@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "App user profile information",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "balance": { "type": "number" },
+        "id": { "type": "string" },
+        "inviteCode": { "type": "string" },
+        "invitedBy": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "author", "admin"] }
+      },
+      "required": ["displayName", "id", "balance"]
+    },
+    "Author": {
+      "title": "Author",
+      "description": "Expert author profile",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "avatar": { "type": "string" },
+        "fans": { "type": "number" },
+        "recentRecord": { "type": "string" },
+        "streak": { "type": "number" },
+        "intro": { "type": "string" }
+      },
+      "required": ["name", "avatar"]
+    },
+    "Prediction": {
+      "title": "Prediction",
+      "description": "A prediction/analysis post",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "title": { "type": "string" },
+        "price": { "type": "number" },
+        "isFree": { "type": "boolean" },
+        "period": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "viewCount": { "type": "number" },
+        "isHot": { "type": "boolean" },
+        "tags": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["authorId", "title", "price"]
+    },
+    "PredictionContent": {
+      "title": "PredictionContent",
+      "description": "Sensitive pick details",
+      "type": "object",
+      "properties": {
+        "content": { "type": "string" },
+        "picks": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["content"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Record of a user unlocking a prediction",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "predictionId": { "type": "string" },
+        "amount": { "type": "number" },
+        "predictionAuthorId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "predictionId", "amount"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "authors/{authorId}": {
+      "schema": "Author",
+      "description": "Expert authors"
+    },
+    "predictions/{predictionId}": {
+      "schema": "Prediction",
+      "description": "Predictions metadata"
+    },
+    "predictions/{predictionId}/content/details": {
+      "schema": "PredictionContent",
+      "description": "Protected prediction details"
+    },
+    "orders/{orderId}": {
+      "schema": "Order",
+      "description": "Purchase records"
+    }
+  }
+}

@@ -1,0 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-primary: #e63946;
+  --color-secondary: #fdf0d5;
+  --color-accent: #003049;
+}
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 247, 248, 250;
+  --background-end-rgb: 247, 248, 250;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-start-rgb));
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Custom Scrollbar for a cleaner mobile look */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+.card-shadow {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.bottom-nav-shadow {
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.red-gradient {
+  background: linear-gradient(135deg, #ff4d4d 0%, #e60000 100%);
+}
+
+.blue-gradient {
+  background: linear-gradient(135deg, #4da6ff 0%, #0066cc 100%);
+}

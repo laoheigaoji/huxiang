@@ -1,0 +1,185 @@
+import React from 'react';
+import { 
+  ClipboardList, PawPrint, Star, Heart, 
+  Headset, Handshake, Download, Settings, 
+  HelpCircle, ArrowRight, X, MoreHorizontal, 
+  Gift, Mail, ArrowUpRight, FileText
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { motion } from 'motion/react';
+
+const ProfileMenuItem = ({ icon: Icon, label, color, bgColor, path }: { icon: any, label: string, color: string, bgColor: string, path?: string }) => (
+  <Link to={path || '#'} className="flex flex-col items-center justify-center py-4 cursor-pointer active:opacity-70 transition-opacity">
+    <div className={`w-11 h-11 ${bgColor} rounded-xl flex items-center justify-center mb-2 shadow-sm`}>
+      <Icon className={`w-6 h-6 ${color}`} />
+    </div>
+    <span className="text-[12px] text-gray-700 font-medium">{label}</span>
+  </Link>
+);
+
+const ServiceItem = ({ icon: Icon, label, path }: { icon: any, label: string, path?: string }) => (
+  <Link to={path || '#'} className="flex flex-col items-center justify-center py-4 cursor-pointer active:opacity-70 transition-opacity">
+    <Icon className="w-7 h-7 text-gray-800 mb-2" strokeWidth={1.5} />
+    <span className="text-[12px] text-gray-600 font-medium">{label}</span>
+  </Link>
+);
+
+const Profile = () => {
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }} 
+      className="bg-gray-50 min-h-screen pb-24"
+    >
+      {/* Target Navigation Bar */}
+      <div className="bg-transparent px-4 pt-12 pb-3 flex items-center justify-between absolute top-0 left-0 right-0 z-30">
+        <X className="w-7 h-7 text-gray-800 cursor-pointer" />
+        <div className="text-center">
+          <h1 className="text-lg font-bold text-gray-900 leading-none">我的</h1>
+          <p className="text-[10px] text-gray-400 mt-1">a0275.com.cn</p>
+        </div>
+        <MoreHorizontal className="w-7 h-7 text-gray-800 cursor-pointer" />
+      </div>
+
+      {/* Header Profile Section */}
+      <div className="relative pt-32 pb-12 bg-white overflow-hidden">
+        {/* Subtle Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#e1f5fe]/60 via-white/40 to-transparent"></div>
+        <div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-[#e3f2fd] to-white/0 opacity-60"></div>
+        
+        <div className="relative z-10 px-6 flex items-start justify-between">
+          <div className="flex items-center">
+            <div className="relative">
+              <img 
+                src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=400" 
+                alt="Avatar" 
+                className="w-16 h-16 rounded-full border-2 border-white shadow-lg object-cover" 
+              />
+            </div>
+            <div className="ml-4">
+              <h2 className="text-xl font-bold text-gray-900">全村人的希望</h2>
+              <div className="text-xs text-gray-500 mt-1 font-medium">ID: 967</div>
+              <div className="text-xs text-gray-400 mt-0.5 font-medium">引荐达人: 一只黑马</div>
+            </div>
+          </div>
+          <Link to="/profile/edit" className="bg-[#6ec9f9] text-white text-[11px] px-4 py-1.5 rounded-full font-bold shadow-sm active:scale-95 transition-transform mt-2">
+            点击编辑资料
+          </Link>
+        </div>
+
+        {/* Balance Display */}
+        <div className="relative z-10 flex px-10 mt-10">
+          <div className="flex-1 text-center">
+            <div className="text-2xl font-bold text-gray-800">0.00</div>
+            <Link to="/topup" className="inline-block mt-2 bg-[#e53935] text-white text-[11px] px-4 py-1 rounded-full font-bold shadow-md active:scale-95 transition-transform">
+              钱包充值
+            </Link>
+          </div>
+          <div className="flex-1 text-center">
+            <div className="text-2xl font-bold text-gray-800">0.00</div>
+            <Link to="/topup" className="inline-block mt-2 bg-[#e53935] text-white text-[11px] px-4 py-1 rounded-full font-bold shadow-md active:scale-95 transition-transform">
+              余额详情
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Actions */}
+      <div className="px-4 -mt-2 relative z-20 space-y-4">
+        {/* Bento Grid Quick Actions */}
+        <div className="flex gap-4">
+          <Link to="#" className="flex-1 bg-[#dff3ff] p-4 rounded-2xl relative overflow-hidden h-24 flex flex-col justify-between shadow-sm">
+            <div className="relative z-10">
+              <h3 className="text-[#3b82f6] font-bold text-lg leading-tight">发文方案</h3>
+              <p className="text-[10px] text-blue-400 mt-0.5 font-medium">发布方案，好料分享</p>
+            </div>
+            <div className="flex items-center text-[10px] text-blue-400 font-bold relative z-10">
+              去发文 <ArrowRight className="w-3 h-3 ml-1" />
+            </div>
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/50 rounded-xl flex items-center justify-center shadow-sm">
+               <Mail className="w-6 h-6 text-blue-400" />
+            </div>
+          </Link>
+
+          <Link to="/invite" className="flex-1 bg-[#fff8e1] p-4 rounded-2xl relative overflow-hidden h-24 flex flex-col justify-between shadow-sm">
+            <div className="relative z-10">
+              <h3 className="text-[#ffa000] font-bold text-lg leading-tight">分享邀请</h3>
+              <p className="text-[10px] text-amber-500/60 mt-0.5 font-medium">分享好料，邀请好友</p>
+            </div>
+            <div className="flex items-center text-[10px] text-amber-500 font-bold relative z-10">
+              去分享 <ArrowRight className="w-3 h-3 ml-1" />
+            </div>
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12">
+               <Gift className="w-12 h-12 text-[#ffd54f] opacity-90" strokeWidth={1} />
+            </div>
+          </Link>
+        </div>
+
+        {/* My Records Section */}
+        <div className="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100">
+          <div className="px-5 py-4">
+            <h3 className="font-bold text-gray-900 text-lg">我的记录</h3>
+          </div>
+          
+          <div className="grid grid-cols-4 px-2 pb-2">
+            <ProfileMenuItem 
+              icon={ClipboardList} 
+              label="我的订单" 
+              color="text-blue-500" 
+              bgColor="bg-blue-50" 
+            />
+            <ProfileMenuItem 
+              icon={PawPrint} 
+              label="浏览足迹" 
+              color="text-[#00c853]" 
+              bgColor="bg-green-50" 
+              path="/footprints"
+            />
+            <ProfileMenuItem 
+              icon={Star} 
+              label="关注列表" 
+              color="text-amber-400" 
+              bgColor="bg-amber-50" 
+            />
+            <ProfileMenuItem 
+              icon={Heart} 
+              label="邀请记录" 
+              color="text-rose-400" 
+              bgColor="bg-rose-50" 
+            />
+          </div>
+
+          <div className="grid grid-cols-4 px-2 pb-6">
+            <ServiceItem icon={Headset} label="平台客服" />
+            <ServiceItem icon={FileText} label="意见反馈" path="/feedback" />
+            <ServiceItem icon={Handshake} label="入驻合作" path="/partner-join" />
+            <ServiceItem icon={Download} label="下载APP" />
+            <ServiceItem icon={Settings} label="系统设置" path="/settings" />
+            <ServiceItem icon={HelpCircle} label="常见问题" path="/faq" />
+          </div>
+        </div>
+
+        {/* Bottom Promotion Banner */}
+        <div className="h-28 bg-gradient-to-r from-[#81d4fa] via-[#e1f5fe] to-[#f8bbd0] rounded-[24px] p-6 relative overflow-hidden flex items-center shadow-sm">
+          <div className="relative z-10">
+            <h4 className="text-2xl font-black text-white italic tracking-tight italic">
+              发文章 享好料
+            </h4>
+            <p className="text-[10px] text-white font-bold tracking-widest mt-1 opacity-90 uppercase">
+              行家精研·智料汇享
+            </p>
+          </div>
+          <div className="ml-auto relative z-10">
+            <div className="w-12 h-12 bg-white/30 rounded-full border border-white/60 flex items-center justify-center backdrop-blur-md shadow-md">
+              <ArrowRight className="w-8 h-8 text-white" />
+            </div>
+          </div>
+          <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+export default Profile;
