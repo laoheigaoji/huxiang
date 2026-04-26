@@ -1,9 +1,10 @@
 import React from 'react';
 import { ChevronLeft, Bell, Settings, MessageSquare, Tag, Volume2 } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 
-const MessageItem = ({ icon: Icon, color, title, desc, time, badge }: any) => (
-  <div className="flex items-center px-4 py-4 bg-white border-b border-gray-50 active:bg-gray-50 transition-colors">
+const MessageItem = ({ id, icon: Icon, color, title, desc, time, badge }: any) => (
+  <Link to={`/message/${id}`} className="flex items-center px-4 py-4 bg-white border-b border-gray-50 active:bg-gray-50 transition-colors">
     <div className={`w-12 h-12 rounded-full ${color} flex items-center justify-center text-white shrink-0 shadow-sm`}>
       <Icon className="w-6 h-6" />
     </div>
@@ -21,7 +22,7 @@ const MessageItem = ({ icon: Icon, color, title, desc, time, badge }: any) => (
         )}
       </div>
     </div>
-  </div>
+  </Link>
 );
 
 const Message = () => {

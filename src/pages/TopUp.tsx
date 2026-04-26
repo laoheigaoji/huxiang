@@ -2,32 +2,58 @@ import React, { useState } from 'react';
 import { ChevronLeft, X, MoreHorizontal, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { api } from '../services/api';
 
 const TopUp = () => {
   const navigate = useNavigate();
-  const [selectedMethod, setSelectedMethod] = useState('alipay1');
+  const [selectedMethod, setSelectedMethod] = useState('alipay');
+  const [amount, setAmount] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  React.useEffect(() => {
+    api.getProfile().then(setUser).catch(console.error);
+  }, []);
+
+  const handlePay = async () => {
+    if (!amount || parseFloat(amount) <= 0) {
+      alert('请输入正确的充值金额');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const res = await api.createPayment(parseFloat(amount), selectedMethod, '金币充值', user?.id);
+      if (res.code === 1 && (res.payurl || res.qrcode || res.urlscheme)) {
+        const url = res.payurl || res.qrcode || res.urlscheme;
+        if (url.startsWith('http')) {
+          window.location.href = url;
+        } else {
+          // For qrcode or urlscheme that aren't direct http links
+          alert(`请使用支付应用扫码或打开: ${url}`);
+        }
+      } else {
+        alert(res.msg || '创建支付失败 (错误代码: ' + res.code + ')');
+      }
+    } catch (err) {
+      console.error('Payment failed', err);
+      alert('支付请求失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }} 
       animate={{ opacity: 1, y: 0 }} 
       exit={{ opacity: 0, y: -20 }} 
-      className="bg-white min-h-screen pb-32"
+      className="bg-white min-h-screen pb-12"
     >
-      {/* System Browser Header */}
-      <div className="bg-white px-4 pt-10 pb-2 flex items-center justify-between border-b border-gray-50">
-        <X className="w-6 h-6 text-gray-800 cursor-pointer" onClick={() => navigate(-1)} />
-        <div className="text-center">
-          <h1 className="text-[17px] font-bold text-gray-900 leading-tight">充值</h1>
-          <p className="text-[10px] text-gray-400 mt-0.5">paydo.xzzsff.com</p>
-        </div>
-        <MoreHorizontal className="w-6 h-6 text-gray-800 cursor-pointer" />
-      </div>
-
       {/* App Header */}
-      <div className="bg-white px-4 py-3 flex items-center justify-center border-b border-gray-50 relative">
-        <ChevronLeft className="w-7 h-7 absolute left-4 text-gray-800 cursor-pointer" onClick={() => navigate(-1)} />
-        <h2 className="text-[18px] font-bold text-gray-900">充值</h2>
+      <div className="bg-[#e53935] px-4 py-4 flex items-center justify-center relative shadow-sm">
+        <ChevronLeft className="w-7 h-7 absolute left-4 text-white cursor-pointer" onClick={() => navigate(-1)} />
+        <h2 className="text-[18px] font-bold text-white">充值</h2>
       </div>
 
       <div className="p-4">
@@ -35,9 +61,12 @@ const TopUp = () => {
         <div className="bg-[#e53935] rounded-lg p-6 text-white relative">
           <p className="text-[14px] opacity-90 font-medium">账户余额 (元)</p>
           <p className="text-[36px] font-bold mt-4 flex items-baseline">
-            <span className="text-[20px] mr-1">¥</span>0.00
+            <span className="text-[20px] mr-1">¥</span>{user?.balance?.toFixed(2) || '0.00'}
           </p>
-          <button className="absolute top-4 right-4 bg-white text-[#e53935] px-4 py-1.5 rounded-full text-[13px] font-bold">
+          <button 
+            className="absolute top-4 right-4 bg-white text-[#e53935] px-4 py-1.5 rounded-full text-[13px] font-bold"
+            onClick={() => navigate('/balance-details')}
+          >
             充值记录
           </button>
         </div>
@@ -49,6 +78,8 @@ const TopUp = () => {
              <span className="text-[18px] font-bold mr-3 text-gray-900">¥</span>
              <input 
                type="number" 
+               value={amount}
+               onChange={(e) => setAmount(e.target.value)}
                placeholder="请输入金额" 
                className="text-[20px] font-bold bg-transparent w-full focus:outline-none placeholder:text-gray-300 placeholder:font-medium" 
              />
@@ -65,60 +96,40 @@ const TopUp = () => {
         <div className="mt-8">
           <p className="text-[15px] font-bold text-gray-800 mb-4">充值方式 :</p>
           <div className="space-y-3">
-            {/* Alipay 1 */}
+            {/* Alipay */}
             <div 
-              className={`rounded-xl p-4 flex items-center justify-between border transition-all active:bg-gray-50 ${selectedMethod === 'alipay1' ? 'border-[#e53935] bg-[#fffcfc]' : 'border-gray-100 bg-gray-50/30'}`}
-              onClick={() => setSelectedMethod('alipay1')}
+              className={`rounded-xl p-4 flex items-center justify-between border transition-all active:bg-gray-50 ${selectedMethod === 'alipay' ? 'border-[#e53935] bg-[#fffcfc]' : 'border-gray-100 bg-gray-50/30'}`}
+              onClick={() => setSelectedMethod('alipay')}
             >
               <div className="flex items-center">
                 <div className="w-9 h-9 bg-[#2196f3] rounded-full flex items-center justify-center mr-3">
                    <span className="text-white text-[15px] font-bold italic">支</span>
                 </div>
-                <span className="text-[15px] font-medium text-gray-900">支付宝</span>
+                <span className="text-[15px] font-medium text-gray-900">支付宝 1</span>
               </div>
               <div>
-                {selectedMethod === 'alipay1' ? (
-                  <CheckCircle2 className="w-6 h-6 text-[#e53935] fill-[#e53935] text-white" />
+                {selectedMethod === 'alipay' ? (
+                  <CheckCircle2 className="w-6 h-6 text-[#e53935] fill-[#e53935]" />
                 ) : (
                   <div className="w-6 h-6 rounded-full border border-gray-300"></div>
                 )}
               </div>
             </div>
 
-            {/* Alipay 2 */}
+            {/* WeChat */}
             <div 
-              className={`rounded-xl p-4 flex items-center justify-between border transition-all active:bg-gray-50 ${selectedMethod === 'alipay2' ? 'border-[#e53935] bg-[#fffcfc]' : 'border-gray-100 bg-gray-50/30'}`}
-              onClick={() => setSelectedMethod('alipay2')}
-            >
-              <div className="flex items-center">
-                <div className="w-9 h-9 bg-[#2196f3] rounded-full flex items-center justify-center mr-3">
-                   <span className="text-white text-[15px] font-bold italic">支</span>
-                </div>
-                <span className="text-[15px] font-medium text-gray-900">支付宝2</span>
-              </div>
-              <div>
-                {selectedMethod === 'alipay2' ? (
-                  <CheckCircle2 className="w-6 h-6 text-[#e53935] fill-[#e53935] text-white" />
-                ) : (
-                  <div className="w-6 h-6 rounded-full border border-gray-300"></div>
-                )}
-              </div>
-            </div>
-
-            {/* WeChat 2 */}
-            <div 
-              className={`rounded-xl p-4 flex items-center justify-between border transition-all active:bg-gray-50 ${selectedMethod === 'wechat2' ? 'border-[#e53935] bg-[#fffcfc]' : 'border-gray-100 bg-gray-50/30'}`}
-              onClick={() => setSelectedMethod('wechat2')}
+              className={`rounded-xl p-4 flex items-center justify-between border transition-all active:bg-gray-50 ${selectedMethod === 'wxpay' ? 'border-[#e53935] bg-[#fffcfc]' : 'border-gray-100 bg-gray-50/30'}`}
+              onClick={() => setSelectedMethod('wxpay')}
             >
               <div className="flex items-center">
                 <div className="w-9 h-9 bg-[#00c853] rounded-full flex items-center justify-center mr-3">
                    <span className="text-white text-[15px] font-bold italic">微</span>
                 </div>
-                <span className="text-[15px] font-medium text-gray-900">微信支付2</span>
+                <span className="text-[15px] font-medium text-gray-900">微信支付</span>
               </div>
               <div>
-                {selectedMethod === 'wechat2' ? (
-                  <CheckCircle2 className="w-6 h-6 text-[#e53935] fill-[#e53935] text-white" />
+                {selectedMethod === 'wxpay' ? (
+                  <CheckCircle2 className="w-6 h-6 text-[#e53935] fill-[#e53935]" />
                 ) : (
                   <div className="w-6 h-6 rounded-full border border-gray-300"></div>
                 )}
@@ -138,18 +149,15 @@ const TopUp = () => {
         </div>
 
         {/* Confirm Button */}
-        <button className="w-full bg-[#e53935] text-white font-bold py-4 rounded-full mt-6 shadow-xl shadow-red-100 active:scale-95 transition-transform text-[17px]">
-          确认支付
+        <button 
+          onClick={handlePay}
+          disabled={loading}
+          className={`w-full bg-[#e53935] text-white font-bold py-4 rounded-full mt-6 shadow-xl shadow-red-100 active:scale-95 transition-transform text-[17px] ${loading ? 'opacity-70 animate-pulse' : ''}`}
+        >
+          {loading ? '创建订单中...' : '确认支付'}
         </button>
       </div>
 
-      {/* Bottom Browser Navigation Mockup */}
-      <div className="fixed bottom-0 left-0 right-0 h-10 bg-[#f8f8f8] flex items-center justify-around z-50 border-t border-gray-200 px-24">
-         <ChevronLeft strokeWidth={1.5} className="w-6 h-6 text-gray-400" />
-         <div className="rotate-180">
-            <ChevronLeft strokeWidth={1.5} className="w-6 h-6 text-gray-400" />
-         </div>
-      </div>
     </motion.div>
   );
 };

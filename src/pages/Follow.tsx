@@ -1,16 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Search, SlidersHorizontal, Star } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { MOCK_PREDICTIONS } from '../mockData';
+import { api } from '../services/api';
+import { Author, Prediction } from '../types';
 
-const PredictionCard = ({ prediction }: { prediction: any, key?: React.Key }) => (
-  <Link to={`/prediction/${prediction.id}`} className="block bg-white rounded-lg p-4 mb-3 card-shadow border border-gray-100">
+const PredictionCard = ({ prediction }: { prediction: Prediction, key?: React.Key }) => (
+  <Link to={`/prediction/${prediction.id}`} className="block bg-white rounded-lg p-4 mb-3 shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-100">
     <div className="flex items-center justify-between mb-3">
       <div className="flex items-center">
         <div className="relative">
           <img src={prediction.authorAvatar} alt={prediction.authorName} className="w-10 h-10 rounded-full object-cover" />
-          {prediction.authorStreak && (
+          {prediction.authorStreak > 0 && (
             <div className="absolute -bottom-1 -right-1 bg-red-500 text-white text-[10px] px-1 rounded-sm border border-white">
               {prediction.authorStreak}连红
             </div>
@@ -20,23 +21,21 @@ const PredictionCard = ({ prediction }: { prediction: any, key?: React.Key }) =>
           <div className="flex items-center">
             <span className="font-medium text-sm text-gray-900">{prediction.authorName}</span>
             <span className="ml-2 px-1 rounded text-[10px] bg-red-50 text-red-500 border border-red-100">
-              {prediction.authorRecentRecord}
+              {prediction.authorRecentRecord || '精选'}
             </span>
           </div>
           <div className="text-[10px] text-gray-400 mt-0.5">
-            粉丝：{prediction.authorFans}  ·  方案：{prediction.viewCount}
+            粉丝：{prediction.authorFans}  ·  方案数：{prediction.viewCount}
           </div>
         </div>
       </div>
       <div className="text-right">
         <div className="text-[10px] text-gray-400 mb-1">{prediction.time}</div>
-        {prediction.isHot && <span className="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full font-medium">热门排行</span>}
       </div>
     </div>
     
     <div className="mb-3">
-      <div className="text-xs font-bold text-red-500 mb-1">【{prediction.period}】期：{prediction.title}</div>
-      <div className="text-sm text-gray-700 line-clamp-2 leading-relaxed">
+      <div className="text-sm text-gray-700 font-bold line-clamp-2 leading-relaxed">
         {prediction.contentTitle}
       </div>
     </div>
@@ -54,7 +53,6 @@ const PredictionCard = ({ prediction }: { prediction: any, key?: React.Key }) =>
           <span className="text-sm font-bold text-green-500">免费公开</span>
         ) : (
           <div className="flex items-center">
-            <span className="text-xs text-gray-400 mr-2">截止：{prediction.countdown}</span>
             <span className="text-sm font-bold text-red-500">{prediction.price}金币</span>
           </div>
         )}
@@ -64,8 +62,39 @@ const PredictionCard = ({ prediction }: { prediction: any, key?: React.Key }) =>
 );
 
 const Follow = () => {
-  // Mock followed content - filtering some hot predictions to simulate "following"
-  const followedPredictions = MOCK_PREDICTIONS.filter(p => p.isHot);
+  const [followedPredictions, setFollowedPredictions] = useState<Prediction[]>([]);
+  const [followedAuthors, setFollowedAuthors] = useState<Author[]>([]);
+  const [activeTab, setActiveTab] = useState<'feed' | 'authors'>('feed');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [allPredictions, allAuthors, profile] = await Promise.all([
+          api.getPredictions(),
+          api.getAuthors(),
+          api.getProfile().catch(() => null)
+        ]);
+        
+        if (profile && profile.following) {
+          const followedIds = profile.following;
+          setFollowedPredictions(allPredictions.filter(p => followedIds.includes(p.authorId)));
+          setFollowedAuthors(allAuthors.filter((a: Author) => followedIds.includes(a.id)));
+        }
+      } catch (err) {
+        console.error('Fetch following failed', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-screen bg-white">
+      <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
 
   return (
     <motion.div 
@@ -88,24 +117,57 @@ const Follow = () => {
 
       {/* Tabs */}
       <div className="bg-white flex px-4 border-b border-gray-100 sticky top-[53px] z-20">
-        <div className="py-3 px-4 text-red-500 border-b-2 border-red-500 font-medium text-sm">全部动态</div>
-        <div className="py-3 px-4 text-gray-500 font-medium text-sm">最新开奖</div>
-        <div className="py-3 px-4 text-gray-500 font-medium text-sm">关注专家</div>
+        <button 
+          onClick={() => setActiveTab('feed')}
+          className={`py-3 px-4 font-medium text-sm transition-colors ${activeTab === 'feed' ? 'text-red-500 border-b-2 border-red-500' : 'text-gray-500'}`}
+        >
+          全部动态
+        </button>
+        <button 
+          onClick={() => setActiveTab('authors')}
+          className={`py-3 px-4 font-medium text-sm transition-colors ${activeTab === 'authors' ? 'text-red-500 border-b-2 border-red-500' : 'text-gray-500'}`}
+        >
+          关注专家
+        </button>
       </div>
 
       <div className="p-4">
-        {followedPredictions.length > 0 ? (
-          followedPredictions.map(p => (
-            <PredictionCard key={p.id} prediction={p} />
-          ))
+        {activeTab === 'feed' ? (
+          followedPredictions.length > 0 ? (
+            followedPredictions.map(p => (
+              <PredictionCard key={p.id} prediction={p} />
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+              <Star className="w-16 h-16 mb-4 opacity-20" />
+              <p>暂无关注动态，快去关注大神吧</p>
+              <Link to="/" className="mt-4 px-6 py-2 bg-red-500 text-white rounded-full text-sm font-medium">
+                去大厅看看
+              </Link>
+            </div>
+          )
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-            <Star className="w-16 h-16 mb-4 opacity-20" />
-            <p>暂无关注动态，快去关注大神吧</p>
-            <Link to="/" className="mt-4 px-6 py-2 bg-red-500 text-white rounded-full text-sm font-medium">
-              去大厅看看
-            </Link>
-          </div>
+          followedAuthors.length > 0 ? (
+            <div className="space-y-3">
+              {followedAuthors.map(author => (
+                <Link key={author.id} to={`/author/${author.id}`} className="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-50">
+                  <div className="flex items-center">
+                    <img src={author.avatar} alt={author.name} className="w-12 h-12 rounded-full object-cover" />
+                    <div className="ml-3">
+                      <div className="font-bold text-gray-900">{author.name}</div>
+                      <div className="text-xs text-gray-500 mt-1">粉丝：{author.fans} · 近{author.recentRecord}</div>
+                    </div>
+                  </div>
+                  <ChevronLeft className="w-5 h-5 text-gray-300 rotate-180" />
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+              <Star className="w-16 h-16 mb-4 opacity-20" />
+              <p>你还没有关注任何专家</p>
+            </div>
+          )
         )}
       </div>
 

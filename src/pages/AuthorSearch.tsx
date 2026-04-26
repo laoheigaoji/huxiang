@@ -14,18 +14,8 @@ const AuthorSearch = () => {
       exit={{ opacity: 0 }} 
       className="bg-[#f8f8f8] min-h-screen"
     >
-      {/* System Browser Header */}
-      <div className="bg-white px-4 pt-10 pb-2 flex items-center justify-between border-b border-gray-50">
-        <X className="w-6 h-6 text-gray-800 cursor-pointer" onClick={() => navigate(-1)} />
-        <div className="text-center">
-          <h1 className="text-[17px] font-bold text-gray-900 leading-tight">商家列表</h1>
-          <p className="text-[10px] text-gray-400 mt-0.5">op93.help</p>
-        </div>
-        <MoreHorizontal className="w-6 h-6 text-gray-800 cursor-pointer" />
-      </div>
-
       {/* App Header */}
-      <div className="bg-[#e53935] px-4 py-3 flex items-center justify-center relative">
+      <div className="bg-[#e53935] px-4 py-4 flex items-center justify-center relative shadow-sm">
         <ChevronLeft className="w-7 h-7 absolute left-4 text-white cursor-pointer" onClick={() => navigate(-1)} />
         <h2 className="text-[18px] font-bold text-white">商家列表</h2>
       </div>
@@ -54,13 +44,6 @@ const AuthorSearch = () => {
         </div>
       </div>
 
-      {/* Bottom Browser Navigation Mockup */}
-      <div className="fixed bottom-0 left-0 right-0 h-10 bg-[#f8f8f8] flex items-center justify-around z-50 border-t border-gray-200 px-24">
-         <ChevronLeft strokeWidth={1.5} className="w-6 h-6 text-gray-400" />
-         <div className="rotate-180">
-            <ChevronLeft strokeWidth={1.5} className="w-6 h-6 text-gray-400" />
-         </div>
-      </div>
     </motion.div>
   );
 };

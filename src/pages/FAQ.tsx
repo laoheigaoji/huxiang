@@ -62,47 +62,54 @@ const FAQ = () => {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      exit={{ opacity: 0, y: -20 }} 
-      className="bg-[#f2f9ff] min-h-screen pb-32"
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }} 
+      className="bg-[#f0f7ff] min-h-screen pb-12 relative overflow-hidden"
     >
-      {/* System Browser Header */}
-      <div className="bg-white px-4 pt-10 pb-2 flex items-center justify-between border-b border-gray-50">
-        <X className="w-6 h-6 text-gray-800 cursor-pointer" onClick={() => navigate(-1)} />
-        <div className="text-center">
-          <h1 className="text-[17px] font-bold text-gray-900 leading-tight">常见问题</h1>
-          <p className="text-[10px] text-gray-400 mt-0.5">a0275.com.cn</p>
-        </div>
-        <MoreHorizontal className="w-6 h-6 text-gray-800 cursor-pointer" />
+      {/* Sky Background with Clouds Effect */}
+      <div className="absolute top-0 left-0 right-0 h-80 bg-gradient-to-b from-[#b3e5fc] to-[#f0f7ff] -z-10">
+        <div className="absolute top-10 left-10 w-32 h-12 bg-white/40 blur-2xl rounded-full"></div>
+        <div className="absolute top-20 right-0 w-48 h-16 bg-white/30 blur-2xl rounded-full"></div>
       </div>
 
-      {/* Hero Section with Mascot */}
-      <div className="relative bg-gradient-to-b from-[#e3f2fd] to-[#f2f9ff] h-40 overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
-        <div className="px-4 py-4 flex items-center relative z-10">
-          <ChevronLeft className="w-7 h-7 text-gray-800 cursor-pointer" onClick={() => navigate(-1)} />
-          <h2 className="ml-24 text-[18px] font-bold text-gray-900 text-center flex-1 mr-4">常见问题</h2>
-        </div>
-        
-        {/* Mascot Robot Image Placeholder (Matching feedback mascot) */}
-        <div className="absolute right-0 bottom-0 w-48 h-32 flex items-end justify-end pointer-events-none translate-y-4">
-           <div className="relative">
-              <div className="w-32 h-32 bg-blue-200/50 rounded-full flex items-center justify-center filter blur-xl absolute -bottom-10 -right-10"></div>
-              <img 
-                src="https://img.icons8.com/color/240/robot-tapi.png" 
-                alt="mascot" 
-                className="w-32 h-32 object-contain relative z-10 opacity-80" 
-              />
-           </div>
+      {/* Header */}
+      <div className="px-4 py-8 flex items-center relative z-10">
+        <ChevronLeft className="w-7 h-7 text-gray-800 cursor-pointer" onClick={() => navigate(-1)} />
+        <h2 className="text-[20px] font-bold text-gray-900 text-center flex-1 pr-6">常见问题</h2>
+      </div>
+
+      {/* Mascot Robot (Refined position) */}
+      <div className="flex justify-center -mt-4 mb-4 relative">
+        <div className="w-56 h-40 relative flex items-center justify-center">
+          {/* Blue Sphere Mascot with Headphones (Using a more accurate placeholder) */}
+          <div className="relative group">
+            {/* Blue Sphere */}
+            <div className="w-24 h-24 bg-gradient-to-br from-[#80d8ff] to-[#40c4ff] rounded-full shadow-lg flex items-center justify-center relative border-4 border-white/50">
+               {/* Eyes */}
+               <div className="flex space-x-3 mt-1">
+                 <div className="w-2.5 h-2.5 bg-blue-800 rounded-full"></div>
+                 <div className="w-2.5 h-2.5 bg-blue-800 rounded-full"></div>
+               </div>
+               {/* Smile */}
+               <div className="absolute bottom-6 w-8 h-3 border-b-2 border-blue-800 rounded-full"></div>
+               
+               {/* Translucent Headphones */}
+               <div className="absolute -top-3 -left-4 -right-4 h-20 border-[10px] border-blue-300/60 rounded-full pointer-events-none"></div>
+               <div className="absolute -left-6 top-1/2 -translate-y-1/2 w-8 h-10 bg-blue-400/80 rounded-lg border-2 border-white/30"></div>
+               <div className="absolute -right-6 top-1/2 -translate-y-1/2 w-8 h-10 bg-blue-400/80 rounded-lg border-2 border-white/30"></div>
+            </div>
+            
+            {/* Glow / Clouds behind */}
+            <div className="absolute inset-0 bg-blue-200/40 blur-3xl -z-10 rounded-full scale-150"></div>
+          </div>
         </div>
       </div>
 
       {/* FAQ Card Container */}
-      <div className="px-5 -mt-4 relative z-20">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-50">
-          <h3 className="text-[17px] font-bold text-blue-600 mb-2">常见问题：</h3>
-          <div className="bg-gray-100/30 h-[1px] w-full mb-1"></div>
+      <div className="px-4 -mt-2 relative z-20">
+        <div className="bg-white rounded-2xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white">
+          <h3 className="text-[17px] font-bold text-[#3f51b5] mb-4">常见问题：</h3>
           
           <div className="space-y-0">
             {faqs.map((faq, index) => (
@@ -113,19 +120,12 @@ const FAQ = () => {
       </div>
 
       {/* Sticky Action Button */}
-      <div className="fixed bottom-10 left-0 right-0 px-8 z-50">
-        <button className="w-full bg-[#e53935] text-white font-bold py-4 rounded-full text-lg shadow-xl shadow-red-100 active:scale-95 transition-transform">
+      <div className="fixed bottom-10 left-0 right-0 px-6 z-50">
+        <button className="w-full bg-[#e53935] text-white font-bold py-[15px] rounded-full text-lg shadow-xl shadow-red-200 active:scale-95 transition-transform">
           点击联系在线客服
         </button>
       </div>
 
-      {/* Bottom Browser Navigation Mockup */}
-      <div className="fixed bottom-0 left-0 right-0 h-10 bg-[#f8f8f8] flex items-center justify-around z-50 border-t border-gray-200 px-24">
-         <ChevronLeft strokeWidth={1.5} className="w-6 h-6 text-gray-400" />
-         <div className="rotate-180">
-            <ChevronLeft strokeWidth={1.5} className="w-6 h-6 text-gray-400" />
-         </div>
-      </div>
     </motion.div>
   );
 };

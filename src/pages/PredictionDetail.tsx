@@ -1,24 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Headset, Share2, Lock, ArrowRight, UserPlus, X } from 'lucide-react';
+import { ChevronLeft, Headset, Share2, Lock, ArrowRight, UserPlus, X, Star, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MOCK_PREDICTIONS, MOCK_HISTORY } from '../mockData';
+import { QRCodeSVG } from 'qrcode.react';
+import { api } from '../services/api';
+import { Prediction, HistoryItem } from '../types';
 
 const PredictionDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [showPayment, setShowPayment] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
-  const prediction = MOCK_PREDICTIONS.find(p => p.id === id) || MOCK_PREDICTIONS[1];
+  const [prediction, setPrediction] = useState<Prediction | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isFollowed, setIsFollowed] = useState(false);
+  const [isPurchased, setIsPurchased] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        if (id) {
+          const [predData, histData, profileData] = await Promise.all([
+            api.getPredictionById(id),
+            api.getHistory(),
+            api.getProfile().catch(() => null)
+          ]);
+          setPrediction(predData);
+          setHistory(histData);
+          setUser(profileData);
+          if (profileData && predData) {
+            if (profileData.following) {
+              setIsFollowed(profileData.following.includes(predData.authorId));
+            }
+            if (profileData.purchased && profileData.purchased.includes(id)) {
+              setIsPurchased(true);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch prediction', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+
     const lastShown = localStorage.getItem('disclaimer_last_shown');
     const today = new Date().toDateString();
     if (lastShown !== today) {
       setShowDisclaimer(true);
     }
-  }, []);
+  }, [id]);
 
   const handleCloseDisclaimer = () => {
     if (dontShowAgain) {
@@ -26,6 +62,50 @@ const PredictionDetail = () => {
     }
     setShowDisclaimer(false);
   };
+
+  const handleFollow = async () => {
+    if (!prediction) return;
+    try {
+      await api.followAuthor(prediction.authorId);
+      setIsFollowed(!isFollowed);
+      // Update local profile cache if needed
+      api.getProfile().then(p => {
+        localStorage.setItem('user', JSON.stringify(p));
+        setUser(p);
+      });
+    } catch (err) {
+      console.error('Follow failed', err);
+    }
+  };
+
+  const handlePurchase = async () => {
+    if (!id) return;
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    try {
+      setLoading(true);
+      await api.purchasePrediction(id);
+      setIsPurchased(true);
+      const updatedUser = await api.getProfile();
+      setUser(updatedUser);
+      setShowPayment(false);
+      alert('购买成功！');
+    } catch (err: any) {
+      alert(err.message || '购买失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return (
+    <div className="flex items-center justify-center min-vh-screen bg-gray-50 h-screen">
+      <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+
+  if (!prediction) return null;
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-gray-50 min-h-screen">
@@ -131,8 +211,15 @@ const PredictionDetail = () => {
                 <p className="text-xs text-orange-500">{prediction.authorFans} 粉丝</p>
               </div>
             </div>
-            <button className="bg-pink-50 text-red-500 px-4 py-1.5 rounded-full text-xs font-bold border border-red-100 flex items-center">
-              <UserPlus className="w-3 h-3 mr-1" /> 关注
+            <button 
+              onClick={handleFollow}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold border flex items-center transition-all active:scale-95 ${
+                isFollowed 
+                  ? 'bg-gray-100 text-gray-400 border-gray-200' 
+                  : 'bg-pink-50 text-red-500 border-red-100'
+              }`}
+            >
+              <UserPlus className={`w-3 h-3 mr-1 ${isFollowed ? 'hidden' : 'block'}`} /> {isFollowed ? '已关注' : '关注'}
             </button>
           </div>
 
@@ -161,10 +248,10 @@ const PredictionDetail = () => {
         </div>
 
         {/* Lock Section / Result Section */}
-        {!prediction.isFree && (
+        {!prediction.isFree && !isPurchased && (
           <div className="mt-4 bg-orange-50 rounded-2xl p-6 border border-orange-100 text-center relative overflow-hidden">
             <div className="absolute top-4 right-4 text-gray-400">
-              <Share2 className="w-5 h-5 cursor-pointer" />
+              <Share2 className="w-5 h-5 cursor-pointer" onClick={() => setShowShare(true)} />
             </div>
             
             <h4 className="text-gray-800 font-bold text-lg">解锁公开倒计时</h4>
@@ -180,7 +267,7 @@ const PredictionDetail = () => {
 
             <button 
               onClick={() => setShowPayment(true)}
-              className="mt-6 flex items-center justify-center space-x-2 bg-gray-900 text-white w-full py-3 rounded-full font-medium"
+              className="mt-6 flex items-center justify-center space-x-2 bg-gray-900 text-white w-full py-3 rounded-full font-medium active:scale-95 transition-transform"
             >
               <Lock className="w-4 h-4 fill-white" />
               <span>付费 ¥ {prediction.price} 立即解锁</span>
@@ -189,6 +276,33 @@ const PredictionDetail = () => {
             <p className="mt-4 text-[10px] text-gray-400 leading-relaxed px-2">
               作者方案为个人数字概率分析内容，该结果不作为开奖胜负统计，不作为任何承诺。内容信息仅供参考，不代表平台意见！
             </p>
+          </div>
+        )}
+
+        {(prediction.isFree || isPurchased) && (
+          <div className="mt-4 bg-white rounded-2xl p-6 border border-gray-100 card-shadow text-center relative overflow-hidden">
+            <div className="absolute top-4 right-4 text-gray-400">
+              <Share2 className="w-5 h-5 cursor-pointer" onClick={() => setShowShare(true)} />
+            </div>
+            
+            <h4 className="text-gray-800 font-bold text-lg mb-6">推荐内容</h4>
+            
+            <div className="space-y-6">
+              <div className="flex flex-col items-center">
+                <span className="text-sm text-gray-500 mb-2">精选内容</span>
+                <div className="flex space-x-3">
+                  {[36, 24, 12].map(n => (
+                    <div key={n} className="w-12 h-12 rounded-full bg-[#f44336] flex items-center justify-center text-white text-lg font-black shadow-lg">
+                      {n}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 leading-relaxed">
+                这是作者为您精心挑选的号码，基于大数据模拟分析得出。
+              </div>
+            </div>
           </div>
         )}
 
@@ -218,7 +332,7 @@ const PredictionDetail = () => {
           </div>
 
           <div className="space-y-4 pb-12">
-            {MOCK_HISTORY.map(item => (
+            {history.map(item => (
               <div key={item.id} className="bg-white rounded-xl p-4 card-shadow relative">
                  <div className="absolute top-4 right-4 w-12 h-12 opacity-40">
                     <img src="https://img.icons8.com/color/96/000000/stamp.png" alt="" className="grayscale" />
@@ -262,18 +376,20 @@ const PredictionDetail = () => {
       </div>
 
       {/* Floating Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white p-3 flex items-center justify-between z-50 border-t border-gray-100 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-        <div className="flex items-baseline space-x-1">
-          <span className="text-sm font-medium text-gray-800">需支付:</span>
-          <span className="text-xl font-bold text-red-600">¥ {prediction.price}</span>
+      {!isPurchased && !prediction.isFree && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white p-3 flex items-center justify-between z-50 border-t border-gray-100 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+          <div className="flex items-baseline space-x-1">
+            <span className="text-sm font-medium text-gray-800">需支付:</span>
+            <span className="text-xl font-bold text-red-600">¥ {prediction.price}</span>
+          </div>
+          <button 
+            onClick={() => setShowPayment(true)}
+            className="bg-red-600 text-white px-10 py-3 rounded-full font-bold shadow-lg shadow-red-100 transition-transform active:scale-95"
+          >
+            立即支付
+          </button>
         </div>
-        <button 
-          onClick={() => setShowPayment(true)}
-          className="bg-red-600 text-white px-10 py-3 rounded-full font-bold shadow-lg shadow-red-100 transition-transform active:scale-95"
-        >
-          立即支付
-        </button>
-      </div>
+      )}
 
       {/* Payment Modal */}
       {showPayment && (
@@ -295,7 +411,7 @@ const PredictionDetail = () => {
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer" onClick={() => {}}>
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
                        <span className="text-white font-bold text-lg">支</span>
@@ -309,14 +425,22 @@ const PredictionDetail = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 opacity-60">
+                <div 
+                  className={`flex items-center justify-between p-4 rounded-xl border border-gray-100 cursor-pointer ${user?.balance < prediction?.price ? 'bg-gray-50 opacity-60' : 'bg-orange-50'}`}
+                  onClick={() => {
+                    if (user?.balance < prediction?.price) {
+                       navigate('/topup');
+                    }
+                  }}
+                >
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center mr-3 text-white">¥</div>
                     <div>
-                      <p className="font-medium">余额支付 (可用余额: ¥ 0.00 <span className="text-green-500">充值</span>)</p>
+                      <p className="font-medium">余额支付 (可用余额: ¥ {user?.balance || '0.00'})</p>
+                      {user?.balance < prediction?.price && <p className="text-[10px] text-red-500">余额不足，请充值</p>}
                     </div>
                   </div>
-                  <div className="w-5 h-5 rounded-full border-2 border-gray-300"></div>
+                  <div className={`w-5 h-5 rounded-full border-2 ${user?.balance < prediction?.price ? 'border-gray-300' : 'border-gray-300'}`}></div>
                 </div>
               </div>
 
@@ -324,12 +448,134 @@ const PredictionDetail = () => {
                  支付异常请联系上级推荐人，严禁私下交易。查实违规奖励5-10倍。
               </div>
 
-              <button className="w-full bg-red-600 text-white font-bold py-4 rounded-full mt-6 shadow-xl shadow-red-100">
-                立即支付
+              <button 
+                onClick={handlePurchase}
+                disabled={loading}
+                className="w-full bg-red-600 text-white font-bold py-4 rounded-full mt-6 shadow-xl shadow-red-100 active:scale-95 transition-transform disabled:opacity-50"
+              >
+                {loading ? '正在支付...' : '立即支付'}
               </button>
            </motion.div>
         </div>
       )}
+
+      {/* Share Poster Modal */}
+      <AnimatePresence>
+        {showShare && (
+          <div className="fixed inset-0 z-[150] flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowShare(false)}>
+            <motion.div 
+              initial={{ y: "100%" }} 
+              animate={{ y: 0 }} 
+              exit={{ y: "100%" }}
+              className="bg-white w-full max-w-lg rounded-t-[32px] overflow-hidden relative pb-10"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <div className="absolute top-6 right-6 z-20">
+                <X className="w-6 h-6 text-gray-500 cursor-pointer" onClick={() => setShowShare(false)} />
+              </div>
+
+              {/* Poster Content Area */}
+              <div className="relative p-6 pt-10">
+                {/* Background Watermark Pattern */}
+                <div className="absolute inset-0 z-0 opacity-5 pointer-events-none overflow-hidden select-none" style={{ 
+                  backgroundImage: 'radial-gradient(#000 1px, transparent 1px)',
+                  backgroundSize: '20px 20px'
+                }}>
+                  {Array.from({ length: 40 }).map((_, i) => (
+                    <div key={i} className="absolute text-[10px] whitespace-nowrap rotate-[-30deg]" style={{
+                      left: `${(i % 5) * 25}%`,
+                      top: `${Math.floor(i / 5) * 15}%`,
+                    }}>
+                      智料汇享 智料汇享 智料汇享
+                    </div>
+                  ))}
+                </div>
+
+                <div className="relative z-10">
+                  {/* Poster Header */}
+                  <div className="text-center mb-8">
+                    <h3 className="text-[22px] font-black text-gray-900 tracking-tight">{prediction.authorName}</h3>
+                  </div>
+
+                  {/* Prediction Summary Section */}
+                  <div className="bg-orange-50/60 rounded-3xl p-6 border border-orange-100 flex flex-col items-center mb-10">
+                    <h4 className="text-gray-800 font-black text-[17px] mb-6 tracking-widest">模拟核对</h4>
+                    
+                    {/* Circle Numbers Grid */}
+                    <div className="grid grid-cols-7 gap-1.5 mb-6">
+                      {[
+                        { n: '15', l: '龙' },
+                        { n: '46', l: '鸡' },
+                        { n: '16', l: '兔' },
+                        { n: '10', l: '鸡' },
+                        { n: '48', l: '羊' },
+                        { n: '33', l: '狗' },
+                        { n: '22', l: '鸡', color: 'blue' }
+                      ].map((item, i) => (
+                        <div key={i} className="flex flex-col items-center">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-[15px] font-black shadow-sm ${item.color === 'blue' ? 'bg-[#448aff]' : 'bg-[#f44336]'}`}>
+                            {item.n}
+                          </div>
+                          <span className={`${item.color === 'blue' ? 'text-[#448aff]' : 'text-red-500'} text-[11px] font-bold mt-1.5`}>{item.l}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Paid Content Box */}
+                    <div className="flex items-center justify-center space-x-1.5 text-orange-500 font-black text-sm mb-4">
+                      <Star className="w-4 h-4 fill-orange-500" />
+                      <span>付费内容</span>
+                      <Star className="w-4 h-4 fill-orange-500" />
+                    </div>
+
+                    {/* Dotted Box Overlay */}
+                    <div className="w-full border-2 border-dashed border-orange-300 rounded-xl py-4 flex items-center justify-center space-x-3 bg-white/40">
+                      {[36, 24, 12].map(n => (
+                        <div key={n} className="w-10 h-10 rounded-full bg-[#f44336] flex items-center justify-center text-white text-base font-black shadow-sm">
+                          {n}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* QR Code Section */}
+                  <div className="flex flex-col items-center mb-10">
+                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm mb-3">
+                      <QRCodeSVG 
+                        value={`https://${window.location.host}/prediction/${id}`} 
+                        size={110}
+                        bgColor="#ffffff"
+                        fgColor="#000000"
+                        level="H"
+                        imageSettings={{
+                          src: "https://ais-dev-jx4ks75htxxryfmqk3lw6m-160820254016.us-east1.run.app/favicon.ico",
+                          x: undefined,
+                          y: undefined,
+                          height: 20,
+                          width: 20,
+                          excavate: true,
+                        }}
+                      />
+                    </div>
+                    <p className="text-gray-900 font-black text-[15px] tracking-widest">微信扫码打开</p>
+                    <div className="mt-4 text-[11px] text-gray-400 font-medium flex space-x-3">
+                      <span>来源：智料汇享</span>
+                      <span>2026-04-27 00:12</span>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  <button className="w-full bg-[#e53935] text-white font-bold py-4 rounded-full flex items-center justify-center space-x-2 shadow-xl shadow-red-100 active:scale-[0.98] transition-transform">
+                    <Download className="w-5 h-5" />
+                    <span className="text-[17px] tracking-widest">保存至相册</span>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Floating Return Button */}
       <div className="fixed bottom-24 right-4 z-40">
@@ -342,3 +588,4 @@ const PredictionDetail = () => {
 };
 
 export default PredictionDetail;
+

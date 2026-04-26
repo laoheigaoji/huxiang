@@ -29,6 +29,8 @@ export interface Prediction {
   time: string;
   viewCount: number;
   isHot?: boolean;
+  content?: string;
+  updatedAt?: string;
 }
 
 export interface HistoryItem {
@@ -41,4 +43,25 @@ export interface HistoryItem {
   animals: string[];
   time: string;
   viewCount: number;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  nickname: string;
+  avatar: string;
+  balance: number;
+  isAuthor?: boolean;
+  authorId?: string;
+}
+
+export interface Application {
+  id: string;
+  userId: string;
+  username: string;
+  realName: string;
+  description: string;
+  specialty: string;
+  status: 'pending' | 'approved' | 'rejected';
+  time: string;
 }

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "p1",
+    "authorId": "7",
+    "authorName": "飞哥",
+    "authorAvatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=feige",
+    "authorFans": 7586,
+    "authorRecentRecord": "近30红19",
+    "authorStreak": 1,
+    "period": "第116期",
+    "title": "提供参考（每天免费）福利🎁",
+    "contentTitle": "【第116期】提供参考（每天免费）福利🎁",
+    "tags": ["免费"],
+    "price": 0,
+    "isFree": true,
+    "time": "2026-04-26 15:05",
+    "viewCount": 4412,
+    "isHot": true
+  },
+  {
+    "id": "p2",
+    "authorId": "8",
+    "authorName": "奥迪小王",
+    "authorAvatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=audi",
+    "authorFans": 4305,
+    "authorRecentRecord": "近30红20",
+    "authorStreak": 0,
+    "period": "第116期",
+    "title": "自由资讯 推荐平特一肖",
+    "contentTitle": "【奥迪小王】第116期 自由资讯 推荐平特一肖",
+    "tags": [],
+    "price": 286,
+    "isFree": false,
+    "countdown": "01:25:42",
+    "time": "2026-04-26 15:20",
+    "viewCount": 3616
+  }
+]

@@ -1,10 +1,11 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home as HomeIcon, Star, MessageCircle, User, Bell, ChevronLeft, Search, SlidersHorizontal, Headset } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Home from './pages/Home';
 import Follow from './pages/Follow';
 import Message from './pages/Message';
+import MessageDetail from './pages/MessageDetail';
 import PredictionDetail from './pages/PredictionDetail';
 import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
@@ -17,6 +18,14 @@ import PartnerJoin from './pages/PartnerJoin';
 import AuthorProfile from './pages/AuthorProfile';
 import Invite from './pages/Invite';
 import TopUp from './pages/TopUp';
+import BalanceDetails from './pages/BalanceDetails';
+import Withdraw from './pages/Withdraw';
+import Orders from './pages/Orders';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import AdminDashboard from './pages/AdminDashboard';
+import PublishPrediction from './pages/PublishPrediction';
+import AuthorDashboard from './pages/AuthorDashboard';
 
 const BottomNav = () => {
   const location = useLocation();
@@ -26,6 +35,9 @@ const BottomNav = () => {
     { name: '消息', path: '/message', icon: MessageCircle },
     { name: '我的', path: '/profile', icon: User },
   ];
+
+  const hideNavPaths = ['/publish', '/admin', '/login', '/register', '/partner-join', '/author/dashboard'];
+  if (hideNavPaths.includes(location.pathname)) return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around py-2 items-center bottom-nav-shadow z-50">
@@ -45,14 +57,38 @@ const BottomNav = () => {
 const App = () => {
   return (
     <Router>
-      <div className="min-h-screen pb-20 max-w-full overflow-x-hidden">
-        <AnimatePresence mode="wait">
-          <Routes>
-            <Route path="/" element={<Home />} />
+      <AppContent />
+    </Router>
+  );
+};
+
+const AppContent = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    const user = localStorage.getItem('user');
+    const publicPaths = ['/login', '/register'];
+    if (!user && !publicPaths.includes(location.pathname)) {
+       navigate('/login');
+    }
+  }, [location.pathname, navigate]);
+
+  return (
+    <div className="min-h-screen pb-20 max-w-full overflow-x-hidden">
+      <AnimatePresence mode="wait">
+        <Routes>
+          <Route path="/" element={<Home />} />
             <Route path="/follow" element={<Follow />} />
             <Route path="/message" element={<Message />} />
+            <Route path="/message/:id" element={<MessageDetail />} />
             <Route path="/prediction/:id" element={<PredictionDetail />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/publish" element={<PublishPrediction />} />
+            <Route path="/author/dashboard" element={<AuthorDashboard />} />
             <Route path="/profile/edit" element={<EditProfile />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/settings" element={<Settings />} />
@@ -63,11 +99,13 @@ const App = () => {
             <Route path="/author/:id" element={<AuthorProfile />} />
             <Route path="/invite" element={<Invite />} />
             <Route path="/topup" element={<TopUp />} />
+            <Route path="/balance-details" element={<BalanceDetails />} />
+            <Route path="/withdraw" element={<Withdraw />} />
+            <Route path="/orders" element={<Orders />} />
           </Routes>
         </AnimatePresence>
         <BottomNav />
       </div>
-    </Router>
   );
 };
 
