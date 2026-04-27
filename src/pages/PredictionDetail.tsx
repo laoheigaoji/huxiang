@@ -14,30 +14,43 @@ const PredictionDetail = () => {
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
+  const [author, setAuthor] = useState<any>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFollowed, setIsFollowed] = useState(false);
   const [isPurchased, setIsPurchased] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [timeLeft, setTimeLeft] = useState({ h: '00', m: '00', s: '00' });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (id) {
-          const [predData, histData, profileData] = await Promise.all([
-            api.getPredictionById(id),
-            api.getHistory(),
-            api.getProfile().catch(() => null)
-          ]);
-          setPrediction(predData);
-          setHistory(histData);
-          setUser(profileData);
-          if (profileData && predData) {
-            if (profileData.following) {
-              setIsFollowed(profileData.following.includes(predData.authorId));
-            }
-            if (profileData.purchased && profileData.purchased.includes(id)) {
-              setIsPurchased(true);
+            const [predData, histData, profileData] = await Promise.all([
+              api.getPredictionById(id),
+              api.getHistory(),
+              api.getProfile().catch(() => null)
+            ]);
+            setPrediction(predData);
+            
+            if (predData) {
+              const filteredHistory = histData.filter((h: any) => h.authorId === predData.authorId);
+              setHistory(filteredHistory.length > 0 ? filteredHistory : histData.slice(0, 3)); // Fallback to generic if none found for author
+              
+              if (predData.isUnlocked) {
+                setIsUnlocked(true);
+              }
+              const authorData = await api.getAuthorById(predData.authorId).catch(() => null);
+              setAuthor(authorData);
+            
+            if (profileData) {
+              if (profileData.following) {
+                setIsFollowed(profileData.following.includes(predData.authorId));
+              }
+              if (profileData.purchased && profileData.purchased.includes(id)) {
+                setIsPurchased(true);
+              }
             }
           }
         }
@@ -55,6 +68,43 @@ const PredictionDetail = () => {
       setShowDisclaimer(true);
     }
   }, [id]);
+
+  useEffect(() => {
+    if (!prediction?.unlockAt) return;
+
+    const updateTimer = () => {
+      const target = new Date(prediction.unlockAt!).getTime();
+      const now = new Date().getTime();
+      const diff = target - now;
+
+      if (diff <= 0) {
+        setIsUnlocked(true);
+        setTimeLeft({ h: '00', m: '00', s: '00' });
+        return true; // Finished
+      } else {
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft({
+          h: h.toString().padStart(2, '0'),
+          m: m.toString().padStart(2, '0'),
+          s: s.toString().padStart(2, '0')
+        });
+        return false; // Not finished
+      }
+    };
+
+    const isFinished = updateTimer();
+    if (isFinished) return;
+
+    const timer = setInterval(() => {
+      if (updateTimer()) {
+        clearInterval(timer);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [prediction]);
 
   const handleCloseDisclaimer = () => {
     if (dontShowAgain) {
@@ -224,9 +274,11 @@ const PredictionDetail = () => {
           </div>
 
           <div className="mt-2 flex space-x-2">
-            <span className="text-[10px] text-red-500 bg-red-50 px-1 border border-red-100 rounded-sm">近30红20</span>
+            <span className="text-[10px] text-red-500 bg-red-50 px-1 border border-red-100 rounded-sm">
+              {prediction.authorRecentRecord}
+            </span>
             <div className="flex-grow"></div>
-            <span className="text-[10px] text-gray-400">近七日人气 <span className="text-red-500 font-bold">58373</span></span>
+            <span className="text-[10px] text-gray-400">近七日人气 <span className="text-red-500 font-bold">{prediction.viewCount + 15000}</span></span>
           </div>
 
           <div className="mt-6">
@@ -248,7 +300,7 @@ const PredictionDetail = () => {
         </div>
 
         {/* Lock Section / Result Section */}
-        {!prediction.isFree && !isPurchased && (
+        {!prediction.isFree && !isPurchased && !isUnlocked && (
           <div className="mt-4 bg-orange-50 rounded-2xl p-6 border border-orange-100 text-center relative overflow-hidden">
             <div className="absolute top-4 right-4 text-gray-400">
               <Share2 className="w-5 h-5 cursor-pointer" onClick={() => setShowShare(true)} />
@@ -256,30 +308,34 @@ const PredictionDetail = () => {
             
             <h4 className="text-gray-800 font-bold text-lg">解锁公开倒计时</h4>
             
-            <div className="flex justify-center items-center space-x-2 mt-4">
-              {['01', '25', '20'].map((part, i) => (
-                <React.Fragment key={i}>
-                  <div className="bg-red-500 text-white text-xl font-bold w-10 h-10 flex items-center justify-center rounded-md">{part}</div>
-                  {i < 2 && <span className="text-red-500 text-xl font-bold">:</span>}
+            <div className="flex justify-center items-center space-x-2 mt-4 transition-all">
+              {['h', 'm', 's'].map((key) => (
+                <React.Fragment key={key}>
+                  <motion.div 
+                    className="bg-red-500 text-white text-xl font-bold w-12 h-12 flex items-center justify-center rounded-xl shadow-lg shadow-red-100"
+                  >
+                    {timeLeft[key as keyof typeof timeLeft]}
+                  </motion.div>
+                  {key !== 's' && <span className="text-red-500 text-xl font-black">:</span>}
                 </React.Fragment>
               ))}
             </div>
 
             <button 
               onClick={() => setShowPayment(true)}
-              className="mt-6 flex items-center justify-center space-x-2 bg-gray-900 text-white w-full py-3 rounded-full font-medium active:scale-95 transition-transform"
+              className="mt-8 flex items-center justify-center space-x-2 bg-gray-900 text-white w-full py-4 rounded-full font-black shadow-xl shadow-gray-200 active:scale-95 transition-transform"
             >
-              <Lock className="w-4 h-4 fill-white" />
+              <Lock className="w-5 h-5 fill-white" />
               <span>付费 ¥ {prediction.price} 立即解锁</span>
             </button>
 
-            <p className="mt-4 text-[10px] text-gray-400 leading-relaxed px-2">
-              作者方案为个人数字概率分析内容，该结果不作为开奖胜负统计，不作为任何承诺。内容信息仅供参考，不代表平台意见！
+            <p className="mt-6 text-[11px] text-gray-400 leading-relaxed px-4 font-medium italic">
+              内容解锁后永久查看。倒计时结束后将变更为公开方案，公开后不再收费。
             </p>
           </div>
         )}
 
-        {(prediction.isFree || isPurchased) && (
+        {(prediction.isFree || isPurchased || isUnlocked) && (
           <div className="mt-4 bg-white rounded-2xl p-6 border border-gray-100 card-shadow text-center relative overflow-hidden">
             <div className="absolute top-4 right-4 text-gray-400">
               <Share2 className="w-5 h-5 cursor-pointer" onClick={() => setShowShare(true)} />
@@ -291,16 +347,16 @@ const PredictionDetail = () => {
               <div className="flex flex-col items-center">
                 <span className="text-sm text-gray-500 mb-2">精选内容</span>
                 <div className="flex space-x-3">
-                  {[36, 24, 12].map(n => (
-                    <div key={n} className="w-12 h-12 rounded-full bg-[#f44336] flex items-center justify-center text-white text-lg font-black shadow-lg">
+                  {(prediction.mainPicks || [36, 24, 12]).map((n, i) => (
+                    <div key={i} className="w-12 h-12 rounded-full bg-[#f44336] flex items-center justify-center text-white text-lg font-black shadow-lg">
                       {n}
                     </div>
                   ))}
                 </div>
               </div>
               
-              <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 leading-relaxed">
-                这是作者为您精心挑选的号码，基于大数据模拟分析得出。
+              <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                {prediction.content || '这是作者为您精心挑选的号码，基于大数据模拟分析得出。'}
               </div>
             </div>
           </div>
@@ -322,20 +378,26 @@ const PredictionDetail = () => {
         <div className="mt-8">
           <div className="flex items-center space-x-2 mb-4">
             <span className="font-bold text-gray-800">往期方案</span>
-            <div className="flex space-x-1">
-              {['黑', '黑', '红', '黑', '红', '黑', '红'].map((c, i) => (
-                <span key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-xs text-white ${c === '红' ? 'bg-red-500' : 'bg-gray-800'}`}>
-                  {c}
-                </span>
-              ))}
-            </div>
+            {author?.history && (
+              <div className="flex space-x-1">
+                {author.history.map((c: string, i: number) => (
+                  <span key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-xs text-white ${c === '红' ? 'bg-red-500' : 'bg-gray-800'}`}>
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-4 pb-12">
             {history.map(item => (
               <div key={item.id} className="bg-white rounded-xl p-4 card-shadow relative">
-                 <div className="absolute top-4 right-4 w-12 h-12 opacity-40">
-                    <img src="https://img.icons8.com/color/96/000000/stamp.png" alt="" className="grayscale" />
+                 <div className="absolute top-4 right-4 w-16 h-12 z-10 pointer-events-none opacity-80 select-none">
+                    <img 
+                      src={item.result === 'red' || item.result === '红' ? 'https://wxqun988.vxjuejin.com/IMG_1034.PNG' : 'https://wxqun988.vxjuejin.com/IMG_1035.PNG'} 
+                      alt={item.result} 
+                      className="w-full h-full object-contain rotate-[-15deg]"
+                    />
                  </div>
                  <div className="flex items-center justify-between">
                     <div className="flex items-center">
@@ -376,7 +438,7 @@ const PredictionDetail = () => {
       </div>
 
       {/* Floating Action Bar */}
-      {!isPurchased && !prediction.isFree && (
+      {!isPurchased && !prediction.isFree && !isUnlocked && (
         <div className="fixed bottom-0 left-0 right-0 bg-white p-3 flex items-center justify-between z-50 border-t border-gray-100 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
           <div className="flex items-baseline space-x-1">
             <span className="text-sm font-medium text-gray-800">需支付:</span>
@@ -462,113 +524,162 @@ const PredictionDetail = () => {
       {/* Share Poster Modal */}
       <AnimatePresence>
         {showShare && (
-          <div className="fixed inset-0 z-[150] flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowShare(false)}>
+          <div className="fixed inset-0 z-[150] flex items-end justify-center" onClick={() => setShowShare(false)}>
+            {/* Backdrop with fade and blur */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
+            />
+            
             <motion.div 
               initial={{ y: "100%" }} 
               animate={{ y: 0 }} 
               exit={{ y: "100%" }}
-              className="bg-white w-full max-w-lg rounded-t-[32px] overflow-hidden relative pb-10"
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="bg-white w-full max-w-lg rounded-t-[32px] overflow-hidden relative pb-8 max-h-[85vh] overflow-y-auto"
               onClick={e => e.stopPropagation()}
             >
+              {/* Drag Handle Bar */}
+              <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-1"></div>
+
               {/* Close Button */}
-              <div className="absolute top-6 right-6 z-20">
-                <X className="w-6 h-6 text-gray-500 cursor-pointer" onClick={() => setShowShare(false)} />
+              <div className="absolute top-4 right-6 z-20">
+                <X className="w-6 h-6 text-gray-400 cursor-pointer p-0.5" onClick={() => setShowShare(false)} />
               </div>
 
               {/* Poster Content Area */}
-              <div className="relative p-6 pt-10">
+              <div className="relative p-5">
                 {/* Background Watermark Pattern */}
-                <div className="absolute inset-0 z-0 opacity-5 pointer-events-none overflow-hidden select-none" style={{ 
+                <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none overflow-hidden select-none" style={{ 
                   backgroundImage: 'radial-gradient(#000 1px, transparent 1px)',
-                  backgroundSize: '20px 20px'
+                  backgroundSize: '24px 24px'
                 }}>
-                  {Array.from({ length: 40 }).map((_, i) => (
-                    <div key={i} className="absolute text-[10px] whitespace-nowrap rotate-[-30deg]" style={{
-                      left: `${(i % 5) * 25}%`,
-                      top: `${Math.floor(i / 5) * 15}%`,
+                  {Array.from({ length: 30 }).map((_, i) => (
+                    <div key={i} className="absolute text-[9px] font-black whitespace-nowrap rotate-[-30deg]" style={{
+                      left: `${(i % 4) * 30}%`,
+                      top: `${Math.floor(i / 4) * 18}%`,
                     }}>
-                      智料汇享 智料汇享 智料汇享
+                      智料汇享 智料汇享
                     </div>
                   ))}
                 </div>
-
+                {/* Poster Content Area */}
                 <div className="relative z-10">
                   {/* Poster Header */}
-                  <div className="text-center mb-8">
-                    <h3 className="text-[22px] font-black text-gray-900 tracking-tight">{prediction.authorName}</h3>
+                  <div className="text-center mb-5">
+                    <h3 className="text-[20px] font-black text-gray-900 tracking-tight">{prediction.authorName}</h3>
+                    <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-widest">{prediction.period} 专属方案</p>
                   </div>
 
-                  {/* Prediction Summary Section */}
-                  <div className="bg-orange-50/60 rounded-3xl p-6 border border-orange-100 flex flex-col items-center mb-10">
-                    <h4 className="text-gray-800 font-black text-[17px] mb-6 tracking-widest">模拟核对</h4>
-                    
-                    {/* Circle Numbers Grid */}
-                    <div className="grid grid-cols-7 gap-1.5 mb-6">
-                      {[
-                        { n: '15', l: '龙' },
-                        { n: '46', l: '鸡' },
-                        { n: '16', l: '兔' },
-                        { n: '10', l: '鸡' },
-                        { n: '48', l: '羊' },
-                        { n: '33', l: '狗' },
-                        { n: '22', l: '鸡', color: 'blue' }
-                      ].map((item, i) => (
-                        <div key={i} className="flex flex-col items-center">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-[15px] font-black shadow-sm ${item.color === 'blue' ? 'bg-[#448aff]' : 'bg-[#f44336]'}`}>
-                            {item.n}
+                  {/* Prediction Summary Section - Conditional Rendering */}
+                  {!prediction.isFree && !isPurchased && !isUnlocked ? (
+                    /* Locked Version */
+                    <div className="bg-red-50/60 rounded-2xl p-5 border border-red-100 flex flex-col items-center mb-6 overflow-hidden relative">
+                      <div className="absolute top-0 left-0 w-full h-1 bg-red-500 overflow-hidden">
+                        <motion.div 
+                          animate={{ x: ["-100%", "100%"] }} 
+                          transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                          className="w-1/2 h-full bg-gradient-to-r from-transparent via-white/50 to-transparent"
+                        />
+                      </div>
+                      
+                      <h4 className="text-red-500 font-black text-[15px] mb-4 tracking-widest flex items-center">
+                        <Lock className="w-3.5 h-3.5 mr-1.5 fill-red-500" />
+                        解锁公开倒计时
+                      </h4>
+                      
+                      {/* Countdown Timer in Poster */}
+                      <div className="flex justify-center items-center space-x-1.5 mb-5 transition-all">
+                        {['h', 'm', 's'].map((key) => (
+                          <React.Fragment key={key}>
+                            <div className="bg-[#e53935] text-white text-base font-bold w-9 h-9 flex items-center justify-center rounded-lg shadow-sm">
+                              {timeLeft[key as keyof typeof timeLeft]}
+                            </div>
+                            {key !== 's' && <span className="text-red-500 text-lg font-black">:</span>}
+                          </React.Fragment>
+                        ))}
+                      </div>
+
+                      {/* Payment Info */}
+                      <div className="bg-white/80 backdrop-blur-sm px-5 py-2.5 rounded-full border border-red-100 flex items-center justify-center space-x-2 text-gray-900 font-black text-[13px] mb-4 shadow-sm">
+                        <span>付费 ¥ {prediction.price} 立即解锁</span>
+                      </div>
+
+                      {/* Disclaimer Text */}
+                      <div className="text-[9px] text-gray-400 leading-tight text-center px-4 font-medium italic">
+                        付费解锁后永久查看，不限次数。
+                      </div>
+                    </div>
+                  ) : (
+                    /* Unlocked Version */
+                    <div className="bg-orange-50/60 rounded-2xl p-5 border border-orange-100 flex flex-col items-center mb-6">
+                      <h4 className="text-orange-600 font-black text-[15px] mb-4 tracking-widest flex items-center">
+                        <Star className="w-3.5 h-3.5 mr-1.5 fill-orange-500" />
+                        付费推荐内容
+                      </h4>
+                      
+                      {/* Paid Content Box */}
+                      <div className="w-full bg-white/60 backdrop-blur-sm border-2 border-dashed border-orange-200 rounded-xl py-5 flex flex-col items-center shadow-sm">
+                        <div className="flex space-x-3 mb-4">
+                          {(prediction.mainPicks || [36, 24, 12]).map((n, i) => (
+                            <motion.div 
+                              key={i}
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-lg font-black shadow-md"
+                            >
+                              {n}
+                            </motion.div>
+                          ))}
+                        </div>
+                        <div className="px-4 py-1.5 bg-orange-100 rounded-full text-[10px] text-orange-600 font-black uppercase">
+                          VIP 内部精选方案
+                        </div>
+                        {prediction.content && (
+                          <div className="mt-3 px-4 text-[10px] text-gray-600 text-center font-bold">
+                            {prediction.content.substring(0, 40)}{prediction.content.length > 40 ? '...' : ''}
                           </div>
-                          <span className={`${item.color === 'blue' ? 'text-[#448aff]' : 'text-red-500'} text-[11px] font-bold mt-1.5`}>{item.l}</span>
-                        </div>
-                      ))}
+                        )}
+                      </div>
+                      
+                      <div className="mt-4 text-[9px] text-gray-400 font-medium text-center">
+                        * 这是为您精心挑选的号码，基于大数据模拟分析。
+                      </div>
                     </div>
-
-                    {/* Paid Content Box */}
-                    <div className="flex items-center justify-center space-x-1.5 text-orange-500 font-black text-sm mb-4">
-                      <Star className="w-4 h-4 fill-orange-500" />
-                      <span>付费内容</span>
-                      <Star className="w-4 h-4 fill-orange-500" />
-                    </div>
-
-                    {/* Dotted Box Overlay */}
-                    <div className="w-full border-2 border-dashed border-orange-300 rounded-xl py-4 flex items-center justify-center space-x-3 bg-white/40">
-                      {[36, 24, 12].map(n => (
-                        <div key={n} className="w-10 h-10 rounded-full bg-[#f44336] flex items-center justify-center text-white text-base font-black shadow-sm">
-                          {n}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  )}
 
                   {/* QR Code Section */}
-                  <div className="flex flex-col items-center mb-10">
-                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm mb-3">
-                      <QRCodeSVG 
-                        value={`https://${window.location.host}/prediction/${id}`} 
-                        size={110}
-                        bgColor="#ffffff"
-                        fgColor="#000000"
-                        level="H"
-                        imageSettings={{
-                          src: "https://ais-dev-jx4ks75htxxryfmqk3lw6m-160820254016.us-east1.run.app/favicon.ico",
-                          x: undefined,
-                          y: undefined,
-                          height: 20,
-                          width: 20,
-                          excavate: true,
-                        }}
-                      />
+                  <div className="flex items-center justify-between px-2 mb-6">
+                    <div className="flex-1">
+                       <h4 className="text-gray-900 font-black text-[15px] mb-1">智料汇享</h4>
+                       <p className="text-[10px] text-gray-400 font-bold leading-relaxed pr-4">
+                         专业数字概率分析平台<br />
+                         每日更新独家数据方案
+                       </p>
+                       <div className="mt-3 text-[9px] text-gray-300 font-medium">
+                         {new Date().toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-')}
+                       </div>
                     </div>
-                    <p className="text-gray-900 font-black text-[15px] tracking-widest">微信扫码打开</p>
-                    <div className="mt-4 text-[11px] text-gray-400 font-medium flex space-x-3">
-                      <span>来源：智料汇享</span>
-                      <span>2026-04-27 00:12</span>
+                    <div className="flex flex-col items-center">
+                      <div className="bg-white p-2 rounded-xl border border-gray-100 shadow-md mb-1.5">
+                        <QRCodeSVG 
+                          value={`https://${window.location.host}/prediction/${id}`} 
+                          size={70}
+                          bgColor="#ffffff"
+                          fgColor="#000000"
+                          level="H"
+                        />
+                      </div>
+                      <p className="text-gray-900 font-black text-[10px] tracking-widest">扫码查看详情</p>
                     </div>
                   </div>
 
                   {/* Action Button */}
-                  <button className="w-full bg-[#e53935] text-white font-bold py-4 rounded-full flex items-center justify-center space-x-2 shadow-xl shadow-red-100 active:scale-[0.98] transition-transform">
-                    <Download className="w-5 h-5" />
-                    <span className="text-[17px] tracking-widest">保存至相册</span>
+                  <button className="w-full bg-[#e53935] text-white font-bold py-3.5 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-red-100 active:scale-[0.98] transition-transform">
+                    <Download className="w-4 h-4" />
+                    <span className="text-[15px] tracking-widest">下载高清海报</span>
                   </button>
                 </div>
               </div>

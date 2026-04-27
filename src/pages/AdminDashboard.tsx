@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, BookOpen, Clock, Settings, Plus, Edit, Trash2, 
   ChevronRight, ArrowLeft, Save, X, Search, ShoppingBag,
-  UserCheck, Check, Ban
+  UserCheck, Check, Ban, LogOut, Volume2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -13,31 +13,40 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('authors');
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any>({ authors: [], predictions: [], history: [], users: [], orders: [], applications: [] });
+  const [data, setData] = useState<any>({ authors: [], predictions: [], history: [], users: [], orders: [], applications: [], messages: [], settings: null });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchData();
+    setSearchQuery('');
   }, [activeTab]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [authors, predictions, history, users, orders, applications] = await Promise.all([
+      const [authors, predictions, history, users, orders, applications, messages, settings] = await Promise.all([
         api.getAuthors(),
         api.getPredictions(),
         api.getHistory(),
         api.getAdminUsers().catch(() => []),
         api.getAdminOrders().catch(() => []),
-        api.getAdminApplications().catch(() => [])
+        api.getAdminApplications().catch(() => []),
+        api.getMessages().catch(() => []),
+        api.getSettings().catch(() => null)
       ]);
-      setData({ authors, predictions, history, users, orders, applications });
+      setData({ authors, predictions, history, users, orders, applications, messages, settings });
     } catch (err) {
       console.error('Failed to fetch admin data', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('isAdminAuthenticated');
+    navigate('/admin');
   };
 
   const handleApproveApp = async (id: string, approve: boolean) => {
@@ -57,6 +66,8 @@ const AdminDashboard = () => {
       if (activeTab === 'users') await api.deleteAdminUser(id);
       if (activeTab === 'orders') await api.deleteAdminOrder(id);
       if (activeTab === 'history') await api.deleteHistory(id);
+      if (activeTab === 'applications') await api.deleteAdminApplication(id);
+      if (activeTab === 'messages') await api.deleteAdminMessage(id);
       await fetchData();
     } catch (err) {
       alert('删除失败');
@@ -69,8 +80,15 @@ const AdminDashboard = () => {
         if (editingItem) await api.updateAuthor(editingItem.id, formData);
         else await api.createAuthor(formData);
       } else if (activeTab === 'predictions') {
-        if (editingItem) await api.updatePrediction(editingItem.id, formData);
-        else await api.createPrediction(formData);
+        const payload = {
+          ...formData,
+          isUnlocked: formData.isUnlocked === 'true',
+          price: parseInt(formData.price) || 0,
+          mainPicks: formData.mainPicks ? formData.mainPicks.split(',').map((n: string) => parseInt(n.trim())) : [36, 24, 12],
+          time: editingItem?.time || new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
+        };
+        if (editingItem) await api.updatePrediction(editingItem.id, payload);
+        else await api.createPrediction(payload);
       } else if (activeTab === 'users' && editingItem) {
         await api.updateAdminUser(editingItem.id, { 
           nickname: formData.nickname, 
@@ -82,6 +100,18 @@ const AdminDashboard = () => {
           numbers: formData.numbers.split(','),
           animals: formData.animals.split(',')
         });
+      } else if (activeTab === 'messages') {
+        await api.postAdminMessage({
+          ...formData,
+          userId: formData.userId || 'all',
+          type: formData.type || 'system'
+        });
+      } else if (activeTab === 'settings') {
+        await api.updateSettings({
+          ...formData,
+          authorCommissionRate: parseFloat(formData.authorCommissionRate),
+          inviteCommissionRate: parseFloat(formData.inviteCommissionRate)
+        });
       }
       setIsModalOpen(false);
       setEditingItem(null);
@@ -91,17 +121,28 @@ const AdminDashboard = () => {
     }
   };
 
+  const filteredAuthors = data.authors.filter((a: any) => a.name.includes(searchQuery));
+  const filteredUsers = data.users.filter((u: any) => u.nickname.includes(searchQuery) || u.username.includes(searchQuery));
+  const filteredApplications = data.applications.filter((a: any) => a.realName.includes(searchQuery) || a.username.includes(searchQuery));
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Admin Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center">
-          <button onClick={() => navigate(-1)} className="mr-4 p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <button onClick={() => navigate('/')} className="mr-4 p-2 hover:bg-gray-100 rounded-full transition-colors">
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
           <h1 className="text-xl font-bold text-gray-900 leading-none">管理后台</h1>
         </div>
         <div className="flex items-center space-x-2">
+          <button 
+             onClick={handleLogout}
+             className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg flex items-center text-sm font-bold shadow-sm active:scale-95 transition-transform"
+          >
+            <LogOut className="w-4 h-4 mr-1.5" />
+            退出
+          </button>
           <button 
              onClick={() => { setEditingItem(null); setIsModalOpen(true); }}
              className="bg-red-500 text-white px-4 py-2 rounded-lg flex items-center text-sm font-bold shadow-sm active:scale-95 transition-transform"
@@ -109,6 +150,25 @@ const AdminDashboard = () => {
             <Plus className="w-4 h-4 mr-1.5" />
             新增
           </button>
+          {activeTab === 'predictions' && (
+            <button 
+              onClick={async () => {
+                if (window.confirm('确定要公开所有方案内容吗？此操作不可撤销。')) {
+                  try {
+                    await api.unlockAllPredictions();
+                    alert('已全部公开');
+                    fetchData();
+                  } catch (err) {
+                    alert('操作失败');
+                  }
+                }
+              }}
+              className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center text-sm font-bold shadow-sm active:scale-95 transition-transform"
+            >
+              <Check className="w-4 h-4 mr-1.5" />
+              一键公开
+            </button>
+          )}
         </div>
       </div>
 
@@ -121,6 +181,8 @@ const AdminDashboard = () => {
           { id: 'orders', label: '订单管理', icon: ShoppingBag },
           { id: 'users', label: '用户管理', icon: Settings },
           { id: 'history', label: '历史录入', icon: Clock },
+          { id: 'messages', label: '公告通知', icon: Volume2 },
+          { id: 'settings', label: '基础设置', icon: Settings },
         ].map(tab => (
           <button
             key={tab.id}
@@ -139,13 +201,25 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       <div className="flex-1 p-6 overflow-y-auto">
+        {(activeTab === 'authors' || activeTab === 'users' || activeTab === 'applications') && (
+          <div className="mb-6 relative">
+            <Search className="w-5 h-5 text-gray-300 absolute left-4 top-1/2 -translate-y-1/2" />
+            <input 
+              type="text" 
+              placeholder={`在${activeTab === 'authors' ? '专家' : activeTab === 'users' ? '用户' : '申请'}中搜索...`}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white border border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all shadow-sm" 
+            />
+          </div>
+        )}
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : (
           <div className="grid gap-4">
-            {activeTab === 'authors' && data.authors.map((author: Author) => (
+            {activeTab === 'authors' && filteredAuthors.map((author: Author) => (
               <div key={author.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center">
                 <img src={author.avatar} className="w-12 h-12 rounded-full object-cover mr-4" alt="" />
                 <div className="flex-1">
@@ -164,10 +238,29 @@ const AdminDashboard = () => {
             ))}
 
             {activeTab === 'predictions' && data.predictions.map((pred: Prediction) => (
-              <div key={pred.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+              <div key={pred.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
+                {pred.isHot && (
+                  <div className="absolute top-0 left-0 w-8 h-8 bg-orange-500 flex items-center justify-center rounded-br-xl shadow-sm z-10">
+                    <Trophy className="w-4 h-4 text-white" />
+                  </div>
+                )}
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-bold text-gray-900 flex-1 pr-4">{pred.title}</h3>
+                  <h3 className="font-bold text-gray-900 flex-1 pr-4 pl-8">{pred.contentTitle || pred.title}</h3>
                   <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={async () => {
+                        try {
+                          await api.updatePrediction(pred.id, { isHot: !pred.isHot });
+                          await fetchData();
+                        } catch (err) {
+                          alert('操作失败');
+                        }
+                      }}
+                      className={`p-2 rounded-lg transition-colors ${pred.isHot ? 'bg-orange-100 text-orange-600' : 'text-gray-300 hover:bg-gray-100'}`}
+                      title={pred.isHot ? '取消置顶' : '置顶文章'}
+                    >
+                      <Trophy className="w-4 h-4" />
+                    </button>
                     <button onClick={() => { setEditingItem(pred); setIsModalOpen(true); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg">
                       <Edit className="w-4 h-4" />
                     </button>
@@ -176,15 +269,23 @@ const AdminDashboard = () => {
                     </button>
                   </div>
                 </div>
-                <div className="flex items-center text-[11px] text-gray-400">
+                <div className="flex items-center text-[11px] text-gray-400 pl-8">
                   <span className="mr-3">作者: {pred.authorName}</span>
                   <span className="mr-3">价格: {pred.isFree ? '免' : pred.price}</span>
-                  <span>时间: {pred.time}</span>
+                  <span className="mr-3">时间: {pred.time}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm ${pred.isUnlocked ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400 border border-gray-200'}`}>
+                    {pred.isUnlocked ? '已公开' : '锁定中'}
+                  </span>
+                  {pred.result && (
+                    <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm ${pred.result === '红' ? 'bg-red-500 text-white' : 'bg-gray-900 text-white'}`}>
+                      {pred.result}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
 
-            {activeTab === 'users' && data.users.map((user: any) => (
+            {activeTab === 'users' && filteredUsers.map((user: any) => (
               <div key={user.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center">
                 <img src={user.avatar} className="w-12 h-12 rounded-full object-cover mr-4" alt="" />
                 <div className="flex-1">
@@ -202,43 +303,97 @@ const AdminDashboard = () => {
               </div>
             ))}
 
-            {activeTab === 'applications' && data.applications.map((app: Application) => (
-              <div key={app.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
+            {activeTab === 'applications' && filteredApplications.map((app: Application) => (
+              <div key={app.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm mb-4">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
-                    <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center text-red-500 font-bold mr-3">
+                    <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 font-bold mr-4 text-xl">
                       {app.realName[0]}
                     </div>
                     <div>
-                      <h3 className="font-bold text-gray-900">{app.realName}</h3>
-                      <p className="text-[10px] text-gray-400">用户: {app.username} | {app.time.split('T')[0]}</p>
+                      <h3 className="font-black text-gray-900 text-lg">{app.realName}</h3>
+                      <p className="text-xs text-gray-400 font-bold">账号: {app.username} | {app.time.split('T')[0]}</p>
                     </div>
                   </div>
-                  <div className={`px-2 py-1 rounded text-[10px] font-bold ${
-                    app.status === 'pending' ? 'bg-yellow-100 text-yellow-600' :
-                    app.status === 'approved' ? 'bg-green-100 text-green-600' :
-                    'bg-red-100 text-red-600'
-                  }`}>
-                    {app.status === 'pending' ? '审核中' : app.status === 'approved' ? '已通过' : '已拒绝'}
+                  <div className="flex items-center space-x-3">
+                    <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                      app.status === 'pending' ? 'bg-orange-50 text-orange-500' :
+                      app.status === 'approved' ? 'bg-green-50 text-green-500' :
+                      'bg-red-50 text-red-500'
+                    }`}>
+                      {app.status === 'pending' ? '待审核' : app.status === 'approved' ? '已通过' : '已拒绝'}
+                    </div>
+                    <button 
+                      onClick={() => handleDelete(app.id)} 
+                      className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-                <div className="space-y-2 mb-4">
-                  <p className="text-xs text-gray-600"><span className="font-bold">擅长:</span> {app.specialty}</p>
-                  <p className="text-xs text-gray-600 leading-relaxed"><span className="font-bold">介绍:</span> {app.description}</p>
+
+                <div className="grid grid-cols-2 gap-y-3 bg-gray-50 p-4 rounded-2xl mb-4">
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">联系电话</p>
+                    <p className="text-sm font-bold text-gray-700">{app.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">证件类型</p>
+                    <p className="text-sm font-bold text-gray-700">{app.idType}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">证件号码</p>
+                    <p className="text-sm font-bold text-gray-700">{app.idNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">户籍地址</p>
+                    <p className="text-sm font-bold text-gray-700">{app.hometown}</p>
+                  </div>
                 </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-black uppercase mb-1">身份证人像面</p>
+                    {app.photoFront ? (
+                      <img src={app.photoFront} className="w-full aspect-[1.5/1] object-cover rounded-xl border border-gray-100" alt="正面" />
+                    ) : (
+                      <div className="w-full aspect-[1.5/1] bg-gray-50 rounded-xl flex items-center justify-center border border-dashed border-gray-200">
+                        <span className="text-[10px] text-gray-300">未上传</span>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-black uppercase mb-1">身份证国徽面</p>
+                    {app.photoBack ? (
+                      <img src={app.photoBack} className="w-full aspect-[1.5/1] object-cover rounded-xl border border-gray-100" alt="反面" />
+                    ) : (
+                      <div className="w-full aspect-[1.5/1] bg-gray-50 rounded-xl flex items-center justify-center border border-dashed border-gray-200">
+                        <span className="text-[10px] text-gray-300">未上传</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-y-3 bg-gray-50 p-4 rounded-2xl mb-4">
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">个人优势/描述</p>
+                    <p className="text-sm font-bold text-gray-700 whitespace-pre-wrap leading-relaxed">{app.description}</p>
+                  </div>
+                </div>
+
                 {app.status === 'pending' && (
-                  <div className="flex space-x-2 pt-3 border-t border-gray-50">
+                  <div className="flex space-x-3">
                     <button 
                       onClick={() => handleApproveApp(app.id, true)}
-                      className="flex-1 bg-green-500 text-white py-2 rounded-lg text-xs font-bold flex items-center justify-center"
+                      className="flex-1 bg-red-500 text-white py-3.5 rounded-2xl font-black text-sm shadow-xl shadow-red-100 active:scale-95 transition-all"
                     >
-                      <Check className="w-3 h-3 mr-1" /> 通过
+                      通过
                     </button>
                     <button 
                       onClick={() => handleApproveApp(app.id, false)}
-                      className="flex-1 bg-gray-200 text-gray-600 py-2 rounded-lg text-xs font-bold flex items-center justify-center"
+                      className="flex-1 bg-gray-100 text-gray-400 py-3.5 rounded-2xl font-black text-sm active:scale-95 transition-all"
                     >
-                      <Ban className="w-3 h-3 mr-1" /> 拒绝
+                      拒绝
                     </button>
                   </div>
                 )}
@@ -276,6 +431,75 @@ const AdminDashboard = () => {
                 </button>
               </div>
             ))}
+
+            {activeTab === 'messages' && data.messages.map((msg: any) => (
+              <div key={msg.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        msg.type === 'system' ? 'bg-red-100 text-red-600' :
+                        msg.type === 'activity' ? 'bg-blue-100 text-blue-600' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                        {msg.type === 'system' ? '系统' : msg.type === 'activity' ? '活动' : '通知'}
+                      </span>
+                      <h3 className="font-bold text-gray-900">{msg.title}</h3>
+                    </div>
+                    <p className="text-xs text-gray-500 line-clamp-2">{msg.content}</p>
+                    <div className="mt-2 flex items-center text-[10px] text-gray-400">
+                       <span className="mr-3">对象: {msg.userId === 'all' ? '全部用户' : `用户UID: ${msg.userId}`}</span>
+                       <span>时间: {msg.time.replace('T', ' ').substring(0, 16)}</span>
+                    </div>
+                  </div>
+                  <button onClick={() => handleDelete(msg.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg shrink-0">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {activeTab === 'settings' && data.settings && (
+              <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm max-w-2xl mx-auto w-full">
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  handleSave(Object.fromEntries(formData.entries()));
+                }} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">网站名称</label>
+                    <input name="siteName" defaultValue={data.settings.siteName} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" required />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">文章作者收益比</label>
+                      <input name="authorCommissionRate" type="number" step="0.01" defaultValue={data.settings.authorCommissionRate || 0.7} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" required />
+                      <p className="text-[10px] text-gray-400 mt-1">如 0.7 表示作者得 70%</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">邀请消费分润比</label>
+                      <input name="inviteCommissionRate" type="number" step="0.01" defaultValue={data.settings.inviteCommissionRate || 0.1} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" required />
+                      <p className="text-[10px] text-gray-400 mt-1">如 0.1 表示推荐人得 10%</p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">首页公告</label>
+                    <textarea name="announcement" rows={3} defaultValue={data.settings.announcement} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">默认解锁倒计时 (HH:MM:SS)</label>
+                    <input name="defaultUnlockDuration" defaultValue={data.settings.defaultUnlockDuration} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" placeholder="01:25:20" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">联系邮箱</label>
+                    <input name="contactEmail" defaultValue={data.settings.contactEmail} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" required />
+                  </div>
+                  <button type="submit" className="w-full bg-red-500 text-white py-5 rounded-2xl font-black shadow-xl shadow-red-100 hover:scale-[1.02] active:scale-95 transition-all">
+                    保存设置
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -303,7 +527,8 @@ const AdminDashboard = () => {
                     activeTab === 'authors' ? '专家' : 
                     activeTab === 'predictions' ? '预测' : 
                     activeTab === 'users' ? '用户' : 
-                    activeTab === 'history' ? '开奖结果' : ''
+                    activeTab === 'history' ? '开奖结果' : 
+                    activeTab === 'messages' ? '消息通知' : ''
                   }
                 </h2>
                 <button onClick={() => setIsModalOpen(false)} className="p-2">
@@ -341,8 +566,16 @@ const AdminDashboard = () => {
                   ) : activeTab === 'predictions' ? (
                     <>
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">预测标题</label>
-                        <input name="title" defaultValue={editingItem?.title} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                        <label className="block text-xs font-bold text-gray-500 mb-1">文章标题</label>
+                        <input name="contentTitle" defaultValue={editingItem?.contentTitle || editingItem?.title} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1">精选号码 (逗号分隔)</label>
+                        <input name="mainPicks" placeholder="36,24,12" defaultValue={editingItem?.mainPicks?.join(',')} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1">付费详细内容</label>
+                        <textarea name="content" defaultValue={editingItem?.content} rows={4} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1">作者名称</label>
@@ -357,6 +590,27 @@ const AdminDashboard = () => {
                            <label className="block text-xs font-bold text-gray-500 mb-1">期数</label>
                            <input name="period" defaultValue={editingItem?.period} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" />
                         </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 mb-1">公开状态</label>
+                          <select name="isUnlocked" defaultValue={editingItem?.isUnlocked ? 'true' : 'false'} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm">
+                            <option value="false">锁定中</option>
+                            <option value="true">已公开</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 mb-1">方案结果</label>
+                          <select name="result" defaultValue={editingItem?.result || ''} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm">
+                            <option value="">未开奖</option>
+                            <option value="红">红</option>
+                            <option value="黑">黑</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1">公开倒计时 (HH:MM:SS)</label>
+                        <input name="unlockDuration" defaultValue={editingItem?.unlockDuration || data.settings?.defaultUnlockDuration} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" placeholder="01:25:20" />
                       </div>
                     </>
                   ) : activeTab === 'users' ? (
@@ -393,6 +647,28 @@ const AdminDashboard = () => {
                       <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1">生肖 (逗号分隔)</label>
                         <input name="animals" placeholder="狗,兔,马..." className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                      </div>
+                    </>
+                  ) : activeTab === 'messages' ? (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1">消息类型</label>
+                        <select name="type" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm">
+                          <option value="system">系统公告</option>
+                          <option value="activity">优惠活动</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1">推送对象 (填写ID或all)</label>
+                        <input name="userId" placeholder="all" defaultValue="all" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1">标题</label>
+                        <input name="title" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1">内容</label>
+                        <textarea name="content" rows={4} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
                       </div>
                     </>
                   ) : null}

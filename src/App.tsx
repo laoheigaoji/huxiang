@@ -24,8 +24,11 @@ import Orders from './pages/Orders';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminLogin from './pages/AdminLogin';
 import PublishPrediction from './pages/PublishPrediction';
 import AuthorDashboard from './pages/AuthorDashboard';
+import BindPhone from './pages/BindPhone';
+import RealNameAuth from './pages/RealNameAuth';
 
 const BottomNav = () => {
   const location = useLocation();
@@ -36,7 +39,7 @@ const BottomNav = () => {
     { name: '我的', path: '/profile', icon: User },
   ];
 
-  const hideNavPaths = ['/publish', '/admin', '/login', '/register', '/partner-join', '/author/dashboard'];
+  const hideNavPaths = ['/publish', '/admin', '/admin/dashboard', '/login', '/register', '/partner-join', '/author/dashboard', '/profile/bind-phone', '/profile/real-name'];
   if (hideNavPaths.includes(location.pathname)) return null;
 
   return (
@@ -68,7 +71,20 @@ const AppContent = () => {
 
   React.useEffect(() => {
     const user = localStorage.getItem('user');
-    const publicPaths = ['/login', '/register'];
+    const publicPaths = ['/login', '/register', '/admin'];
+    const isAdminPath = location.pathname.startsWith('/admin');
+    
+    if (isAdminPath) {
+      // For /admin/dashboard, check admin auth
+      if (location.pathname === '/admin/dashboard') {
+        const isAdminAuth = localStorage.getItem('isAdminAuthenticated');
+        if (!isAdminAuth) {
+          navigate('/admin');
+        }
+      }
+      return; // Skip standard user auth check for admin paths
+    }
+
     if (!user && !publicPaths.includes(location.pathname)) {
        navigate('/login');
     }
@@ -86,7 +102,10 @@ const AppContent = () => {
             <Route path="/profile" element={<Profile />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/profile/bind-phone" element={<BindPhone />} />
+            <Route path="/profile/real-name" element={<RealNameAuth />} />
             <Route path="/publish" element={<PublishPrediction />} />
             <Route path="/author/dashboard" element={<AuthorDashboard />} />
             <Route path="/profile/edit" element={<EditProfile />} />

@@ -145,6 +145,11 @@ const AuthorDashboard = () => {
                   }`}>
                     {pred.isFree ? '免费' : `¥ ${pred.price}`}
                   </span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${
+                    pred.isUnlocked ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'
+                  }`}>
+                    {pred.isUnlocked ? '已公开' : '锁定中'}
+                  </span>
                   <span className="text-[10px] text-gray-400 font-medium">{pred.time}</span>
                 </div>
                 <h3 className="font-bold text-gray-800 truncate leading-snug">{pred.title}</h3>

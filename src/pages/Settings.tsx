@@ -2,6 +2,7 @@ import React from 'react';
 import { ChevronLeft, X, MoreHorizontal, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { api } from '../services/api';
 
 const SettingItem = ({ label }: { label: string }) => (
   <div className="bg-white px-4 py-4 flex items-center justify-between active:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-b-0">
@@ -12,6 +13,16 @@ const SettingItem = ({ label }: { label: string }) => (
 
 const Settings = () => {
   const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+      localStorage.removeItem('user');
+      navigate('/login');
+    } catch (err) {
+      console.error('Failed to logout', err);
+    }
+  };
 
   return (
     <motion.div 
@@ -41,7 +52,10 @@ const Settings = () => {
       </div>
 
       {/* Logout Button */}
-      <div className="mt-2 bg-white flex items-center justify-center py-4 active:bg-gray-50 cursor-pointer shadow-sm">
+      <div 
+        onClick={handleLogout}
+        className="mt-2 bg-white flex items-center justify-center py-4 active:bg-gray-50 cursor-pointer shadow-sm"
+      >
         <span className="text-[#e53935] text-[17px] font-bold">退出登录</span>
       </div>
 

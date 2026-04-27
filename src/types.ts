@@ -7,6 +7,7 @@ export interface Author {
   fans: number;
   recentRecord: string; // e.g. "近9红6"
   streak: number; // e.g. 2
+  history?: ('红' | '黑')[];
   isHot?: boolean;
   accuracy?: string;
 }
@@ -26,15 +27,48 @@ export interface Prediction {
   price: number;
   isFree: boolean;
   countdown?: string;
+  unlockAt?: string;
+  unlockDuration?: string;
   time: string;
   viewCount: number;
   isHot?: boolean;
   content?: string;
   updatedAt?: string;
+  isUnlocked?: boolean;
+  result?: '红' | '黑';
+}
+
+export interface SiteSettings {
+  id: string;
+  siteName: string;
+  announcement: string;
+  contactEmail: string;
+  defaultUnlockDuration: string; // HH:MM:SS string
+  authorCommissionRate?: number;
+  inviteCommissionRate?: number;
+  updatedAt: string;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  nickname: string;
+  avatar: string;
+  balance: number;
+  wechatOpenId?: string;
+  following: string[];
+  purchased: string[];
+  isAuthor?: boolean;
+  authorId?: string;
+  totalEarnings?: number;
+  referrerId?: string;
+  totalInvitedEarnings?: number;
+  createdAt?: string;
 }
 
 export interface HistoryItem {
   id: string;
+  authorId?: string;
   period: string;
   result: 'red' | 'black';
   type: string; // 全7位
@@ -45,23 +79,19 @@ export interface HistoryItem {
   viewCount: number;
 }
 
-export interface User {
-  id: string;
-  username: string;
-  nickname: string;
-  avatar: string;
-  balance: number;
-  isAuthor?: boolean;
-  authorId?: string;
-}
-
 export interface Application {
   id: string;
   userId: string;
   username: string;
   realName: string;
-  description: string;
+  phone: string;
+  idType: string;
+  idNumber: string;
+  hometown: string;
   specialty: string;
+  description: string;
+  photoFront?: string;
+  photoBack?: string;
   status: 'pending' | 'approved' | 'rejected';
   time: string;
 }

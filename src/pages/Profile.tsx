@@ -47,8 +47,12 @@ const Profile = () => {
         setUser(userData);
         const userApp = apps.find((a: any) => a.userId === userData.id);
         setApplication(userApp);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to fetch profile', err);
+        if (err.message.includes('User not found') || err.message.includes('未登录')) {
+          localStorage.removeItem('user');
+          navigate('/login');
+        }
       } finally {
         setLoading(false);
       }
@@ -92,7 +96,7 @@ const Profile = () => {
             <div className="ml-4">
               <h2 className="text-xl font-bold text-gray-900">{user?.nickname || user?.username}</h2>
               <div className="text-xs text-gray-500 mt-1 font-medium">ID: {user?.id}</div>
-              <div className="text-xs text-gray-400 mt-0.5 font-medium">引荐达人: 一只黑马</div>
+              <div className="text-xs text-gray-400 mt-0.5 font-medium">引荐达人: {user?.referrerNickname || '无'}</div>
             </div>
           </div>
           <Link to="/profile/edit" className="bg-[#6ec9f9] text-white text-[11px] px-4 py-1.5 rounded-full font-bold shadow-sm active:scale-95 transition-transform mt-2">
@@ -101,17 +105,26 @@ const Profile = () => {
         </div>
 
         {/* Balance Display */}
-        <div className="relative z-10 flex px-10 mt-10">
-          <div className="flex-1 text-center">
-            <div className="text-2xl font-bold text-gray-800">{user?.balance?.toFixed(2) || '0.00'}</div>
-            <Link to="/topup" className="inline-block mt-2 bg-[#e53935] text-white text-[11px] px-4 py-1 rounded-full font-bold shadow-md active:scale-95 transition-transform">
-              钱包充值
+        <div className="relative z-10 grid grid-cols-3 gap-3 px-6 mt-10">
+          <div className="bg-white/60 p-4 rounded-2xl text-center shadow-sm border border-white">
+            <div className="text-[10px] text-gray-400 font-black uppercase mb-1">账户余额</div>
+            <div className="text-xl font-black text-gray-900">¥{user?.balance?.toFixed(2) || '0.00'}</div>
+            <Link to="/topup" className="inline-block mt-3 bg-[#e53935] text-white text-[10px] px-4 py-1 rounded-full font-bold shadow-md active:scale-95 transition-transform">
+              充值
             </Link>
           </div>
-          <div className="flex-1 text-center">
-            <div className="text-2xl font-bold text-gray-800">{(user?.totalEarnings || 0).toFixed(2)}</div>
-            <Link to="/balance-details" className="inline-block mt-2 bg-[#e53935] text-white text-[11px] px-4 py-1 rounded-full font-bold shadow-md active:scale-95 transition-transform">
-              余额详情
+          <div className="bg-white/60 p-4 rounded-2xl text-center shadow-sm border border-white">
+            <div className="text-[10px] text-gray-400 font-black uppercase mb-1">邀请收益</div>
+            <div className="text-xl font-black text-gray-900">¥{(user?.totalInvitedEarnings || 0).toFixed(2)}</div>
+            <Link to="/invite" className="inline-block mt-3 bg-orange-500 text-white text-[10px] px-4 py-1 rounded-full font-bold shadow-md active:scale-95 transition-transform">
+              去邀请
+            </Link>
+          </div>
+          <div className="bg-white/60 p-4 rounded-2xl text-center shadow-sm border border-white">
+            <div className="text-[10px] text-gray-400 font-black uppercase mb-1">累计收益</div>
+            <div className="text-xl font-black text-gray-900">¥{(user?.totalEarnings || 0).toFixed(2)}</div>
+            <Link to="/balance-details" className="inline-block mt-3 bg-blue-500 text-white text-[10px] px-4 py-1 rounded-full font-bold shadow-md active:scale-95 transition-transform">
+              明细
             </Link>
           </div>
         </div>
@@ -186,6 +199,7 @@ const Profile = () => {
               label="邀请记录" 
               color="text-rose-400" 
               bgColor="bg-rose-50" 
+              path="/invite"
             />
           </div>
 
@@ -194,11 +208,16 @@ const Profile = () => {
             <ServiceItem icon={FileText} label="意见反馈" path="/feedback" />
             <ServiceItem 
               icon={user?.isAuthor ? ClipboardList : Handshake} 
-              label={user?.isAuthor ? "文章管理" : (application ? (application.status === 'pending' ? "审核中" : "入驻合作") : "入驻合作")} 
+              label={
+                user?.isAuthor 
+                  ? "文章管理" 
+                  : (application 
+                    ? (application.status === 'pending' ? "审核中" : (application.status === 'rejected' ? "已拒绝" : "已入驻")) 
+                    : "入驻合作")
+              } 
               path={user?.isAuthor ? "/author/dashboard" : "/partner-join"} 
             />
             <ServiceItem icon={Download} label="下载APP" />
-            <ServiceItem icon={Settings} label="管理后台" path="/admin" />
             <ServiceItem icon={Settings} label="系统设置" path="/settings" />
             <ServiceItem icon={HelpCircle} label="常见问题" path="/faq" />
           </div>

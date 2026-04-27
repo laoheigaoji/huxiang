@@ -107,22 +107,84 @@ const AuthorAvatarGrid = ({ author }: { author: Author, key?: React.Key }) => (
     <span className="text-[12px] text-gray-800 font-bold mt-1.5 mb-1 truncate w-full text-center">{author.name}</span>
     <div className="flex items-center">
       <div className="flex bg-white border border-red-500 rounded-[3px] overflow-hidden scale-90">
-        <span className="text-[9px] text-red-500 px-1 font-bold whitespace-nowrap">近10红</span>
+        <span className="text-[9px] text-red-500 px-1 font-bold whitespace-nowrap">{author.recentRecord}</span>
         <span className="bg-red-500 text-white text-[9px] px-1.5 font-bold">{author.streak}</span>
       </div>
     </div>
   </Link>
 );
 
-const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Prediction, isFollowed?: boolean, onFollow?: (e: React.MouseEvent) => void }) => (
+const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
+  const [timeLeft, setTimeLeft] = useState({ h: '00', m: '00', s: '00' });
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    const updateTime = () => {
+      const target = new Date(targetDate).getTime();
+      const now = new Date().getTime();
+      const diff = target - now;
+
+      if (diff <= 0) {
+        setIsExpired(true);
+      } else {
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft({
+          h: h.toString().padStart(2, '0'),
+          m: m.toString().padStart(2, '0'),
+          s: s.toString().padStart(2, '0')
+        });
+      }
+    };
+
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  if (isExpired) return null;
+
+  return (
+    <div className="flex flex-col items-end">
+      <span className="text-[10px] text-[#ef5350] font-bold mb-1 tracking-tighter">公开倒计时</span>
+      <div className="flex items-center space-x-1">
+        <span className="bg-[#ef5350] text-white text-[11px] font-black w-5 h-5 flex items-center justify-center rounded-[3px] shadow-sm">{timeLeft.h}</span>
+        <span className="text-[#ef5350] font-black text-xs">:</span>
+        <span className="bg-[#ef5350] text-white text-[11px] font-black w-5 h-5 flex items-center justify-center rounded-[3px] shadow-sm">{timeLeft.m}</span>
+        <span className="text-[#ef5350] font-black text-xs">:</span>
+        <span className="bg-[#ef5350] text-white text-[11px] font-black w-5 h-5 flex items-center justify-center rounded-[3px] shadow-sm">{timeLeft.s}</span>
+      </div>
+    </div>
+  );
+};
+
+const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Prediction, isFollowed?: boolean, onFollow?: (e: React.MouseEvent) => void, key?: React.Key }) => (
   <Link to={`/prediction/${prediction.id}`} className="block bg-white rounded-xl mb-4 overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] relative border border-gray-100/30 mx-3">
     {prediction.isHot && (
       <div className="absolute top-0 left-0 z-10 w-8 h-8 flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 rounded-br-2xl shadow-sm">
         <Trophy className="w-4 h-4 text-white rotate-[-15deg] drop-shadow-sm" />
       </div>
     )}
+
+    {prediction.isUnlocked && (
+      <div className="absolute top-0 right-0 z-20 bg-green-500 text-white text-[10px] font-black px-2.5 py-1 rounded-bl-xl shadow-md border-b border-l border-white/20">
+        已公开
+      </div>
+    )}
     
-    <div className="p-4">
+    <div className="p-4 relative">
+      {/* Result Stamp */}
+      {prediction.result && (
+        <div className="absolute top-12 right-2 w-16 h-12 z-10 pointer-events-none opacity-90 select-none">
+          <img 
+            src={prediction.result === '红' ? 'https://wxqun988.vxjuejin.com/IMG_1034.PNG' : 'https://wxqun988.vxjuejin.com/IMG_1035.PNG'} 
+            alt={prediction.result}
+            className="w-full h-full object-contain transform rotate-[-15deg]"
+          />
+        </div>
+      )}
+      
       {/* Author Info */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center">
@@ -134,16 +196,21 @@ const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Pred
             <span className="text-[11px] text-orange-500 font-bold mt-0.5">{prediction.authorFans} 粉丝</span>
           </div>
         </div>
-        <button 
-          onClick={onFollow}
-          className={`text-[12px] font-bold px-4 py-1.5 rounded-full active:scale-95 transition-all shadow-sm ${
-            isFollowed 
-              ? 'bg-gray-100 text-gray-400' 
-              : 'bg-[#fef2f2] text-[#ef5350]'
-          }`}
-        >
-          {isFollowed ? '已关注' : '+关注'}
-        </button>
+        {!prediction.isUnlocked && !prediction.isFree && prediction.unlockAt && (
+           <CountdownTimer targetDate={prediction.unlockAt} />
+        )}
+        {(!prediction.unlockAt || prediction.isFree) && !prediction.isUnlocked && (
+          <button 
+            onClick={onFollow}
+            className={`text-[12px] font-bold px-4 py-1.5 rounded-full active:scale-95 transition-all shadow-sm ${
+              isFollowed 
+                ? 'bg-gray-100 text-gray-400' 
+                : 'bg-[#fef2f2] text-[#ef5350]'
+            }`}
+          >
+            {isFollowed ? '已关注' : '+关注'}
+          </button>
+        )}
       </div>
 
       {/* Content Title */}
@@ -154,11 +221,13 @@ const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Pred
       {/* Badges/Tags */}
       <div className="flex items-center space-x-2 mb-4">
         <div className="flex bg-white border border-red-500 rounded-[5px] overflow-hidden scale-95 origin-left">
-          <span className="text-[10px] text-red-500 px-2 py-0.5 font-bold bg-white">近30红19</span>
-          <div className="flex items-center bg-[#ef5350] text-white text-[10px] px-2 py-0.5 font-bold space-x-1">
-            <span>{prediction.authorStreak}连红</span>
-            <span className="text-[9px]">👍</span>
-          </div>
+          <span className="text-[10px] text-red-500 px-2 py-0.5 font-bold bg-white">{prediction.authorRecentRecord}</span>
+          {prediction.authorStreak > 0 && (
+            <div className="flex items-center bg-[#ef5350] text-white text-[10px] px-2 py-0.5 font-bold space-x-1">
+              <span>{prediction.authorStreak}连红</span>
+              <span className="text-[9px]">👍</span>
+            </div>
+          )}
         </div>
         
         {prediction.isFree && (
@@ -192,20 +261,24 @@ const Home = () => {
   const [authors, setAuthors] = useState<Author[]>([]);
   const [authorType, setAuthorType] = useState<'top' | 'new'>('top');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [authorsData, predictionsData, profileData] = await Promise.all([
+        const [authorsData, predictionsData, profileData, settingsData] = await Promise.all([
           api.getAuthors(),
           api.getPredictions(),
-          api.getProfile().catch(() => null)
+          api.getProfile().catch(() => null),
+          api.getSettings().catch(() => null)
         ]);
         setAuthors(authorsData);
         setPredictions(predictionsData);
         setUser(profileData);
+        setSettings(settingsData);
       } catch (err) {
         console.error('Failed to fetch data', err);
       } finally {
@@ -234,6 +307,11 @@ const Home = () => {
     }
   };
 
+  const filteredPredictions = Array.isArray(predictions) ? predictions.filter(p => 
+    p.contentTitle.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    p.authorName.toLowerCase().includes(searchQuery.toLowerCase())
+  ) : [];
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-gray-100/50 min-h-screen">
       {/* Sort Modal */}
@@ -258,7 +336,7 @@ const Home = () => {
             </div>
             <div className="ml-3">
               <h2 className="text-[17px] font-black text-gray-900 leading-tight tracking-tight">{user?.nickname || user?.username || '智汇达人'}</h2>
-              <p className="text-[11px] text-gray-400 font-medium mt-0.5">欢迎使用智料汇享</p>
+              <p className="text-[11px] text-gray-400 font-medium mt-0.5">欢迎使用{settings?.siteName || '智料汇享'}</p>
             </div>
           </div>
           
@@ -276,21 +354,27 @@ const Home = () => {
 
         {/* Search Line */}
         <div className="flex items-center mb-5">
-          <Link to="/author-search" className="flex-1 bg-white rounded-full h-10 px-4 flex items-center shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-red-50/50 transition-shadow">
+          <div className="flex-1 bg-white rounded-full h-10 px-4 flex items-center shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-red-50/50 transition-shadow">
              <Search className="w-4 h-4 text-gray-300 mr-2" />
-             <span className="text-[14px] text-gray-300 font-medium flex-1">输入搜索内容</span>
-          </Link>
+             <input 
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="输入搜索内容"
+                className="text-[14px] text-gray-800 font-medium flex-1 outline-none bg-transparent placeholder:text-gray-300"
+             />
+          </div>
           <div className="flex items-center ml-4">
-             <button 
-                onClick={() => setIsSortModalOpen(true)}
-                className="flex items-center justify-center p-1 active:scale-90 transition-transform"
+             <Link 
+                to="/author-search"
+                className="flex items-center justify-center p-2 bg-white rounded-full shadow-sm border border-red-50 active:scale-90 transition-transform"
              >
-                <div className="flex flex-col space-y-[4px]">
-                   <div className="w-6 h-[2.5px] bg-[#ef5350] rounded-full"></div>
-                   <div className="w-4 h-[2.5px] bg-[#ef5350] rounded-full self-end"></div>
-                   <div className="w-6 h-[2.5px] bg-[#ef5350] rounded-full"></div>
+                <div className="flex flex-col space-y-[3.5px] items-center">
+                   <div className="w-5 h-[2px] bg-[#ef5350] rounded-full"></div>
+                   <div className="w-5 h-[2px] bg-[#ef5350] rounded-full"></div>
+                   <div className="w-5 h-[2px] bg-[#ef5350] rounded-full"></div>
                 </div>
-             </button>
+             </Link>
           </div>
         </div>
 
@@ -338,54 +422,29 @@ const Home = () => {
         <div className="flex items-center flex-1 overflow-hidden space-x-2">
           <div className="w-1 h-1 bg-orange-400 rounded-full animate-pulse"></div>
           <span className="text-[12px] text-[#ef6c00] font-bold whitespace-nowrap overflow-hidden">
-            如没有微信支付通知，请联系客服查询。
+            {settings?.announcement || '如没有微信支付通知，请联系客服查询。'}
           </span>
         </div>
         <X className="w-4 h-4 text-orange-300 ml-2 shrink-0 cursor-pointer hover:text-orange-500" />
       </div>
 
-      {/* Main Feed Content */}
-      <div className="pt-4 pb-32 bg-gray-50/30">
+      <div className="flex-1 pb-24">
         <div className="space-y-0">
-          {predictions.map((prediction, index) => (
-            <React.Fragment key={prediction.id}>
-              {index === 1 && (
-                <Link to="/prediction/p2" className="block bg-white rounded-xl mb-4 overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] relative border border-gray-100/30 mx-3">
-                  <div className="p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center">
-                        <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-100 shadow-sm mr-2.5">
-                          <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100" className="w-full h-full object-cover" alt="avatar" />
-                        </div>
-                        <div className="flex flex-col">
-                          <h3 className="text-[15px] font-bold text-gray-900 leading-tight">奥迪小王</h3>
-                          <span className="text-[11px] text-orange-500 font-bold mt-0.5">4305 粉丝</span>
-                        </div>
-                      </div>
-                      
-                      {/* Countdown Timer Block */}
-                      <div className="flex flex-col items-end">
-                        <span className="text-[11px] text-[#ef5350] font-bold mb-1 tracking-tighter">公开倒计时</span>
-                        <div className="flex items-center space-x-1 uppercase">
-                          <span className="bg-[#ef5350] text-white text-[12px] font-black w-6 h-6 flex items-center justify-center rounded-[3px] shadow-sm">01</span>
-                          <span className="text-[#ef5350] font-black">:</span>
-                          <span className="bg-[#ef5350] text-white text-[12px] font-black w-6 h-6 flex items-center justify-center rounded-[3px] shadow-sm">25</span>
-                          <span className="text-[#ef5350] font-black">:</span>
-                          <span className="bg-[#ef5350] text-white text-[12px] font-black w-6 h-6 flex items-center justify-center rounded-[3px] shadow-sm">39</span>
-                        </div>
-                      </div>
-                    </div>
-                    <h4 className="text-[16px] font-black text-gray-900 leading-tight mb-2">【第116期】提供参考 (每天免费) 福利🧧</h4>
-                  </div>
-                </Link>
-              )}
+          {filteredPredictions.map((prediction) => (
               <PredictionCard 
+                key={prediction.id}
                 prediction={prediction} 
                 isFollowed={user?.following?.includes(prediction.authorId)}
                 onFollow={(e) => handleFollow(e, prediction.authorId)} 
               />
-            </React.Fragment>
-          ))}
+            ))}
+          
+          {filteredPredictions.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+               <Search className="w-12 h-12 mb-3 opacity-20" />
+               <p className="text-sm font-bold">没有搜索到相关文章</p>
+            </div>
+          )}
           
           {/* Legal Disclaimer Footer */}
           <div className="mx-4 mt-6 p-4 rounded-xl border border-gray-100/50 bg-white/50 relative overflow-hidden backdrop-blur-sm">

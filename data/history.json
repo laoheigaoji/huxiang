@@ -1,6 +1,7 @@
 [
   {
     "id": "h1",
+    "authorId": "1",
     "period": "第115期",
     "result": "black",
     "type": "全7位",
@@ -12,6 +13,7 @@
   },
   {
     "id": "h2",
+    "authorId": "1",
     "period": "第114期",
     "result": "black",
     "type": "全7位",

@@ -25,17 +25,20 @@ const Login = () => {
 
     // Handle wechat code in URL
     const code = searchParams.get('code');
+    const nickname = searchParams.get('nickname');
+    const avatar = searchParams.get('avatar') || searchParams.get('headimgurl');
+    const referrer = searchParams.get('ref');
     if (code) {
-      handleWechatLogin(code);
+      handleWechatLogin(code, nickname || undefined, avatar || undefined, referrer || undefined);
     }
   }, [searchParams]);
 
-  const handleWechatLogin = async (code: string) => {
+  const handleWechatLogin = async (code: string, nickname?: string, avatar?: string, referrer?: string) => {
     setLoading(true);
     setError('');
     try {
       // In a real app, send the code to your backend to exchange for a token/user
-      const data = await api.wechatLogin(code);
+      const data = await api.wechatLogin(code, nickname, avatar, referrer);
       localStorage.setItem('user', JSON.stringify(data));
       navigate('/');
     } catch (err: any) {
@@ -65,6 +68,8 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  const referrer = searchParams.get('ref');
 
   return (
     <motion.div 
@@ -168,7 +173,7 @@ const Login = () => {
         <div className="mt-8 text-center space-y-4">
           <p className="text-gray-500">
             还没有账户?{' '}
-            <Link to="/register" className="text-[#e53935] font-bold">
+            <Link to={`/register${referrer ? `?ref=${referrer}` : ''}`} className="text-[#e53935] font-bold">
               立即注册
             </Link>
           </p>

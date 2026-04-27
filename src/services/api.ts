@@ -39,6 +39,20 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getSettings() {
+    const res = await fetch(`${API_BASE}/settings`);
+    return handleResponse(res);
+  },
+
+  async updateSettings(data: any) {
+    const res = await fetch(`${API_BASE}/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
   async getHistory(): Promise<HistoryItem[]> {
     const res = await fetch(`${API_BASE}/history`);
     return handleResponse(res);
@@ -50,12 +64,17 @@ export const api = {
   },
 
   async getProfile() {
-    const res = await fetch(`${API_BASE}/profile`);
+    const userStr = localStorage.getItem('user');
+    const userId = userStr ? JSON.parse(userStr).id : null;
+    if (!userId) throw new Error('未登录');
+    const res = await fetch(`${API_BASE}/profile?userId=${userId}`);
     return handleResponse(res);
   },
 
   async updateProfile(data: any) {
-    const res = await fetch(`${API_BASE}/profile`, {
+    const userStr = localStorage.getItem('user');
+    const userId = userStr ? JSON.parse(userStr).id : null;
+    const res = await fetch(`${API_BASE}/profile${userId ? `?userId=${userId}` : ''}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -64,7 +83,9 @@ export const api = {
   },
 
   async followAuthor(id: string) {
-    const res = await fetch(`${API_BASE}/authors/follow/${id}`, {
+    const userStr = localStorage.getItem('user');
+    const userId = userStr ? JSON.parse(userStr).id : null;
+    const res = await fetch(`${API_BASE}/authors/follow/${id}${userId ? `?userId=${userId}` : ''}`, {
       method: 'POST'
     });
     return handleResponse(res);
@@ -79,25 +100,38 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getMessages() {
+    const userStr = localStorage.getItem('user');
+    const userId = userStr ? JSON.parse(userStr).id : null;
+    const res = await fetch(`${API_BASE}/messages${userId ? `?userId=${userId}` : ''}`);
+    return handleResponse(res);
+  },
+
   async getTransactions() {
-    const res = await fetch(`${API_BASE}/transactions`);
+    const userStr = localStorage.getItem('user');
+    const userId = userStr ? JSON.parse(userStr).id : null;
+    const res = await fetch(`${API_BASE}/transactions${userId ? `?userId=${userId}` : ''}`);
     return handleResponse(res);
   },
 
   async withdraw(data: any) {
+    const userStr = localStorage.getItem('user');
+    const userId = userStr ? JSON.parse(userStr).id : null;
     const res = await fetch(`${API_BASE}/withdraw`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify({ ...data, userId })
     });
     return handleResponse(res);
   },
 
   async purchasePrediction(predictionId: string) {
+    const userStr = localStorage.getItem('user');
+    const userId = userStr ? JSON.parse(userStr).id : null;
     const res = await fetch(`${API_BASE}/purchase`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ predictionId })
+      body: JSON.stringify({ predictionId, userId })
     });
     return handleResponse(res);
   },
@@ -111,21 +145,28 @@ export const api = {
     return handleResponse(res);
   },
 
-  async wechatLogin(code: string) {
+  async wechatLogin(code: string, nickname?: string, avatar?: string, referrer?: string) {
     const res = await fetch(`${API_BASE}/wechat-login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code })
+      body: JSON.stringify({ code, nickname, avatar, referrer })
     });
     return handleResponse(res);
   },
 
-  async register(username: string, password: string, nickname: string) {
+  async register(username: string, password: string, nickname: string, referrerId?: string) {
     const res = await fetch(`${API_BASE}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, nickname })
+      body: JSON.stringify({ username, password, nickname, referrerId })
     });
+    return handleResponse(res);
+  },
+
+  async getInvitedFriends() {
+    const userStr = localStorage.getItem('user');
+    const userId = userStr ? JSON.parse(userStr).id : null;
+    const res = await fetch(`${API_BASE}/invited-friends${userId ? `?userId=${userId}` : ''}`);
     return handleResponse(res);
   },
 
@@ -238,6 +279,11 @@ export const api = {
     return handleResponse(res);
   },
 
+  async deleteAdminApplication(id: string) {
+    const res = await fetch(`${API_BASE}/admin/applications/${id}`, { method: 'DELETE' });
+    return handleResponse(res);
+  },
+
   async updateAdminApplication(id: string, status: string) {
     const res = await fetch(`${API_BASE}/admin/applications/${id}`, {
       method: 'PUT',
@@ -265,6 +311,28 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
+    return handleResponse(res);
+  },
+
+  async unlockAllPredictions() {
+    const res = await fetch(`${API_BASE}/admin/predictions/unlock-all`, {
+      method: 'POST'
+    });
+    return handleResponse(res);
+  },
+
+  // Admin Message APIs
+  async postAdminMessage(data: any) {
+    const res = await fetch(`${API_BASE}/admin/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async deleteAdminMessage(id: string) {
+    const res = await fetch(`${API_BASE}/admin/messages/${id}`, { method: 'DELETE' });
     return handleResponse(res);
   }
 };

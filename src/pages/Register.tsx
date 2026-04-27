@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { User, Lock, ChevronLeft, Eye, EyeOff, Smile } from 'lucide-react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { User, Lock, ChevronLeft, Eye, EyeOff, Smile, Users } from 'lucide-react';
 import { motion } from 'motion/react';
 import { api } from '../services/api';
 
 const Register = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [username, setUsername] = useState('');
   const [nickname, setNickname] = useState('');
   const [password, setPassword] = useState('');
+  const [referrer, setReferrer] = useState(searchParams.get('ref') || '');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,7 +21,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await api.register(username, password, nickname);
+      await api.register(username, password, nickname, referrer || undefined);
       navigate('/login');
     } catch (err: any) {
       setError(err.message || '注册失败');

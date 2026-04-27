@@ -6,6 +6,53 @@ import { api } from '../services/api';
 import { Author, Prediction } from '../types';
 import { Link } from 'react-router-dom';
 
+const CountdownTimer = ({ unlockAt }: { unlockAt: string }) => {
+  const [timeLeft, setTimeLeft] = useState({ h: '00', m: '00', s: '00' });
+  const [isFinished, setIsFinished] = useState(false);
+
+  useEffect(() => {
+    const update = () => {
+      const diff = new Date(unlockAt).getTime() - new Date().getTime();
+      if (diff <= 0) {
+        setIsFinished(true);
+        setTimeLeft({ h: '00', m: '00', s: '00' });
+        return true;
+      }
+      const h = Math.floor(diff / (1000 * 60 * 60));
+      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const s = Math.floor((diff % (1000 * 60)) / 1000);
+      setTimeLeft({
+        h: h.toString().padStart(2, '0'),
+        m: m.toString().padStart(2, '0'),
+        s: s.toString().padStart(2, '0')
+      });
+      return false;
+    };
+
+    if (update()) return;
+    const timer = setInterval(() => {
+      if (update()) clearInterval(timer);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [unlockAt]);
+
+  if (isFinished) return <span className="text-[11px] text-green-500 font-black">已公开</span>;
+
+  return (
+    <div className="flex flex-col items-end">
+      <span className="text-[11px] text-[#f44336] font-black mb-1">公开倒计时</span>
+      <div className="flex space-x-0.5">
+        {[timeLeft.h, timeLeft.m, timeLeft.s].map((p, idx) => (
+          <React.Fragment key={idx}>
+            <span className="bg-[#ef5350] text-white text-[11px] font-bold px-1.5 py-0.5 rounded-sm">{p}</span>
+            {idx < 2 && <span className="text-[#f44336] text-[11px] font-bold self-center">:</span>}
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const AuthorProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -19,11 +66,17 @@ const AuthorProfile = () => {
       try {
         const [authorData, allPredictions, profileData] = await Promise.all([
           api.getAuthorById(id!),
-          api.getPredictions(),
+          api.getPredictions().catch(() => []),
           api.getProfile().catch(() => null)
         ]);
         setAuthor(authorData);
-        setPredictions(allPredictions.filter(p => p.authorId === id));
+        // Sort items by time descending
+        const predictionsArray = Array.isArray(allPredictions) ? allPredictions : [];
+        const sorted = predictionsArray
+          .filter(p => p.authorId === id)
+          .sort((a, b) => new Date(b.time || '').getTime() - new Date(a.time || '').getTime());
+        setPredictions(sorted);
+        
         if (profileData && profileData.following) {
           setIsFollowed(profileData.following.includes(id!));
         }
@@ -39,8 +92,8 @@ const AuthorProfile = () => {
   const toggleFollow = async () => {
     if (!author) return;
     try {
-      const res = await api.followAuthor(author.id);
-      setIsFollowed(res.isFollowing);
+      await api.followAuthor(author.id);
+      setIsFollowed(!isFollowed);
       // Update local storage to keep sync
       const updatedProfile = await api.getProfile();
       localStorage.setItem('user', JSON.stringify(updatedProfile));
@@ -95,24 +148,32 @@ const AuthorProfile = () => {
           </div>
 
           {/* Record Circles */}
-          <div className="mt-6 flex space-x-2">
-            {['红', '红', '黑', '红', '黑', '红', '黑'].map((status, idx) => (
-              <div 
-                key={idx} 
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold text-white shadow-sm ${
-                  status === '红' ? 'bg-[#ef5350]' : 'bg-[#212121]'
-                }`}
-              >
-                {status}
+          {author.history && author.history.length > 0 ? (
+            <div className="mt-6 flex space-x-2">
+              {author.history.map((status, idx) => (
+                <div 
+                  key={idx} 
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold text-white shadow-sm ${
+                    status === '红' ? 'bg-[#ef5350]' : 'bg-[#212121]'
+                  }`}
+                >
+                  {status}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-6 flex items-center space-x-2">
+              <div className="px-3 py-1 bg-gray-50 rounded-full text-[12px] text-gray-400 font-bold border border-gray-100 italic">
+                新作者暂无历史记录
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Prediction Feed */}
         <div className="mt-6 space-y-4 pb-20">
           {predictions.length > 0 ? (
-            predictions.map((prediction, index) => (
+            predictions.map((prediction) => (
               <Link 
                 key={prediction.id} 
                 to={`/prediction/${prediction.id}`}
@@ -125,46 +186,45 @@ const AuthorProfile = () => {
                       <div className="text-[15px] font-bold text-gray-900">{author.name}</div>
                       <div className="flex items-center mt-0.5 space-x-1">
                         <span className="px-1.5 py-0.5 bg-[#fff5f5] text-[#f44336] text-[10px] font-black rounded-sm border border-[#ffe0e0]">
-                          近9红6
+                          {author.recentRecord}
                         </span>
-                        <span className="px-1.5 py-0.5 bg-[#f44336] text-white text-[10px] font-black rounded-sm flex items-center">
-                          {index === 0 ? '2连红' : index === 1 ? '2连红' : '1连红'} <span className="ml-0.5 text-[8px] transform -translate-y-[1px]">👍</span>
-                        </span>
+                        {author.streak > 0 && (
+                          <span className="px-1.5 py-0.5 bg-[#f44336] text-white text-[10px] font-black rounded-sm flex items-center">
+                            {author.streak}连红 <span className="ml-0.5 text-[8px] transform -translate-y-[1px]">👍</span>
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
                   
-                  {index === 0 ? (
-                    <div className="flex flex-col items-end">
-                      <span className="text-[11px] text-[#f44336] font-black mb-1">公开倒计时</span>
-                      <div className="flex space-x-0.5">
-                        {['03', '52', '30'].map((p, idx) => (
-                          <React.Fragment key={idx}>
-                            <span className="bg-[#ef5350] text-white text-[11px] font-bold px-1.5 py-0.5 rounded-sm">{p}</span>
-                            {idx < 2 && <span className="text-[#f44336] text-[11px] font-bold self-center">:</span>}
-                          </React.Fragment>
-                        ))}
-                      </div>
+                  {!prediction.isUnlocked && prediction.unlockAt && new Date(prediction.unlockAt).getTime() > Date.now() ? (
+                    <CountdownTimer unlockAt={prediction.unlockAt} />
+                  ) : prediction.result ? (
+                    <div className="absolute top-4 right-4 w-16 h-12 z-10 pointer-events-none select-none">
+                      <img 
+                        src={prediction.result === '红' ? 'https://wxqun988.vxjuejin.com/IMG_1034.PNG' : 'https://wxqun988.vxjuejin.com/IMG_1035.PNG'} 
+                        className="w-full h-full object-contain opacity-90 rotate-[-15deg]" 
+                        alt={prediction.result} 
+                      />
                     </div>
-                  ) : (
-                    <div className="absolute top-2 right-4 w-16 h-12">
-                      <img src="https://img.icons8.com/color/96/000000/stamp.png" 
-                           className="w-full h-full object-contain opacity-80 rotate-12" alt="Won" />
-                    </div>
-                  )}
+                  ) : null}
                 </div>
 
                 <div className="mt-4">
                   <h5 className="text-[16px] font-bold leading-relaxed">
-                    <span className="text-[#f44336]">【第{116-index}期】</span>
-                    <span className="text-gray-800">精选六码中特得得得🛑💖</span>
+                    <span className="text-[#f44336]">【{prediction.period}】</span>
+                    <span className="text-gray-800">{prediction.contentTitle}</span>
                   </h5>
                 </div>
 
                 <div className="mt-5 flex items-center justify-between">
                   <div className="flex items-center space-x-3 text-[12px] text-gray-400 font-medium">
                     <span>{prediction.time}</span>
-                    <span className="bg-[#f0f7ff] text-[#40c4ff] px-2 py-0.5 rounded-sm text-[11px] font-bold">第7位</span>
+                    {prediction.tags?.[0] && (
+                      <span className="bg-[#f0f7ff] text-[#40c4ff] px-2 py-0.5 rounded-sm text-[11px] font-bold">
+                        {prediction.tags[0]}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center">
                     <div className="flex -space-x-1.5 mr-2">

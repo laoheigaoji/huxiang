@@ -18,19 +18,30 @@ const PublishPrediction = () => {
     tags: ['精选推荐', '独家分析'] as string[],
     price: 0,
     isFree: true,
-    content: ''
+    content: '',
+    mainPicks: [36, 24, 12] as number[],
+    unlockDuration: '',
+    isUnlocked: false,
+    result: undefined as '红' | '黑' | undefined
   });
 
   useEffect(() => {
     const initPage = async () => {
       try {
-        const data = await api.getProfile();
-        if (!data.isAuthor) {
+        const [profileData, settingsData] = await Promise.all([
+          api.getProfile(),
+          api.getSettings().catch(() => null)
+        ]);
+        
+        if (!profileData.isAuthor) {
           alert('您还不是认证作者，请先申请入驻');
           navigate('/partner-join');
           return;
         }
-        setUser(data);
+        setUser(profileData);
+        if (settingsData?.defaultUnlockDuration) {
+          setFormData(prev => ({...prev, unlockDuration: settingsData.defaultUnlockDuration}));
+        }
 
         if (editId) {
           setFetching(true);
@@ -43,7 +54,11 @@ const PublishPrediction = () => {
               tags: pred.tags || [],
               price: pred.price || 0,
               isFree: pred.isFree,
-              content: pred.content || ''
+              content: pred.content || '',
+              mainPicks: pred.mainPicks || [36, 24, 12],
+              unlockDuration: pred.unlockDuration || settingsData?.defaultUnlockDuration || '',
+              isUnlocked: pred.isUnlocked || false,
+              result: pred.result
             });
           } catch (err) {
             console.error('Failed to fetch prediction for edit', err);
@@ -70,6 +85,7 @@ const PublishPrediction = () => {
           authorId: user.authorId,
           authorName: user.nickname || user.username,
           authorAvatar: user.avatar,
+          time: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-'),
           updatedAt: new Date().toISOString().replace('T', ' ').slice(0, 16)
         });
         alert('修改成功！');
@@ -201,7 +217,75 @@ const PublishPrediction = () => {
               </div>
             </div>
           )}
+
+          {!formData.isFree && (
+            <div className="pt-2 border-t border-gray-50">
+              <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase tracking-tighter">解锁公开倒计时 (HH:MM:SS)</label>
+              <div className="relative">
+                <input 
+                  value={formData.unlockDuration}
+                  onChange={e => setFormData({...formData, unlockDuration: e.target.value})}
+                  placeholder="例如：01:25:20"
+                  className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-red-500 outline-none" 
+                />
+                <span className="absolute right-4 top-3.5 text-xs text-gray-400 font-bold">必填</span>
+              </div>
+              <p className="mt-1.5 text-[10px] text-gray-400">设定后，文章将在规定时间后自动对所有用户公开。</p>
+            </div>
+          )}
         </div>
+
+          <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="w-1 h-4 bg-red-500 rounded-full"></div>
+              <h3 className="font-bold text-gray-900">方案结果与公开</h3>
+            </div>
+
+            <div className="space-y-4">
+               <div>
+                  <label className="block text-xs font-bold text-gray-400 mb-2 uppercase">方案结果 (红/黑)</label>
+                  <div className="flex space-x-4">
+                     {['红', '黑'].map((r) => (
+                        <button
+                           key={r}
+                           type="button"
+                           onClick={() => setFormData({...formData, result: r as any})}
+                           className={`flex-1 py-3 rounded-xl font-bold transition-all border ${
+                              formData.result === r 
+                                 ? (r === '红' ? 'bg-red-500 text-white border-red-500 shadow-md' : 'bg-gray-900 text-white border-gray-900 shadow-md') 
+                                 : 'bg-white text-gray-400 border-gray-200'
+                           }`}
+                        >
+                           {r}
+                        </button>
+                     ))}
+                     <button
+                        type="button"
+                        onClick={() => setFormData({...formData, result: undefined})}
+                        className={`flex-1 py-3 rounded-xl font-bold transition-all border ${
+                           !formData.result ? 'bg-blue-500 text-white border-blue-500 shadow-md' : 'bg-white text-gray-400 border-gray-200'
+                        }`}
+                     >
+                        未开奖
+                     </button>
+                  </div>
+               </div>
+
+               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                  <div>
+                     <h4 className="text-sm font-bold text-gray-800">直接公开内容</h4>
+                     <p className="text-[10px] text-gray-400">开启后方案内容将对所有人免费公开，无需付费或等待</p>
+                  </div>
+                  <button 
+                     type="button"
+                     onClick={() => setFormData({...formData, isUnlocked: !formData.isUnlocked})}
+                     className={`w-12 h-6 rounded-full relative transition-colors ${formData.isUnlocked ? 'bg-green-500' : 'bg-gray-200'}`}
+                  >
+                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${formData.isUnlocked ? 'right-1' : 'left-1'}`}></div>
+                  </button>
+               </div>
+            </div>
+          </div>
 
         {/* Content */}
         <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
@@ -216,6 +300,16 @@ const PublishPrediction = () => {
               value={formData.contentTitle}
               onChange={e => setFormData({...formData, contentTitle: e.target.value})}
               placeholder="如：精准平特一肖 重点推荐"
+              className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-red-500 outline-none" 
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase">精选号码 (逗号分隔)</label>
+            <input 
+              value={formData.mainPicks.join(',')}
+              onChange={e => setFormData({...formData, mainPicks: e.target.value.split(',').map(n => parseInt(n.trim()) || 0)})}
+              placeholder="36,24,12"
               className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-red-500 outline-none" 
             />
           </div>

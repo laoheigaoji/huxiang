@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Info, CheckCircle2, ChevronRight, Landmark } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
@@ -12,6 +12,20 @@ const Withdraw = () => {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await api.getProfile();
+        setUser(data);
+      } catch (err) {
+        navigate('/login');
+      }
+    };
+    fetchProfile();
+  }, [navigate]);
 
   const handleSubmit = async () => {
     if (!amount || parseFloat(amount) <= 0) return alert('请输入正确的提现金额');
@@ -76,8 +90,8 @@ const Withdraw = () => {
             />
           </div>
           <div className="flex items-center justify-between text-[11px]">
-            <span className="text-gray-400">可用余额 : ¥120.00</span>
-            <button className="text-[#e53935] font-bold" onClick={() => setAmount('120.00')}>全部提现</button>
+            <span className="text-gray-400">可用余额 : ¥{user?.balance?.toFixed(2) || '0.00'}</span>
+            <button className="text-[#e53935] font-bold" onClick={() => setAmount(user?.balance?.toFixed(2) || '0')}>全部提现</button>
           </div>
         </div>
 

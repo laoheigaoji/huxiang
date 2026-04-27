@@ -85,13 +85,17 @@ const EditProfile = () => {
             <span className="text-[15px] text-gray-800 font-bold w-20 whitespace-nowrap">手机号：</span>
             <input 
               type="tel" 
+              value={user?.phone || ""} 
               placeholder="未绑定" 
               readOnly
               className="flex-1 bg-transparent text-[15px] text-gray-800 font-bold focus:outline-none" 
             />
           </div>
-          <button className="w-24 bg-[#e53935] text-white font-bold rounded-[4px] active:scale-95 transition-transform text-[15px]">
-            绑定
+          <button 
+            onClick={() => navigate('/profile/bind-phone')}
+            className="w-24 bg-[#e53935] text-white font-bold rounded-[4px] active:scale-95 transition-transform text-[15px]"
+          >
+            {user?.phone ? "修改" : "绑定"}
           </button>
         </div>
 
@@ -110,10 +114,15 @@ const EditProfile = () => {
         <div className="flex space-x-2">
           <div className="flex-1 bg-[#f8f8f8] rounded-[4px] h-[52px] flex items-center px-4 opacity-60">
             <span className="text-[15px] text-gray-800 font-bold w-20 whitespace-nowrap">实名认证：</span>
-            <span className="flex-1 text-[15px] text-red-600 font-bold">未认证</span>
+            <span className={`flex-1 text-[15px] font-bold ${user?.isRealNameVerified ? 'text-green-600' : 'text-red-600'}`}>
+              {user?.isRealNameVerified ? '已认证' : '未认证'}
+            </span>
           </div>
-          <button className="w-24 bg-[#e53935] text-white font-bold rounded-[4px] active:scale-95 transition-transform text-[15px]">
-            未认证
+          <button 
+            onClick={() => navigate('/profile/real-name')}
+            className="w-24 bg-[#e53935] text-white font-bold rounded-[4px] active:scale-95 transition-transform text-[15px]"
+          >
+             {user?.isRealNameVerified ? '已认证' : '去认证'}
           </button>
         </div>
       </div>
