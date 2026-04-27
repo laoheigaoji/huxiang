@@ -211,7 +211,7 @@ const Profile = () => {
               发文章 享好料
             </h4>
             <p className="text-[10px] text-white font-bold tracking-widest mt-1 opacity-90 uppercase">
-              行家精研·智料汇享
+              智选精研·智料汇享
             </p>
           </div>
           <div className="ml-auto relative z-10">

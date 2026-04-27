@@ -257,7 +257,7 @@ const Home = () => {
               />
             </div>
             <div className="ml-3">
-              <h2 className="text-[17px] font-black text-gray-900 leading-tight tracking-tight">{user?.nickname || user?.username || '全村人的希望'}</h2>
+              <h2 className="text-[17px] font-black text-gray-900 leading-tight tracking-tight">{user?.nickname || user?.username || '智汇达人'}</h2>
               <p className="text-[11px] text-gray-400 font-medium mt-0.5">欢迎使用智料汇享</p>
             </div>
           </div>
