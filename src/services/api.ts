@@ -265,6 +265,13 @@ export const api = {
     return handleResponse(res);
   },
 
+  async markAsPublic(id: string) {
+    const res = await fetch(`${API_BASE}/predictions/${id}/public`, {
+      method: 'POST'
+    });
+    return handleResponse(res);
+  },
+
   async applyForAuthor(data: any) {
     const res = await fetch(`${API_BASE}/applications`, {
       method: 'POST',
@@ -293,7 +300,7 @@ export const api = {
     return handleResponse(res);
   },
 
-  async getAuthorPredictions(authorId: string) {
+  async getAuthorPredictions(authorId: string): Promise<Prediction[]> {
     const res = await fetch(`${API_BASE}/author/predictions/${authorId}`);
     return handleResponse(res);
   },

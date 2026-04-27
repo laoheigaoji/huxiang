@@ -81,7 +81,7 @@ async function startServer() {
       createdAt: new Date().toISOString()
     };
     await db.collection("users").insertOne(newUser);
-    res.json({ message: "注册成功" });
+    res.json(newUser);
   });
 
   app.post("/api/login", async (req, res) => {
@@ -149,6 +149,11 @@ async function startServer() {
     } else {
       res.status(404).json({ error: "Prediction not found" });
     }
+  });
+
+  app.post("/api/predictions/:id/public", async (req, res) => {
+    await db.collection("predictions").updateOne({ id: req.params.id }, { $set: { isUnlocked: true, status: 'public' } });
+    res.json({ message: "marked as public" });
   });
 
   app.get("/api/profile", async (req, res) => {

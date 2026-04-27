@@ -21,8 +21,9 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await api.register(username, password, nickname, referrer || undefined);
-      navigate('/login');
+      const newUser = await api.register(username, password, nickname, referrer || undefined);
+      localStorage.setItem('user', JSON.stringify(newUser));
+      navigate('/');
     } catch (err: any) {
       setError(err.message || '注册失败');
     } finally {

@@ -9,7 +9,7 @@ import { Prediction, HistoryItem } from '../types';
 const PredictionDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [showPayment, setShowPayment] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'balance' | 'alipay'>('balance');
   const [showShare, setShowShare] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
@@ -18,10 +18,18 @@ const PredictionDetail = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFollowed, setIsFollowed] = useState(false);
+  const isPurchasedRef = React.useRef(false);
+  const isUnlockedRef = React.useRef(false);
   const [isPurchased, setIsPurchased] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState({ h: '00', m: '00', s: '00' });
+  const [showPayment, setShowPayment] = useState(false);
+
+  useEffect(() => {
+    isPurchasedRef.current = isPurchased;
+    isUnlockedRef.current = isUnlocked;
+  }, [isPurchased, isUnlocked]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -29,14 +37,14 @@ const PredictionDetail = () => {
         if (id) {
             const [predData, histData, profileData] = await Promise.all([
               api.getPredictionById(id),
-              api.getHistory(),
+              api.getHistory().catch(() => []),
               api.getProfile().catch(() => null)
             ]);
             setPrediction(predData);
             
             if (predData) {
-              const filteredHistory = histData.filter((h: any) => h.authorId === predData.authorId);
-              setHistory(filteredHistory.length > 0 ? filteredHistory : histData.slice(0, 3)); // Fallback to generic if none found for author
+              const allPredictionsForAuthor = await api.getAuthorPredictions(predData.authorId).catch(() => []);
+              setHistory(allPredictionsForAuthor.filter((h: any) => h.id !== predData.id).sort((a: any, b: any) => new Date(b.time).getTime() - new Date(a.time).getTime()));
               
               if (predData.isUnlocked) {
                 setIsUnlocked(true);
@@ -45,6 +53,7 @@ const PredictionDetail = () => {
               setAuthor(authorData);
             
             if (profileData) {
+              setUser(profileData);
               if (profileData.following) {
                 setIsFollowed(profileData.following.includes(predData.authorId));
               }
@@ -61,18 +70,36 @@ const PredictionDetail = () => {
       }
     };
     fetchData();
+    
+    // Polling to check unlocking status after payment
+    const pollInterval = setInterval(async () => {
+        if (id && !isUnlockedRef.current && !isPurchasedRef.current) {
+             const predData = await api.getPredictionById(id).catch(() => null);
+             const profileData = await api.getProfile().catch(() => null);
+             
+             if (predData && (predData.isUnlocked || (profileData && profileData.purchased?.includes(id)))) {
+                 setPrediction(predData);
+                 if (profileData) setUser(profileData);
+                 setIsUnlocked(true);
+                 setIsPurchased(true);
+                 clearInterval(pollInterval);
+             }
+        }
+    }, 5000);
 
     const lastShown = localStorage.getItem('disclaimer_last_shown');
     const today = new Date().toDateString();
     if (lastShown !== today) {
       setShowDisclaimer(true);
     }
+    
+    return () => clearInterval(pollInterval);
   }, [id]);
 
   useEffect(() => {
     if (!prediction?.unlockAt) return;
 
-    const updateTimer = () => {
+    const updateTimer = async () => {
       const target = new Date(prediction.unlockAt!).getTime();
       const now = new Date().getTime();
       const diff = target - now;
@@ -80,6 +107,12 @@ const PredictionDetail = () => {
       if (diff <= 0) {
         setIsUnlocked(true);
         setTimeLeft({ h: '00', m: '00', s: '00' });
+        
+        // Mark as public on backend if not already unlocked/public
+        if (!prediction.isUnlocked && prediction.status !== 'public') {
+            await api.markAsPublic(prediction.id).catch(console.error);
+        }
+
         return true; // Finished
       } else {
         const h = Math.floor(diff / (1000 * 60 * 60));
@@ -136,12 +169,24 @@ const PredictionDetail = () => {
     }
     try {
       setLoading(true);
-      await api.purchasePrediction(id);
-      setIsPurchased(true);
-      const updatedUser = await api.getProfile();
-      setUser(updatedUser);
-      setShowPayment(false);
-      alert('购买成功！');
+      if (selectedPaymentMethod === 'balance') {
+        await api.purchasePrediction(id);
+        setIsPurchased(true);
+        const updatedUser = await api.getProfile();
+        setUser(updatedUser);
+        setShowPayment(false);
+        alert('购买成功！');
+      } else {
+        // Alipay flow
+        const payRes = await api.createPayment(prediction!.price, 'alipay', prediction!.title, user.id);
+        const paymentUrl = payRes.url || payRes.payurl || payRes.payment_url || payRes.qrcode;
+        if (paymentUrl) {
+            window.location.href = paymentUrl;
+        } else {
+            console.error('Payment failed', payRes);
+            alert('支付请求发送失败，请稍后再试');
+        }
+      }
     } catch (err: any) {
       alert(err.message || '购买失败');
     } finally {
@@ -247,7 +292,13 @@ const PredictionDetail = () => {
       <div className="relative z-10 flex items-center justify-between p-4 text-white">
         <ChevronLeft className="w-6 h-6 cursor-pointer" onClick={() => navigate(-1)} />
         <h2 className="text-lg font-medium">方案详情</h2>
-        <Headset className="w-6 h-6 cursor-pointer" />
+        
+        <div className="flex items-center space-x-2">
+            {prediction.status === 'public' && (
+                <span className="bg-green-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">公开</span>
+            )}
+            <Headset className="w-6 h-6 cursor-pointer" />
+        </div>
       </div>
 
       {/* Main Content */}
@@ -412,12 +463,12 @@ const PredictionDetail = () => {
                  <div className="mt-4 flex items-center">
                    <span className="text-xs text-gray-400 mr-2">核对</span>
                    <div className="flex space-x-1.5">
-                     {item.numbers.map((n, i) => (
+                     {(item.numbers || []).map((n, i) => (
                        <div key={i} className="flex flex-col items-center">
                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold ${i === 6 ? 'bg-blue-500' : 'bg-red-500'}`}>
                            {n}
                          </div>
-                         <span className="text-[10px] text-red-500 mt-0.5">{item.animals[i]}</span>
+                         <span className="text-[10px] text-red-500 mt-0.5">{item.animals?.[i] || ''}</span>
                        </div>
                      ))}
                    </div>
@@ -473,7 +524,10 @@ const PredictionDetail = () => {
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer" onClick={() => {}}>
+                <div 
+                  className={`flex items-center justify-between p-4 rounded-xl border border-gray-100 cursor-pointer ${selectedPaymentMethod === 'alipay' ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'}`} 
+                  onClick={() => setSelectedPaymentMethod('alipay')}
+                >
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
                        <span className="text-white font-bold text-lg">支</span>
@@ -482,16 +536,18 @@ const PredictionDetail = () => {
                       <p className="font-medium">支付宝 (通过性更强)</p>
                     </div>
                   </div>
-                  <div className="w-5 h-5 rounded-full border-2 border-red-500 p-0.5">
-                    <div className="w-full h-full bg-red-500 rounded-full"></div>
+                  <div className={`w-5 h-5 rounded-full border-2 ${selectedPaymentMethod === 'alipay' ? 'border-blue-500 p-0.5' : 'border-gray-300'}`}>
+                    {selectedPaymentMethod === 'alipay' && <div className="w-full h-full bg-blue-500 rounded-full"></div>}
                   </div>
                 </div>
 
                 <div 
-                  className={`flex items-center justify-between p-4 rounded-xl border border-gray-100 cursor-pointer ${user?.balance < prediction?.price ? 'bg-gray-50 opacity-60' : 'bg-orange-50'}`}
+                  className={`flex items-center justify-between p-4 rounded-xl border border-gray-100 cursor-pointer ${user?.balance < prediction?.price ? 'bg-gray-50 opacity-60' : (selectedPaymentMethod === 'balance' ? 'bg-orange-50 border-orange-200' : 'bg-white')}`}
                   onClick={() => {
                     if (user?.balance < prediction?.price) {
                        navigate('/topup');
+                    } else {
+                       setSelectedPaymentMethod('balance');
                     }
                   }}
                 >
@@ -502,7 +558,9 @@ const PredictionDetail = () => {
                       {user?.balance < prediction?.price && <p className="text-[10px] text-red-500">余额不足，请充值</p>}
                     </div>
                   </div>
-                  <div className={`w-5 h-5 rounded-full border-2 ${user?.balance < prediction?.price ? 'border-gray-300' : 'border-gray-300'}`}></div>
+                  <div className={`w-5 h-5 rounded-full border-2 ${selectedPaymentMethod === 'balance' ? 'border-orange-500 p-0.5' : 'border-gray-300'}`}>
+                    {selectedPaymentMethod === 'balance' && <div className="w-full h-full bg-orange-500 rounded-full"></div>}
+                  </div>
                 </div>
               </div>
 

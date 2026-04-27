@@ -18,18 +18,27 @@ const ProfileMenuItem = ({ icon: Icon, label, color, bgColor, path }: { icon: an
   </Link>
 );
 
-const ServiceItem = ({ icon: Icon, label, path }: { icon: any, label: string, path?: string }) => (
-  <Link to={path || '#'} className="flex flex-col items-center justify-center py-4 cursor-pointer active:opacity-70 transition-opacity">
-    <Icon className="w-7 h-7 text-gray-800 mb-2" strokeWidth={1.5} />
-    <span className="text-[12px] text-gray-600 font-medium">{label}</span>
-  </Link>
-);
+const ServiceItem = ({ icon: Icon, label, path, target }: { icon: any, label: string, path?: string, target?: string }) => {
+  const isExternal = path?.startsWith('http') || path?.startsWith('mailto:');
+  return isExternal ? (
+    <a href={path || '#'} target={target || "_blank"} className="flex flex-col items-center justify-center py-4 cursor-pointer active:opacity-70 transition-opacity">
+      <Icon className="w-7 h-7 text-gray-800 mb-2" strokeWidth={1.5} />
+      <span className="text-[12px] text-gray-600 font-medium">{label}</span>
+    </a>
+  ) : (
+    <Link to={path || '#'} className="flex flex-col items-center justify-center py-4 cursor-pointer active:opacity-70 transition-opacity">
+      <Icon className="w-7 h-7 text-gray-800 mb-2" strokeWidth={1.5} />
+      <span className="text-[12px] text-gray-600 font-medium">{label}</span>
+    </Link>
+  );
+};
 
 const Profile = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [application, setApplication] = useState<any>(null);
+  const [settings, setSettings] = useState<any>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -40,11 +49,13 @@ const Profile = () => {
 
     const fetchData = async () => {
       try {
-        const [userData, apps] = await Promise.all([
+        const [userData, apps, settingsData] = await Promise.all([
           api.getProfile(),
-          api.getAdminApplications().catch(() => [])
+          api.getAdminApplications().catch(() => []),
+          api.getSettings().catch(() => null)
         ]);
         setUser(userData);
+        setSettings(settingsData);
         const userApp = apps.find((a: any) => a.userId === userData.id);
         setApplication(userApp);
       } catch (err: any) {
@@ -204,7 +215,7 @@ const Profile = () => {
           </div>
 
           <div className="grid grid-cols-4 px-2 pb-6">
-            <ServiceItem icon={Headset} label="平台客服" />
+            <ServiceItem icon={Headset} label="平台客服" path={settings?.contactLink || `mailto:${settings?.contactEmail || 'admin@example.com'}`} />
             <ServiceItem icon={FileText} label="意见反馈" path="/feedback" />
             <ServiceItem 
               icon={user?.isAuthor ? ClipboardList : Handshake} 
@@ -217,7 +228,7 @@ const Profile = () => {
               } 
               path={user?.isAuthor ? "/author/dashboard" : "/partner-join"} 
             />
-            <ServiceItem icon={Download} label="下载APP" />
+            <ServiceItem icon={Download} label="下载APP" path={settings?.downloadLink || '#'} />
             <ServiceItem icon={Settings} label="系统设置" path="/settings" />
             <ServiceItem icon={HelpCircle} label="常见问题" path="/faq" />
           </div>

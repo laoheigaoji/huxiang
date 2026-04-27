@@ -121,6 +121,12 @@ const AdminDashboard = () => {
     }
   };
 
+  const [expandedApplications, setExpandedApplications] = useState<Record<string, boolean>>({});
+  
+  const toggleApplication = (id: string) => {
+    setExpandedApplications(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+  
   const filteredAuthors = data.authors.filter((a: any) => a.name.toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredPredictions = data.predictions.filter((p: any) => (p.contentTitle || p.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (p.authorName || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredUsers = data.users.filter((u: any) => (u.nickname || '').toLowerCase().includes(searchQuery.toLowerCase()) || (u.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
@@ -308,10 +314,9 @@ const AdminDashboard = () => {
                 </div>
               </div>
             ))}
-
             {activeTab === 'applications' && filteredApplications.map((app: Application) => (
-              <div key={app.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm mb-4">
-                <div className="flex items-center justify-between mb-4">
+              <div key={app.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm mb-4 overflow-hidden">
+                <div className="p-6 cursor-pointer flex items-center justify-between" onClick={() => toggleApplication(app.id)}>
                   <div className="flex items-center">
                     <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 font-bold mr-4 text-xl">
                       {app.realName[0]}
@@ -329,78 +334,76 @@ const AdminDashboard = () => {
                     }`}>
                       {app.status === 'pending' ? '待审核' : app.status === 'approved' ? '已通过' : '已拒绝'}
                     </div>
-                    <button 
-                      onClick={() => handleDelete(app.id)} 
-                      className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-y-3 bg-gray-50 p-4 rounded-2xl mb-4">
-                  <div>
-                    <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">联系电话</p>
-                    <p className="text-sm font-bold text-gray-700">{app.phone}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">证件类型</p>
-                    <p className="text-sm font-bold text-gray-700">{app.idType}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">证件号码</p>
-                    <p className="text-sm font-bold text-gray-700">{app.idNumber}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">户籍地址</p>
-                    <p className="text-sm font-bold text-gray-700">{app.hometown}</p>
-                  </div>
-                </div>
+                {expandedApplications[app.id] && (
+                  <div className="p-6 border-t border-gray-50 pt-0">
+                    <div className="grid grid-cols-2 gap-y-3 bg-gray-50 p-4 rounded-2xl mb-4">
+                      <div>
+                        <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">联系电话</p>
+                        <p className="text-sm font-bold text-gray-700">{app.phone}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">证件类型</p>
+                        <p className="text-sm font-bold text-gray-700">{app.idType}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">证件号码</p>
+                        <p className="text-sm font-bold text-gray-700">{app.idNumber}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">户籍地址</p>
+                        <p className="text-sm font-bold text-gray-700">{app.hometown}</p>
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <p className="text-[10px] text-gray-400 font-black uppercase mb-1">身份证人像面</p>
-                    {app.photoFront ? (
-                      <img src={app.photoFront} className="w-full aspect-[1.5/1] object-cover rounded-xl border border-gray-100" alt="正面" />
-                    ) : (
-                      <div className="w-full aspect-[1.5/1] bg-gray-50 rounded-xl flex items-center justify-center border border-dashed border-gray-200">
-                        <span className="text-[10px] text-gray-300">未上传</span>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <p className="text-[10px] text-gray-400 font-black uppercase mb-1">身份证人像面</p>
+                        {app.photoFront ? (
+                          <img src={app.photoFront} className="w-full aspect-[1.5/1] object-cover rounded-xl border border-gray-100" alt="正面" />
+                        ) : (
+                          <div className="w-full aspect-[1.5/1] bg-gray-50 rounded-xl flex items-center justify-center border border-dashed border-gray-200">
+                            <span className="text-[10px] text-gray-300">未上传</span>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-400 font-black uppercase mb-1">身份证国徽面</p>
+                        {app.photoBack ? (
+                          <img src={app.photoBack} className="w-full aspect-[1.5/1] object-cover rounded-xl border border-gray-100" alt="反面" />
+                        ) : (
+                          <div className="w-full aspect-[1.5/1] bg-gray-50 rounded-xl flex items-center justify-center border border-dashed border-gray-200">
+                            <span className="text-[10px] text-gray-300">未上传</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-y-3 bg-gray-50 p-4 rounded-2xl mb-4">
+                      <div>
+                        <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">个人优势/描述</p>
+                        <p className="text-sm font-bold text-gray-700 whitespace-pre-wrap leading-relaxed">{app.description}</p>
+                      </div>
+                    </div>
+
+                    {app.status === 'pending' && (
+                      <div className="flex space-x-3">
+                        <button 
+                          onClick={() => handleApproveApp(app.id, true)}
+                          className="flex-1 bg-red-500 text-white py-3.5 rounded-2xl font-black text-sm shadow-xl shadow-red-100 active:scale-95 transition-all"
+                        >
+                          通过
+                        </button>
+                        <button 
+                          onClick={() => handleApproveApp(app.id, false)}
+                          className="flex-1 bg-gray-100 text-gray-400 py-3.5 rounded-2xl font-black text-sm active:scale-95 transition-all"
+                        >
+                          拒绝
+                        </button>
                       </div>
                     )}
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-gray-400 font-black uppercase mb-1">身份证国徽面</p>
-                    {app.photoBack ? (
-                      <img src={app.photoBack} className="w-full aspect-[1.5/1] object-cover rounded-xl border border-gray-100" alt="反面" />
-                    ) : (
-                      <div className="w-full aspect-[1.5/1] bg-gray-50 rounded-xl flex items-center justify-center border border-dashed border-gray-200">
-                        <span className="text-[10px] text-gray-300">未上传</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-y-3 bg-gray-50 p-4 rounded-2xl mb-4">
-                  <div>
-                    <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">个人优势/描述</p>
-                    <p className="text-sm font-bold text-gray-700 whitespace-pre-wrap leading-relaxed">{app.description}</p>
-                  </div>
-                </div>
-
-                {app.status === 'pending' && (
-                  <div className="flex space-x-3">
-                    <button 
-                      onClick={() => handleApproveApp(app.id, true)}
-                      className="flex-1 bg-red-500 text-white py-3.5 rounded-2xl font-black text-sm shadow-xl shadow-red-100 active:scale-95 transition-all"
-                    >
-                      通过
-                    </button>
-                    <button 
-                      onClick={() => handleApproveApp(app.id, false)}
-                      className="flex-1 bg-gray-100 text-gray-400 py-3.5 rounded-2xl font-black text-sm active:scale-95 transition-all"
-                    >
-                      拒绝
-                    </button>
                   </div>
                 )}
               </div>
@@ -499,6 +502,14 @@ const AdminDashboard = () => {
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">联系邮箱</label>
                     <input name="contactEmail" defaultValue={data.settings.contactEmail} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">联系客服链接 (URL或mailto:)</label>
+                    <input name="contactLink" defaultValue={data.settings.contactLink} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" placeholder="https://..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">下载APP链接</label>
+                    <input name="downloadLink" defaultValue={data.settings.downloadLink} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" placeholder="https://..." />
                   </div>
                   <button type="submit" className="w-full bg-red-500 text-white py-5 rounded-2xl font-black shadow-xl shadow-red-100 hover:scale-[1.02] active:scale-95 transition-all">
                     保存设置
