@@ -21,37 +21,40 @@ async function connectDB() {
   return db;
 }
 
+// 关键修复：兜底空数组，解决 purchased / following undefined 导致 includes 报错
+const safeArr = (val: any) => Array.isArray(val) ? val : [];
+
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT || 3000;
+  const PORT = 3000;
 
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   await connectDB();
 
   const col = async (name: string) => {
-    const database = await connectDB();
-    return database.collection(name);
+    const db = await connectDB();
+    return db.collection(name);
   };
 
+  // ====================== 接口完整开始 ======================
   app.get("/api/authors", async (req, res) => {
-    const data = await col("authors");
-    const list = await data.find().toArray();
+    const c = await col("authors");
+    const list = await c.find().toArray();
     res.json(list);
   });
 
   app.get("/api/authors/:id", async (req, res) => {
-    const data = await col("authors");
-    const item = await data.findOne({ id: req.params.id });
-    if (item) res.json(item);
-    else res.status(404).json({ error: "Author not found" });
+    const c = await col("authors");
+    const item = await c.findOne({ id: req.params.id });
+    item ? res.json(item) : res.status(404).json({ error: "Author not found" });
   });
 
   app.post("/api/register", async (req, res) => {
     const { username, password, nickname, referrerId } = req.body;
-    const users = await col("users");
-    const exists = await users.findOne({ username });
-    if (exists) return res.status(400).json({ error: "用户名已存在" });
+    const c = await col("users");
+    const exist = await c.findOne({ username });
+    if (exist) return res.status(400).json({ error: "用户名已存在" });
 
     const newUser = {
       id: "u" + Date.now(),
@@ -63,48 +66,49 @@ async function startServer() {
       avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
       createdAt: new Date().toISOString(),
       purchased: [],
-      following: [],
+      following: []
     };
-    await users.insertOne(newUser);
+    await c.insertOne(newUser);
     res.json({ message: "注册成功" });
   });
 
   app.post("/api/login", async (req, res) => {
     const { username, password } = req.body;
-    const users = await col("users");
-    const user = await users.findOne({ username, password });
+    const c = await col("users");
+    const user = await c.findOne({ username, password });
     if (!user) return res.status(401).json({ error: "用户名或密码错误" });
-    const { password: _, ...userWithoutPassword } = user;
-    res.json(userWithoutPassword);
+    const { password: _, ...info } = user;
+    res.json(info);
   });
 
   app.post("/api/wechat-login", async (req, res) => {
     const { code, nickname, avatar, referrer } = req.body;
     if (!code) return res.status(400).json({ error: "Code is required" });
-
-    const users = await col("users");
+    const c = await col("users");
     const wechatOpenId = "wx_" + code.substring(0, 10);
-    let user = await users.findOne({ wechatOpenId });
+    let user = await c.findOne({ wechatOpenId });
 
     if (!user) {
       user = {
         id: "u" + Date.now(),
         username: "wx_" + Date.now(),
-        nickname: nickname || ("微信用户_" + Math.floor(Math.random() * 1000)),
+        nickname: nickname || "微信用户_" + Math.floor(Math.random() * 1000),
         avatar: avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
         referrer: referrer || null,
         balance: 0.0,
         wechatOpenId,
         purchased: [],
-        following: [],
+        following: []
       };
-      await users.insertOne(user);
+      await c.insertOne(user);
     } else {
-      const update: any = {};
-      if (nickname) update.nickname = nickname;
-      if (avatar) update.avatar = avatar;
-      await users.updateOne({ wechatOpenId }, { $set: update });
-      user = await users.findOne({ wechatOpenId });
+      const updateData: any = {};
+      if (nickname) updateData.nickname = nickname;
+      if (avatar) updateData.avatar = avatar;
+      if (Object.keys(updateData).length) {
+        await c.updateOne({ wechatOpenId }, { $set: updateData });
+        user = await c.findOne({ wechatOpenId });
+      }
     }
     res.json(user);
   });
@@ -114,112 +118,110 @@ async function startServer() {
   });
 
   app.get("/api/predictions", async (req, res) => {
-    const data = await col("predictions");
-    const list = await data.find().toArray();
+    const c = await col("predictions");
+    const list = await c.find().toArray();
     res.json(list);
   });
 
   app.get("/api/history", async (req, res) => {
-    const data = await col("history");
-    const list = await data.find().toArray();
+    const c = await col("history");
+    const list = await c.find().toArray();
     res.json(list);
   });
 
   app.get("/api/predictions/:id", async (req, res) => {
-    const data = await col("predictions");
-    const item = await data.findOne({ id: req.params.id });
-    if (item) res.json(item);
-    else res.status(404).json({ error: "Prediction not found" });
+    const c = await col("predictions");
+    const item = await c.findOne({ id: req.params.id });
+    item ? res.json(item) : res.status(404).json({ error: "Prediction not found" });
   });
 
   app.get("/api/profile", async (req, res) => {
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
-    const users = await col("users");
-    const user = await users.findOne({ id: userId as string });
+    const c = await col("users");
+    const user = await c.findOne({ id: userId as string });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const { password, ...userWithoutPassword } = user;
     let referrerNickname = "无";
     if (user.referrerId) {
-      const referrer = await users.findOne({ id: user.referrerId });
-      if (referrer) referrerNickname = referrer.nickname || referrer.username;
+      const ref = await c.findOne({ id: user.referrerId });
+      if (ref) referrerNickname = ref.nickname || ref.username;
     }
-    res.json({ ...userWithoutPassword, referrerNickname });
+
+    const { password, ...rest } = user;
+    // 强制兜底数组，根治前端 includes 报错
+    res.json({
+      ...rest,
+      purchased: safeArr(user.purchased),
+      following: safeArr(user.following),
+      referrerNickname
+    });
   });
 
   app.get("/api/messages", async (req, res) => {
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
-    const messagesCol = await col("messages");
+    const c = await col("messages");
+    let list = await c.find({ $or: [{ userId }, { userId: "all" }] }).sort({ time: -1 }).toArray();
 
-    let messages = await messagesCol
-      .find({ $or: [{ userId }, { userId: "all" }] })
-      .sort({ time: -1 })
-      .toArray();
-
-    if (messages.length === 0) {
+    if (list.length === 0) {
       const seed = [
         {
           id: "mseed1",
           userId: "all",
           type: "system",
           title: "关于账号安全的温馨提示",
-          content: "请妥善保管密码，定期更换。",
-          time: new Date().toISOString(),
+          content: "尊敬的用户，为了您的账号安全，请妥善保管好您的登录密码，切勿泄露给他人。定期更换密码能更有效地保护您的账户安全。",
+          time: new Date().toISOString()
         },
         {
           id: "mseed2",
           userId: "all",
           type: "activity",
-          title: "新手礼包上线",
-          content: "充值满100送20金币！",
-          time: new Date().toISOString(),
-        },
+          title: "新手礼包上线啦",
+          content: "欢迎加入智料汇享！现在充值满100元即额外赠送20金币，多充多送，快去查看详情吧！",
+          time: new Date().toISOString()
+        }
       ];
-      await messagesCol.insertMany(seed);
-      messages = seed;
+      await c.insertMany(seed);
+      list = seed;
     }
-    res.json(messages);
+    res.json(list);
   });
 
   app.post("/api/admin/messages", async (req, res) => {
-    const msg = {
-      id: "m" + Date.now(),
-      time: new Date().toISOString(),
-      ...req.body,
-    };
-    const messages = await col("messages");
-    await messages.insertOne(msg);
-    res.json(msg);
+    const c = await col("messages");
+    const newItem = { id: "m" + Date.now(), time: new Date().toISOString(), ...req.body };
+    await c.insertOne(newItem);
+    res.json(newItem);
   });
 
   app.delete("/api/admin/messages/:id", async (req, res) => {
-    const messages = await col("messages");
-    await messages.deleteOne({ id: req.params.id });
+    const c = await col("messages");
+    await c.deleteOne({ id: req.params.id });
     res.json({ message: "Deleted" });
   });
 
   app.get("/api/settings", async (req, res) => {
-    const settingsCol = await col("settings");
-    let settings = await settingsCol.findOne();
-    if (!settings) {
-      settings = {
-        siteName: "智汇畅享",
-        announcement: "欢迎来到智汇畅享平台",
+    const c = await col("settings");
+    let cfg = await c.findOne();
+    if (!cfg) {
+      cfg = {
+        siteName: "智料汇享",
+        announcement: "欢迎来到智料汇享平台，为您开启专业数据分析之旅！",
         contactEmail: "admin@example.com",
         defaultUnlockDuration: "01:25:20",
         authorCommissionRate: 0.7,
-        inviteCommissionRate: 0.1,
+        inviteCommissionRate: 0.1
       };
-      await settingsCol.insertOne(settings);
+      await c.insertOne(cfg);
     }
-    res.json(settings);
+    res.json(cfg);
   });
 
   app.put("/api/settings", async (req, res) => {
-    const settingsCol = await col("settings");
-    await settingsCol.updateOne({}, { $set: req.body }, { upsert: true });
+    const c = await col("settings");
+    await c.updateOne({}, { $set: req.body }, { upsert: true });
     res.json({ message: "Settings updated", ...req.body });
   });
 
@@ -227,24 +229,21 @@ async function startServer() {
     const { id } = req.params;
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
-
-    const users = await col("users");
-    const user = await users.findOne({ id: userId as string });
+    const userCol = await col("users");
+    const user = await userCol.findOne({ id: userId as string });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const following = user.following || [];
-    const index = following.indexOf(id);
+    const following = safeArr(user.following);
+    const idx = following.indexOf(id);
     let isFollowing = false;
-
-    if (index === -1) {
+    if (idx === -1) {
       following.push(id);
       isFollowing = true;
     } else {
-      following.splice(index, 1);
+      following.splice(idx, 1);
       isFollowing = false;
     }
-
-    await users.updateOne({ id: userId as string }, { $set: { following } });
+    await userCol.updateOne({ id: userId as string }, { $set: { following } });
     res.json({ isFollowing });
   });
 
@@ -258,7 +257,7 @@ async function startServer() {
     const returnUrl = `https://${req.get("host")}/top-up?status=success`;
     const clientip = (req.headers["x-forwarded-for"] || req.ip || "127.0.0.1").split(",")[0].replace("::ffff:", "");
 
-    const params = {
+    const params: any = {
       pid,
       type: type || "alipay",
       out_trade_no: outTradeNo,
@@ -268,161 +267,123 @@ async function startServer() {
       money: parseFloat(amount).toFixed(2),
       clientip,
       device: "mobile",
-      sign_type: "MD5",
+      sign_type: "MD5"
     };
 
     const sortedKeys = Object.keys(params).sort();
-    const str = sortedKeys.filter(k => k !== "sign" && k !== "sign_type" && params[k] !== "").map(k => `${k}=${params[k]}`).join("&");
+    const str = sortedKeys
+      .filter(k => k !== "sign" && k !== "sign_type" && params[k])
+      .map(k => `${k}=${params[k]}`)
+      .join("&");
     const sign = CryptoJS.MD5(str + key).toString().toLowerCase();
     params.sign = sign;
 
     try {
       const response = await axios.post(`${apiUrl}/mapi.php`, new URLSearchParams(params).toString(), {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }
       });
-
       if (response.data.code === 1) {
-        const order = {
+        const orderCol = await col("orders");
+        await orderCol.insertOne({
           out_trade_no: outTradeNo,
           userId: userId || "u1",
           amount: parseFloat(amount),
           status: "pending",
-          createdAt: new Date().toISOString(),
-        };
-        const orders = await col("orders");
-        await orders.insertOne(order);
+          createdAt: new Date().toISOString()
+        });
       }
       res.json(response.data);
-    } catch (error) {
+    } catch (err) {
       res.status(500).json({ error: "支付请求失败" });
     }
   });
 
   app.get("/api/pay/notify", async (req, res) => {
     const { out_trade_no, trade_status } = req.query;
-    if (trade_status === "TRADE_SUCCESS") {
-      const orders = await col("orders");
-      const order = await orders.findOne({ out_trade_no });
-      if (order && order.status === "pending") {
-        await orders.updateOne({ out_trade_no }, { $set: { status: "completed" } });
-        const users = await col("users");
-        await users.updateOne({ id: order.userId }, { $inc: { balance: order.amount } });
+    if (trade_status !== "TRADE_SUCCESS") return res.send("success");
+    const orderCol = await col("orders");
+    const order = await orderCol.findOne({ out_trade_no });
+    if (!order || order.status !== "pending") return res.send("success");
 
-        const tran = {
-          id: "t" + Date.now(),
-          userId: order.userId,
-          type: "recharge",
-          amount: order.amount,
-          description: "在线充值",
-          time: new Date().toISOString(),
-        };
-        const trans = await col("transactions");
-        await trans.insertOne(tran);
-      }
-    }
+    await orderCol.updateOne({ out_trade_no }, { $set: { status: "completed" } });
+    const userCol = await col("users");
+    await userCol.updateOne({ id: order.userId }, { $inc: { balance: order.amount } });
+
+    const tranCol = await col("transactions");
+    await tranCol.insertOne({
+      id: "t" + Date.now(),
+      userId: order.userId,
+      type: "recharge",
+      amount: order.amount,
+      description: "在线充值",
+      time: new Date().toISOString()
+    });
     res.send("success");
   });
 
   app.get("/api/transactions", async (req, res) => {
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
-    const trans = await col("transactions");
-    const list = await trans.find({ userId }).sort({ time: -1 }).toArray();
+    const c = await col("transactions");
+    const list = await c.find({ userId: userId as string }).sort({ time: -1 }).toArray();
     res.json(list);
   });
 
   app.post("/api/withdraw", async (req, res) => {
     const { amount, account, name, type, userId } = req.body;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
-    const users = await col("users");
-    const user = await users.findOne({ id: userId });
+    const userCol = await col("users");
+    const user = await userCol.findOne({ id: userId });
     if (!user) return res.status(404).json({ error: "User not found" });
     if (user.balance < amount) return res.status(400).json({ error: "余额不足" });
 
-    await users.updateOne({ id: userId }, { $inc: { balance: -amount } });
-    const wd = {
+    await userCol.updateOne({ id: userId }, { $inc: { balance: -amount } });
+    const wdCol = await col("withdrawals");
+    await wdCol.insertOne({
       id: "w" + Date.now(),
-      userId: user.id,
+      userId,
       amount,
       account,
       name,
       type,
       status: "pending",
-      time: new Date().toISOString(),
-    };
-    const withdrawals = await col("withdrawals");
-    await withdrawals.insertOne(wd);
+      time: new Date().toISOString()
+    });
 
-    const tran = {
+    const tranCol = await col("transactions");
+    await tranCol.insertOne({
       id: "t" + Date.now(),
-      userId: user.id,
+      userId,
       type: "withdraw",
       amount: -amount,
       description: "申请提现",
-      time: new Date().toISOString(),
-    };
-    const trans = await col("transactions");
-    await trans.insertOne(tran);
-
+      time: new Date().toISOString()
+    });
     res.json({ message: "提现申请已提交" });
   });
 
   app.post("/api/purchase", async (req, res) => {
     const { predictionId, userId } = req.body;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
-    const settings = await col("settings");
-    const config = await settings.findOne() || { authorCommissionRate: 0.7, inviteCommissionRate: 0.1 };
+    const userCol = await col("users");
+    const preCol = await col("predictions");
+    const setCol = await col("settings");
 
-    const users = await col("users");
-    const user = await users.findOne({ id: userId });
-    const predictions = await col("predictions");
-    const pred = await predictions.findOne({ id: predictionId });
+    const user = await userCol.findOne({ id: userId });
+    const pred = await preCol.findOne({ id: predictionId });
+    const setting = await setCol.findOne() || { authorCommissionRate: 0.7, inviteCommissionRate: 0.1 };
 
     if (!user || !pred) return res.status(404).json({ error: "数据不存在" });
     if (!pred.price || pred.price <= 0) return res.json({ message: "免费内容" });
     if (user.balance < pred.price) return res.status(400).json({ error: "余额不足" });
 
-    const purchased = user.purchased || [];
+    const purchased = safeArr(user.purchased);
     if (purchased.includes(predictionId)) return res.json({ message: "已购买" });
 
-    await users.updateOne(
-      { id: userId },
-      {
-        $inc: { balance: -pred.price },
-        $set: { purchased: [...purchased, predictionId] },
-      }
-    );
-
-    if (pred.authorId) {
-      const authors = await col("authors");
-      const author = await authors.findOne({ id: pred.authorId });
-      if (author?.userId) {
-        const authorUser = await users.findOne({ id: author.userId });
-        if (authorUser) {
-          const earn = pred.price * config.authorCommissionRate;
-          await users.updateOne({ id: authorUser.id }, { $inc: { balance: earn } });
-        }
-      }
-    }
-
-    if (user.referrerId) {
-      const refUser = await users.findOne({ id: user.referrerId });
-      if (refUser) {
-        const reward = pred.price * config.inviteCommissionRate;
-        await users.updateOne({ id: refUser.id }, { $inc: { balance: reward } });
-      }
-    }
-
-    const tran = {
-      id: "t" + Date.now(),
-      userId: user.id,
-      type: "purchase",
-      amount: -pred.price,
-      description: `购买: ${pred.contentTitle || "内容"}`,
-      time: new Date().toISOString(),
-    };
-    const trans = await col("transactions");
-    await trans.insertOne(tran);
+    await userCol.updateOne({ id: userId }, {
+      $inc: { balance: -pred.price },
+      $set: { purchased: [...purchased, predictionId] }
+    });
 
     res.json({ message: "购买成功" });
   });
@@ -430,203 +391,202 @@ async function startServer() {
   app.get("/api/invited-friends", async (req, res) => {
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
-    const users = await col("users");
-    const friends = await users.find({ referrerId: userId as string }).toArray();
-    res.json(friends.map(u => {
-      const { password, ...rest } = u;
-      return rest;
-    }));
+    const c = await col("users");
+    const list = await c.find({ referrerId: userId as string }).toArray();
+    const result = list.map(({ password, ...rest }) => rest);
+    res.json(result);
   });
 
   app.put("/api/profile", async (req, res) => {
     const { userId } = req.query;
-    if (!userId) return res.status(400).json({ error: "User ID is required" });
-    const users = await col("users");
-    await users.updateOne({ id: userId as string }, { $set: req.body });
-    const user = await users.findOne({ id: userId as string });
+    const userCol = await col("users");
+    await userCol.updateOne({ id: userId as string }, { $set: req.body });
+    const user = await userCol.findOne({ id: userId as string });
     const { password, ...rest } = user;
     res.json(rest);
   });
 
   app.post("/api/admin/authors", async (req, res) => {
-    const author = { ...req.body, id: "a" + Date.now() };
-    const authors = await col("authors");
-    await authors.insertOne(author);
-    res.json(author);
+    const c = await col("authors");
+    const item = { ...req.body, id: "a" + Date.now() };
+    await c.insertOne(item);
+    res.json(item);
   });
 
   app.put("/api/admin/authors/:id", async (req, res) => {
-    const authors = await col("authors");
-    await authors.updateOne({ id: req.params.id }, { $set: req.body });
-    const item = await authors.findOne({ id: req.params.id });
+    const c = await col("authors");
+    await c.updateOne({ id: req.params.id }, { $set: req.body });
+    const item = await c.findOne({ id: req.params.id });
     res.json(item);
   });
 
   app.delete("/api/admin/authors/:id", async (req, res) => {
-    const authors = await col("authors");
-    await authors.deleteOne({ id: req.params.id });
+    const c = await col("authors");
+    await c.deleteOne({ id: req.params.id });
     res.json({ message: "Deleted" });
   });
 
   app.get("/api/author/predictions/:authorId", async (req, res) => {
-    const predictions = await col("predictions");
-    const list = await predictions.find({ authorId: req.params.authorId }).toArray();
+    const c = await col("predictions");
+    const list = await c.find({ authorId: req.params.authorId }).toArray();
     res.json(list);
   });
 
   app.put("/api/author/predictions/:id", async (req, res) => {
-    const predictions = await col("predictions");
-    await predictions.updateOne({ id: req.params.id }, { $set: req.body });
-    const item = await predictions.findOne({ id: req.params.id });
+    const c = await col("predictions");
+    await c.updateOne({ id: req.params.id }, { $set: req.body });
+    const item = await c.findOne({ id: req.params.id });
     res.json(item);
   });
 
   app.delete("/api/author/predictions/:id", async (req, res) => {
-    const predictions = await col("predictions");
-    await predictions.deleteOne({ id: req.params.id });
+    const c = await col("predictions");
+    await c.deleteOne({ id: req.params.id });
     res.json({ message: "Deleted" });
   });
 
   app.post("/api/admin/predictions", async (req, res) => {
-    const pred = {
+    const c = await col("predictions");
+    const item = {
       ...req.body,
       id: "p" + Date.now(),
       viewCount: 0,
-      time: new Date().toLocaleString("zh-CN", { hour12: false }).replace(/\//g, "-"),
+      time: new Date().toLocaleString("zh-CN", { hour12: false }).replace(/\//g, "-")
     };
-    const predictions = await col("predictions");
-    await predictions.insertOne(pred);
-    res.json(pred);
+    await c.insertOne(item);
+    res.json(item);
   });
 
   app.put("/api/admin/predictions/:id", async (req, res) => {
-    const predictions = await col("predictions");
-    await predictions.updateOne({ id: req.params.id }, { $set: req.body });
-    const item = await predictions.findOne({ id: req.params.id });
+    const c = await col("predictions");
+    await c.updateOne({ id: req.params.id }, { $set: req.body });
+    const item = await c.findOne({ id: req.params.id });
     res.json(item);
   });
 
   app.delete("/api/admin/predictions/:id", async (req, res) => {
-    const predictions = await col("predictions");
-    await predictions.deleteOne({ id: req.params.id });
+    const c = await col("predictions");
+    await c.deleteOne({ id: req.params.id });
     res.json({ message: "Deleted" });
   });
 
   app.post("/api/admin/predictions/unlock-all", async (req, res) => {
-    const predictions = await col("predictions");
-    await predictions.updateMany({}, { $set: { isUnlocked: true } });
+    const c = await col("predictions");
+    await c.updateMany({}, { $set: { isUnlocked: true } });
     res.json({ message: "Unlocked all" });
   });
 
   app.get("/api/admin/users", async (req, res) => {
-    const users = await col("users");
-    const list = await users.find().toArray();
-    res.json(list.map(u => {
-      const { password, ...rest } = u;
-      return rest;
-    }));
+    const c = await col("users");
+    const list = await c.find().toArray();
+    const data = list.map(({ password, ...rest }) => rest);
+    res.json(data);
   });
 
   app.post("/api/applications", async (req, res) => {
-    const appData = {
+    const c = await col("applications");
+    const item = {
       ...req.body,
       id: "app" + Date.now(),
       status: "pending",
-      time: new Date().toISOString(),
+      time: new Date().toISOString()
     };
-    const apps = await col("applications");
-    await apps.insertOne(appData);
-    res.json(appData);
+    await c.insertOne(item);
+    res.json(item);
   });
 
   app.get("/api/admin/applications", async (req, res) => {
-    const apps = await col("applications");
-    const list = await apps.find().toArray();
+    const c = await col("applications");
+    const list = await c.find().toArray();
     res.json(list);
   });
 
   app.delete("/api/admin/applications/:id", async (req, res) => {
-    const apps = await col("applications");
-    await apps.deleteOne({ id: req.params.id });
+    const c = await col("applications");
+    await c.deleteOne({ id: req.params.id });
     res.json({ message: "Deleted" });
   });
 
   app.put("/api/admin/applications/:id", async (req, res) => {
     const { status } = req.body;
-    const apps = await col("applications");
-    await apps.updateOne({ id: req.params.id }, { $set: { status } });
-    const appData = await apps.findOne({ id: req.params.id });
+    const appCol = await col("applications");
+    const userCol = await col("users");
+    const autCol = await col("authors");
 
-    if (status === "approved" && appData?.userId) {
-      const users = await col("users");
-      await users.updateOne({ id: appData.userId }, { $set: { isAuthor: true, authorId: "a" + appData.userId } });
+    await appCol.updateOne({ id: req.params.id }, { $set: { status } });
+    const app = await appCol.findOne({ id: req.params.id });
 
-      const authors = await col("authors");
-      const exist = await authors.findOne({ userId: appData.userId });
-      if (!exist) {
-        const user = await users.findOne({ id: appData.userId });
-        await authors.insertOne({
-          id: "a" + appData.userId,
-          userId: appData.userId,
-          name: user.nickname || user.username,
-          avatar: user.avatar || "",
+    if (status === "approved" && app?.userId) {
+      await userCol.updateOne({ id: app.userId }, { $set: { isAuthor: true, authorId: "a" + app.userId } });
+      const user = await userCol.findOne({ id: app.userId });
+      const has = await autCol.findOne({ userId: app.userId });
+      if (!has) {
+        await autCol.insertOne({
+          id: "a" + app.userId,
+          userId: app.userId,
+          name: user?.nickname || user?.username || "",
+          avatar: user?.avatar || "",
           fans: 0,
           recentRecord: "新晋作者",
           streak: 0,
-          history: [],
+          history: []
         });
       }
     }
-
-    res.json(appData);
+    res.json(app);
   });
 
   app.put("/api/admin/users/:id", async (req, res) => {
-    const users = await col("users");
-    await users.updateOne({ id: req.params.id }, { $set: req.body });
-    const user = await users.findOne({ id: req.params.id });
-    res.json(user);
+    const c = await col("users");
+    await c.updateOne({ id: req.params.id }, { $set: req.body });
+    const item = await c.findOne({ id: req.params.id });
+    res.json(item);
   });
 
   app.delete("/api/admin/users/:id", async (req, res) => {
-    const users = await col("users");
-    await users.deleteOne({ id: req.params.id });
+    const c = await col("users");
+    await c.deleteOne({ id: req.params.id });
     res.json({ message: "Deleted" });
   });
 
   app.get("/api/admin/history", async (req, res) => {
-    const history = await col("history");
-    const list = await history.find().toArray();
+    const c = await col("history");
+    const list = await c.find().toArray();
     res.json(list);
   });
 
   app.post("/api/admin/history", async (req, res) => {
+    const c = await col("history");
     const item = { ...req.body, id: "h" + Date.now() };
-    const history = await col("history");
-    await history.insertOne(item);
+    await c.insertOne(item);
     res.json(item);
   });
 
   app.delete("/api/admin/history/:id", async (req, res) => {
-    const history = await col("history");
-    await history.deleteOne({ id: req.params.id });
+    const c = await col("history");
+    await c.deleteOne({ id: req.params.id });
     res.json({ message: "Deleted" });
   });
 
   app.get("/api/admin/orders", async (req, res) => {
-    const orders = await col("orders");
-    const list = await orders.find().toArray();
+    const c = await col("orders");
+    const list = await c.find().toArray();
     res.json(list);
   });
 
   app.delete("/api/admin/orders/:id", async (req, res) => {
-    const orders = await col("orders");
-    await orders.deleteOne({ _id: req.params.id });
+    const c = await col("orders");
+    await c.deleteOne({ _id: req.params.id });
     res.json({ message: "Deleted" });
   });
+  // ====================== 接口完整结束 ======================
 
+  // 前端静态托管 / Vite 中间件
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa"
+    });
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
@@ -637,7 +597,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
   });
 }
 
