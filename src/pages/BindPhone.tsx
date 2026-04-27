@@ -8,6 +8,7 @@ const BindPhone = () => {
   const navigate = useNavigate();
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -15,7 +16,7 @@ const BindPhone = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.updateProfile({ phone });
+      await api.updateProfile({ phone, password });
       // Update local storage
       const userStr = localStorage.getItem('user');
       if (userStr) {
@@ -40,46 +41,59 @@ const BindPhone = () => {
       </div>
 
       <div className="px-6 pt-10 text-center">
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight">绑定手机号</h1>
-        <p className="text-gray-400 mt-2 text-sm font-medium">请填写手机号和验证码</p>
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight">绑定手机号并完善密码</h1>
+        <p className="text-gray-400 mt-2 text-sm font-medium">请填写手机号、验证码和登录密码</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="px-6 mt-16 space-y-8">
-        <div className="relative">
+      <form onSubmit={handleSubmit} className="px-6 mt-16 space-y-6">
+        <div>
           <input
             type="tel"
             required
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full bg-gray-50 border-none rounded-[20px] px-6 py-5 focus:ring-2 focus:ring-red-500 text-lg font-medium placeholder-gray-300"
+            className="block w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-red-500 focus:border-red-500 bg-gray-50 text-[15px] font-bold text-gray-800 placeholder:text-gray-400"
             placeholder="请输入手机号"
           />
         </div>
 
-        <div className="relative flex items-center">
-          <input
-            type="text"
-            required
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            className="w-full bg-gray-50 border-none rounded-[20px] px-6 py-5 focus:ring-2 focus:ring-red-500 text-lg font-medium placeholder-gray-300"
-            placeholder="请输入短信验证码"
-          />
+        <div className="flex space-x-2">
+          <div className="flex-1">
+            <input
+              type="text"
+              required
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className="block w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-red-500 focus:border-red-500 bg-gray-50 text-[15px] font-bold text-gray-800 placeholder:text-gray-400"
+              placeholder="请输入短信验证码"
+            />
+          </div>
           <button 
             type="button" 
-            className="absolute right-4 text-red-500 font-bold border border-red-500 px-4 py-1.5 rounded-full text-xs active:scale-95 transition-transform"
+            className="w-24 bg-[#e53935] text-white font-bold rounded-xl text-[15px] active:scale-95 transition-transform"
           >
             获取验证码
           </button>
         </div>
 
+        <div>
+          <input
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="block w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-red-500 focus:border-red-500 bg-gray-50 text-[15px] font-bold text-gray-800 placeholder:text-gray-400"
+            placeholder="请输入登录密码"
+          />
+        </div>
+
         {error && <p className="text-red-500 text-sm text-center font-bold">{error}</p>}
 
-        <div className="pt-20">
+        <div className="pt-10">
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-red-600 text-white font-bold py-5 rounded-full text-xl shadow-xl active:scale-[0.98] transition-all disabled:bg-gray-400"
+            className="w-full bg-[#e53935] text-white font-bold py-[14px] rounded-xl text-[17px] shadow-lg shadow-red-100 active:scale-95 transition-transform disabled:opacity-70"
           >
             {loading ? '保存中...' : '确定'}
           </button>

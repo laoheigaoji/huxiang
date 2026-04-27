@@ -200,10 +200,10 @@ const AuthorProfile = () => {
                   {!prediction.isUnlocked && prediction.unlockAt && new Date(prediction.unlockAt).getTime() > Date.now() ? (
                     <CountdownTimer unlockAt={prediction.unlockAt} />
                   ) : prediction.result ? (
-                    <div className="absolute top-4 right-4 w-16 h-12 z-10 pointer-events-none select-none">
+                    <div className="absolute top-8 right-4 w-20 h-16 z-10 pointer-events-none select-none">
                       <img 
                         src={prediction.result === '红' ? 'https://wxqun988.vxjuejin.com/IMG_1034.PNG' : 'https://wxqun988.vxjuejin.com/IMG_1035.PNG'} 
-                        className="w-full h-full object-contain opacity-90 rotate-[-15deg]" 
+                        className="w-full h-full object-contain opacity-90 rotate-[-12deg]" 
                         alt={prediction.result} 
                       />
                     </div>

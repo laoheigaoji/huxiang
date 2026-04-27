@@ -181,6 +181,7 @@ const PredictionDetail = () => {
         const payRes = await api.createPayment(prediction!.price, 'alipay', prediction!.title, user.id);
         const paymentUrl = payRes.url || payRes.payurl || payRes.payment_url || payRes.qrcode;
         if (paymentUrl) {
+            setShowPayment(false);
             window.location.href = paymentUrl;
         } else {
             console.error('Payment failed', payRes);
@@ -443,46 +444,42 @@ const PredictionDetail = () => {
           <div className="space-y-4 pb-12">
             {history.map(item => (
               <div key={item.id} className="bg-white rounded-xl p-4 card-shadow relative">
-                 <div className="absolute top-4 right-4 w-16 h-12 z-10 pointer-events-none opacity-80 select-none">
-                    <img 
-                      src={item.result === 'red' || item.result === '红' ? 'https://wxqun988.vxjuejin.com/IMG_1034.PNG' : 'https://wxqun988.vxjuejin.com/IMG_1035.PNG'} 
-                      alt={item.result} 
-                      className="w-full h-full object-contain rotate-[-15deg]"
-                    />
-                 </div>
-                 <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <span className="font-bold text-gray-800">{item.period}</span>
-                      <span className="ml-2 text-[10px] text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-sm">{item.type}</span>
-                    </div>
-                 </div>
-                 <div className="mt-4 flex items-center">
-                   <span className="text-xs text-gray-400 mr-2">正文</span>
-                   <span className="w-6 h-6 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-xs font-bold leading-none">{item.mainPick}</span>
-                 </div>
-                 <div className="mt-4 flex items-center">
-                   <span className="text-xs text-gray-400 mr-2">核对</span>
-                   <div className="flex space-x-1.5">
-                     {(item.numbers || []).map((n, i) => (
-                       <div key={i} className="flex flex-col items-center">
-                         <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold ${i === 6 ? 'bg-blue-500' : 'bg-red-500'}`}>
-                           {n}
-                         </div>
-                         <span className="text-[10px] text-red-500 mt-0.5">{item.animals?.[i] || ''}</span>
-                       </div>
-                     ))}
-                   </div>
-                 </div>
-                 <div className="mt-4 flex justify-between items-center text-[10px] text-gray-400">
-                   <span>{item.time}</span>
-                   <div className="flex items-center">
-                     <div className="flex -space-x-1 mr-1">
-                        {[1, 2, 3].map(i => <img key={i} className="w-4 h-4 rounded-full ring-1 ring-white" src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i+item.id}`} alt=""/>)}
-                     </div>
-                     <span>{item.viewCount}人查看</span>
-                   </div>
-                 </div>
-              </div>
+                <div className="absolute top-8 right-4 w-20 h-16 z-10 pointer-events-none opacity-90 select-none">
+                   <img 
+                     src={item.result === 'red' || item.result === '红' ? 'https://wxqun988.vxjuejin.com/IMG_1034.PNG' : 'https://wxqun988.vxjuejin.com/IMG_1035.PNG'} 
+                     alt={item.result} 
+                     className="w-full h-full object-contain"
+                   />
+                </div>
+
+                <div className="flex items-center mb-3">
+                   <span className="font-bold text-gray-800 text-lg mr-2">{item.period}</span>
+                   <span className="text-[11px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded font-medium">{item.title}</span>
+                </div>
+                
+                <div className="mt-3 flex items-center">
+                  <span className="text-sm text-gray-500 mr-3">正文</span>
+                  <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded text-sm font-bold">{item.content || '暂无'}</span>
+                </div>
+                
+                <div className="mt-3 flex items-start">
+                  <span className="text-sm text-gray-500 mr-3 mt-1">核对</span>
+                  <div className="flex flex-wrap gap-2 text-sm font-bold text-gray-800">
+                    {(item.mainPicks || []).map((p: any, i: number) => (
+                      <div key={i} className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-[#ef4444]">
+                        {p}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="mt-4 flex justify-between items-center text-xs text-gray-400 border-t border-gray-50 pt-3">
+                  <span>{item.time}</span>
+                  <div className="flex items-center">
+                    <span className="mr-2">{item.viewCount}人查看</span>
+                  </div>
+                </div>
+             </div>
             ))}
           </div>
         </div>
@@ -569,7 +566,7 @@ const PredictionDetail = () => {
               </div>
 
               <button 
-                onClick={handlePurchase}
+                onClick={(e) => { e.stopPropagation(); handlePurchase(); }}
                 disabled={loading}
                 className="w-full bg-red-600 text-white font-bold py-4 rounded-full mt-6 shadow-xl shadow-red-100 active:scale-95 transition-transform disabled:opacity-50"
               >

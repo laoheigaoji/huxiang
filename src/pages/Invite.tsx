@@ -55,10 +55,32 @@ const Invite = () => {
     }
   ];
 
+  const posterRef = React.useRef<HTMLDivElement>(null);
+
+  const handleDownload = async () => {
+    if (!posterRef.current) return;
+    
+    try {
+        const html2canvas = (await import('html2canvas')).default;
+        const canvas = await html2canvas(posterRef.current, {
+            backgroundColor: null,
+            scale: 2, // Higher quality
+        });
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `invite-poster-${activeTab}.png`;
+        link.href = dataUrl;
+        link.click();
+    } catch (err) {
+        console.error('Failed to generate poster', err);
+        alert('保存海报失败，请尝试截图保存');
+    }
+  };
+
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
   const baseUrl = window.location.origin;
-  const referralUrl = `${baseUrl}/register?ref=${user?.id || ''}`;
+  const referralUrl = `${baseUrl}/login?ref=${user?.id || ''}`;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(referralUrl);
@@ -66,71 +88,57 @@ const Invite = () => {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-gray-50 min-h-screen">
-      <div className="bg-orange-400 h-48 relative overflow-hidden">
-        <div className="p-4 flex items-center justify-between relative z-10 text-white">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-[#FFF5EB] min-h-screen pb-10">
+      {/* Header - Matches Screenshot */}
+      <div className="bg-[#FF9F6A] h-60 relative overflow-hidden flex flex-col items-center pt-6">
+        <div className="px-4 flex items-center justify-between w-full relative z-10 text-white mb-6">
           <ChevronLeft className="w-6 h-6 cursor-pointer" onClick={() => navigate(-1)} />
-          <h2 className="text-lg font-bold">邀请有礼</h2>
-          <div className="w-6"></div>
+          <h2 className="text-xl font-bold">邀请有礼</h2>
+          <div className="flex gap-4">
+            <span className="text-sm">邀请记录</span>
+            {/* Dots */}
+            <div className="flex gap-1">
+              <div className="w-1 h-1 bg-white rounded-full"></div>
+              <div className="w-1 h-1 bg-white rounded-full"></div>
+              <div className="w-1 h-1 bg-white rounded-full"></div>
+            </div>
+          </div>
         </div>
         
-        {/* Banner Text Decoration */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full">
-           <h1 className="text-4xl font-black text-white italic drop-shadow-md tracking-tighter">邀请好友 得佣金</h1>
-           <div className="mt-2 inline-block bg-white text-orange-500 px-4 py-1 rounded-full text-xs font-bold">好友消费 得佣金</div>
+        {/* Banner Text - Matches Screenshot Mood */}
+        <div className="text-center px-4 w-full">
+           <h1 className="text-3xl font-black text-white italic drop-shadow-lg tracking-tight mb-3">邀请好友 得佣金</h1>
+           <div className="inline-block bg-white/20 backdrop-blur-sm text-white px-6 py-1.5 rounded-full text-sm font-bold border border-white/30">好友消费 得佣金</div>
         </div>
-        
-        {/* Confetti decoration */}
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/circle-knot.png')] opacity-20"></div>
       </div>
 
-      <div className="px-4 -mt-8 relative z-20">
-        <div className="bg-white rounded-3xl p-6 flex flex-col items-center card-shadow mb-6">
-           <div className="flex items-center justify-around w-full mb-8">
-              <div className="text-center">
-                 <div className="text-2xl font-black text-gray-900">{friends.length}</div>
-                 <div className="text-[10px] text-gray-400 font-bold uppercase mt-1">成功邀请</div>
-              </div>
-              <div className="w-px h-10 bg-gray-100"></div>
-              <div className="text-center">
-                 <div className="text-2xl font-black text-red-600">¥ {(user?.totalInvitedEarnings || 0).toFixed(2)}</div>
-                 <div className="text-[10px] text-gray-400 font-bold uppercase mt-1">累计分润</div>
-              </div>
-           </div>
-
-           <div className="grid grid-cols-2 gap-4 w-full">
-              <button 
-                onClick={copyToClipboard}
-                className="bg-orange-50 rounded-2xl py-4 flex flex-col items-center justify-center space-y-2 active:scale-95 transition-transform"
-              >
-                 <Copy className="w-6 h-6 text-orange-500" />
-                 <span className="text-xs font-bold text-orange-600">复制链接</span>
-              </button>
-              <button 
-                onClick={() => setShowQR(true)}
-                className="bg-red-50 rounded-2xl py-4 flex flex-col items-center justify-center space-y-2 active:scale-95 transition-transform"
-              >
-                 <QrCode className="w-6 h-6 text-red-500" />
-                 <span className="text-xs font-bold text-red-600">我的二维码</span>
-              </button>
+      <div className="px-4 -mt-10 relative z-20">
+        {/* CTA Bar */}
+        <div className="bg-white rounded-2xl shadow-lg p-2 mb-6 flex items-center justify-between">
+           <div className="font-bold text-gray-800 text-lg ml-4">立即邀请</div>
+           <div className="flex items-center bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-full px-6 py-3 font-bold shadow-md cursor-pointer active:scale-95 transition-transform" onClick={() => setShowQR(true)}>
+             <span className="mr-2">分享二维码</span>
+             <div className="bg-white/30 p-1 rounded-full"><span className="text-lg">👆</span></div>
            </div>
         </div>
 
-        <div className="mt-6 bg-white rounded-2xl card-shadow min-h-[300px] overflow-hidden">
-           <div className="bg-orange-500 text-white py-3 px-6 text-center font-bold text-sm">
+        {/* List Section */}
+        <div className="bg-white rounded-2xl shadow-sm min-h-[300px] overflow-hidden">
+           <div className="bg-[#FFE4CC] text-orange-900 py-3 px-6 text-center font-bold text-sm">
              已成功邀请 {friends.length} 位好友
            </div>
            
            <div className="p-4">
              <div className="relative mb-4">
-               <Search className="w-4 h-4 text-gray-300 absolute left-3 top-1/2 -translate-y-1/2" />
+               <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                <input 
                 type="text" 
-                placeholder="搜索好友昵称/账号" 
+                placeholder="请输入" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-100 rounded-lg py-2 pl-9 pr-4 text-sm focus:outline-none" 
+                className="w-full bg-[#FFF9F2] border border-[#F8E1C9] rounded-full py-2 pl-9 pr-20 text-sm focus:outline-none" 
                />
+               <button className="absolute right-0 top-0 bottom-0 bg-[#FF9F6A] text-white px-4 rounded-full text-sm font-bold">搜索</button>
              </div>
 
              {loading ? (
@@ -148,17 +156,15 @@ const Invite = () => {
                          <p className="text-[10px] text-gray-400">账号: {friend.username}</p>
                        </div>
                      </div>
-                     <div className="text-right">
-                       <p className="text-[10px] text-gray-400">注册时间</p>
-                       <p className="text-xs font-medium text-gray-600">{friend.createdAt?.split('T')[0] || '未知'}</p>
-                     </div>
                    </div>
                  ))}
                </div>
              ) : (
-               <div className="flex flex-col items-center justify-center py-12 opacity-40">
-                  <ClipboardList className="w-16 h-16 text-gray-300" />
-                  <p className="text-xs text-gray-400 mt-2">暂无数据</p>
+               <div className="flex flex-col items-center justify-center py-12">
+                  <div className="w-32 h-32 bg-[#FFF0E0] rounded-full flex items-center justify-center mb-4">
+                    <ScrollText className="w-16 h-16 text-[#FF9F6A]" />
+                  </div>
+                  <p className="text-sm text-[#FF9F6A] font-bold">暂无数据</p>
                </div>
              )}
            </div>
@@ -182,7 +188,7 @@ const Invite = () => {
               animate={{ y: 0 }} 
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="bg-white w-full max-w-lg rounded-t-[32px] overflow-hidden relative pb-8 max-h-[90vh] overflow-y-auto"
+              className="bg-white w-full max-w-lg rounded-t-[32px] overflow-hidden relative pb-8"
               onClick={e => e.stopPropagation()}
             >
               {/* Drag Handle */}
@@ -193,13 +199,13 @@ const Invite = () => {
                     <X className="w-6 h-6 text-gray-300 cursor-pointer" onClick={() => setShowQR(false)} />
                  </div>
                  
-                 <div className="text-center mb-6">
-                    <h3 className="font-bold text-2xl text-gray-800">邀好友 享好料</h3>
-                    <p className="text-sm text-gray-500 font-medium mt-1">传递好料.收获回报</p>
+                 <div className="text-center mb-4">
+                    <h3 className="font-bold text-xl text-gray-800">邀好友 享好料</h3>
+                    <p className="text-xs text-gray-500 font-medium mt-0.5">传递好料.收获回报</p>
                  </div>
                  
-                 {/* Poster Canvas / Image */}
-                 <div className="relative w-full aspect-[4/5] max-w-[320px] bg-gray-50 rounded-2xl overflow-hidden shadow-xl mx-auto">
+                 {/* Poster Canvas / Image - FIX: Use explicit hex colors instead of Tailwind colors to avoid oklch error */}
+                 <div ref={posterRef} className="relative w-full aspect-[4/5] max-w-[280px] bg-gray-50 rounded-2xl overflow-hidden shadow-xl mx-auto">
                     <AnimatePresence mode="wait">
                       {/* Different background styles based on tab */}
                       <motion.div 
@@ -209,11 +215,7 @@ const Invite = () => {
                         exit={{ opacity: 0, x: -20 }}
                         className="absolute inset-0"
                       >
-                        <div className={`absolute inset-0 transition-colors duration-500 ${
-                          activeTab === 0 ? 'bg-orange-50' : 
-                          activeTab === 1 ? 'bg-blue-50' : 'bg-red-50'
-                        }`}>
-                          {/* Decorative background elements based on image */}
+                        <div className="absolute inset-0" style={{ backgroundColor: activeTab === 0 ? '#fff7ed' : activeTab === 1 ? '#eff6ff' : '#fef2f2' }}>
                           <img 
                             src={posters[activeTab].bg} 
                             alt="bg" 
@@ -222,36 +224,33 @@ const Invite = () => {
                           <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-transparent to-transparent"></div>
                         </div>
 
-                        <div className="relative z-10 p-6 flex flex-col h-full items-center justify-between">
-                           <div className="text-center mt-4">
-                              <h4 className={`text-2xl font-black whitespace-pre-line leading-tight tracking-tight ${
-                                activeTab === 0 ? 'text-orange-900' : 
-                                activeTab === 1 ? 'text-blue-900' : 'text-red-900'
-                              }`}>
+                        <div className="relative z-10 p-5 flex flex-col h-full items-center justify-between">
+                           <div className="text-center mt-2">
+                              <h4 className="text-xl font-black whitespace-pre-line leading-tight tracking-tight" style={{ color: activeTab === 0 ? '#7c2d12' : activeTab === 1 ? '#1e3a8a' : '#991b1b' }}>
                                 {posters[activeTab].mainText}
                               </h4>
                            </div>
 
-                           <div className={`relative bg-white p-2.5 rounded-xl shadow-2xl transition-transform duration-500 hover:scale-105 active:scale-95`}>
+                           <div className={`relative bg-white p-2 rounded-xl shadow-2xl transition-transform duration-500 hover:scale-105 active:scale-95`}>
                               <QRCodeSVG 
                                 value={referralUrl} 
-                                size={144}
+                                size={120}
                                 level="H"
                                 includeMargin={false}
                               />
                               {user?.avatar && (
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border-2 border-white overflow-hidden bg-white shadow-sm">
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full border-2 border-white overflow-hidden bg-white shadow-sm">
                                   <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
                                 </div>
                               )}
                            </div>
 
-                           <div className="text-center mb-4">
-                              <div className="flex items-center justify-center space-x-1 mb-1">
+                           <div className="text-center mb-2">
+                              <div className="flex items-center justify-center space-x-1 mb-0.5">
                                  <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
-                                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">智汇达人 精选推荐</span>
+                                 <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">智汇达人 精选推荐</span>
                               </div>
-                              <p className="text-[11px] text-gray-400">微信扫码 即可加入</p>
+                              <p className="text-[10px] text-gray-400">微信扫码 即可加入</p>
                            </div>
                         </div>
                       </motion.div>
@@ -259,13 +258,13 @@ const Invite = () => {
                  </div>
 
                  {/* Tab Selection */}
-                 <div className="mt-8 flex w-full max-w-[320px] justify-between px-2">
+                 <div className="mt-4 flex w-full max-w-[280px] justify-between px-2">
                     {posters.map((poster, index) => (
                       <button 
                         key={poster.id}
                         onClick={() => setActiveTab(index)}
-                        className={`text-sm font-bold pb-2 transition-all duration-300 relative ${
-                          activeTab === index ? 'text-red-600 scale-110' : 'text-gray-400'
+                        className={`text-xs font-bold pb-1 transition-all duration-300 relative ${
+                          activeTab === index ? 'text-red-600 scale-105' : 'text-gray-400'
                         }`}
                       >
                         {poster.title}
@@ -276,8 +275,8 @@ const Invite = () => {
                     ))}
                  </div>
 
-                 <button className="w-full max-w-[320px] bg-red-600 text-white font-bold py-4 rounded-full mt-8 flex items-center justify-center shadow-lg active:scale-95 transition-all">
-                    <Download className="w-5 h-5 mr-2" /> 长按二维码保存
+                 <button onClick={handleDownload} className="w-full max-w-[280px] bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold py-3 rounded-full mt-4 flex items-center justify-center shadow-lg active:scale-95 transition-all">
+                    <Download className="w-4 h-4 mr-2" /> 保存海报到相册
                  </button>
               </div>
             </motion.div>

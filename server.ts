@@ -113,12 +113,16 @@ async function startServer() {
           wechatOpenId: wechatOpenId
         } as any;
         await db.collection("users").insertOne(user);
-      } else if (nickname || avatar) {
+      } else {
         const update: any = {};
+        // Always update nickname/avatar if provided from WeChat
         if (nickname) update.nickname = nickname;
         if (avatar) update.avatar = avatar;
-        await db.collection("users").updateOne({ id: user.id }, { $set: update });
-        user = { ...user, ...update };
+        
+        if (Object.keys(update).length > 0) {
+            await db.collection("users").updateOne({ id: user.id }, { $set: update });
+            user = { ...user, ...update };
+        }
       }
 
       res.json(user);

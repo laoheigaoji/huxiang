@@ -70,7 +70,7 @@ const EditProfile = () => {
       <div className="px-5 space-y-3.5">
         {/* Nickname */}
         <div className="bg-[#f8f8f8] rounded-[4px] h-[52px] flex items-center px-4">
-          <span className="text-[15px] text-gray-800 font-bold w-20">昵称：</span>
+          <span className="text-[15px] text-gray-800 font-bold w-20 flex-shrink-0">昵称：</span>
           <input 
             type="text" 
             value={nickname}
@@ -81,19 +81,19 @@ const EditProfile = () => {
 
         {/* Phone Number */}
         <div className="flex space-x-2">
-          <div className="flex-1 bg-[#f8f8f8] rounded-[4px] h-[52px] flex items-center px-4 opacity-60">
-            <span className="text-[15px] text-gray-800 font-bold w-20 whitespace-nowrap">手机号：</span>
+          <div className="flex-1 bg-[#f8f8f8] rounded-[4px] h-[52px] flex items-center px-4">
+            <span className="text-[15px] text-gray-800 font-bold w-20 flex-shrink-0">手机号：</span>
             <input 
               type="tel" 
               value={user?.phone || ""} 
               placeholder="未绑定" 
               readOnly
-              className="flex-1 bg-transparent text-[15px] text-gray-800 font-bold focus:outline-none" 
+              className="flex-1 bg-transparent text-[15px] text-gray-800 font-bold focus:outline-none opacity-60" 
             />
           </div>
           <button 
             onClick={() => navigate('/profile/bind-phone')}
-            className="w-24 bg-[#e53935] text-white font-bold rounded-[4px] active:scale-95 transition-transform text-[15px]"
+            className="w-24 bg-[#e53935] text-white font-bold rounded-[4px] active:scale-95 transition-transform text-[15px] flex-shrink-0"
           >
             {user?.phone ? "修改" : "绑定"}
           </button>
@@ -101,26 +101,34 @@ const EditProfile = () => {
 
         {/* Password */}
         <div className="flex space-x-2">
-          <div className="flex-1 bg-[#f8f8f8] rounded-[4px] h-[52px] flex items-center px-4 opacity-60">
-            <span className="text-[15px] text-gray-800 font-bold w-20 whitespace-nowrap">登录密码：</span>
-            <span className="flex-1 text-[15px] text-gray-800 font-bold">******</span>
+          <div className="flex-1 bg-[#f8f8f8] rounded-[4px] h-[52px] flex items-center px-4">
+            <span className="text-[15px] text-gray-800 font-bold w-20 flex-shrink-0">登录密码：</span>
+            <input 
+              type="password"
+              placeholder="******"
+              readOnly
+              className="flex-1 bg-transparent text-[15px] text-gray-800 font-bold focus:outline-none opacity-60"
+            />
           </div>
-          <button className="w-24 bg-[#e53935] text-white font-bold rounded-[4px] active:scale-95 transition-transform text-[15px]">
+          <button 
+            onClick={() => navigate('/profile/bind-phone')}
+            className="w-24 bg-[#e53935] text-white font-bold rounded-[4px] active:scale-95 transition-transform text-[15px] flex-shrink-0"
+          >
             设置
           </button>
         </div>
 
         {/* ID Verification */}
         <div className="flex space-x-2">
-          <div className="flex-1 bg-[#f8f8f8] rounded-[4px] h-[52px] flex items-center px-4 opacity-60">
-            <span className="text-[15px] text-gray-800 font-bold w-20 whitespace-nowrap">实名认证：</span>
+          <div className="flex-1 bg-[#f8f8f8] rounded-[4px] h-[52px] flex items-center px-4">
+            <span className="text-[15px] text-gray-800 font-bold w-20 flex-shrink-0">实名认证：</span>
             <span className={`flex-1 text-[15px] font-bold ${user?.isRealNameVerified ? 'text-green-600' : 'text-red-600'}`}>
               {user?.isRealNameVerified ? '已认证' : '未认证'}
             </span>
           </div>
           <button 
             onClick={() => navigate('/profile/real-name')}
-            className="w-24 bg-[#e53935] text-white font-bold rounded-[4px] active:scale-95 transition-transform text-[15px]"
+            className="w-24 bg-[#e53935] text-white font-bold rounded-[4px] active:scale-95 transition-transform text-[15px] flex-shrink-0"
           >
              {user?.isRealNameVerified ? '已认证' : '去认证'}
           </button>
