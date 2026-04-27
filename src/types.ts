@@ -36,6 +36,7 @@ export interface Prediction {
   updatedAt?: string;
   isUnlocked?: boolean;
   result?: '红' | '黑';
+  mainPicks?: number[];
 }
 
 export interface SiteSettings {

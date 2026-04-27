@@ -18,20 +18,6 @@ const AdminDashboard = () => {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // ==========================
-  // 全局修复：永远保证 purchased 是数组
-  // ==========================
-  const safeUser = (user: any) => {
-    if (!user) return user;
-    return {
-      ...user,
-      purchased: user.purchased ?? [],
-      following: user.following ?? [],
-    };
-  };
-
-  const safeUsers = (users: any[]) => users.map(u => safeUser(u));
-
   useEffect(() => {
     fetchData();
     setSearchQuery('');
@@ -50,22 +36,7 @@ const AdminDashboard = () => {
         api.getMessages().catch(() => []),
         api.getSettings().catch(() => null)
       ]);
-
-      // ==========================
-      // 这里自动修复所有用户
-      // ==========================
-      const safeUsersList = safeUsers(users);
-
-      setData({
-        authors,
-        predictions,
-        history,
-        users: safeUsersList,
-        orders,
-        applications,
-        messages,
-        settings
-      });
+      setData({ authors, predictions, history, users, orders, applications, messages, settings });
     } catch (err) {
       console.error('Failed to fetch admin data', err);
     } finally {
@@ -150,12 +121,14 @@ const AdminDashboard = () => {
     }
   };
 
-  const filteredAuthors = data.authors.filter((a: any) => a.name.includes(searchQuery));
-  const filteredUsers = data.users.filter((u: any) => u.nickname.includes(searchQuery) || u.username.includes(searchQuery));
-  const filteredApplications = data.applications.filter((a: any) => a.realName.includes(searchQuery) || a.username.includes(searchQuery));
+  const filteredAuthors = data.authors.filter((a: any) => a.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredPredictions = data.predictions.filter((p: any) => (p.contentTitle || p.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (p.authorName || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredUsers = data.users.filter((u: any) => (u.nickname || '').toLowerCase().includes(searchQuery.toLowerCase()) || (u.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredApplications = data.applications.filter((a: any) => (a.realName || '').toLowerCase().includes(searchQuery.toLowerCase()) || (a.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Admin Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center">
           <button onClick={() => navigate('/')} className="mr-4 p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -200,6 +173,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
+      {/* Tabs */}
       <div className="bg-white border-b border-gray-100 px-6 overflow-x-auto scrollbar-hide flex">
         {[
           { id: 'authors', label: '专家管理', icon: Users },
@@ -226,13 +200,19 @@ const AdminDashboard = () => {
         ))}
       </div>
 
+      {/* Main Content */}
       <div className="flex-1 p-6 overflow-y-auto">
-        {(activeTab === 'authors' || activeTab === 'users' || activeTab === 'applications') && (
+        {(activeTab === 'authors' || activeTab === 'users' || activeTab === 'applications' || activeTab === 'predictions') && (
           <div className="mb-6 relative">
             <Search className="w-5 h-5 text-gray-300 absolute left-4 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
-              placeholder={`在${activeTab === 'authors' ? '专家' : activeTab === 'users' ? '用户' : '申请'}中搜索...`}
+              placeholder={`在${
+                activeTab === 'authors' ? '专家' : 
+                activeTab === 'users' ? '用户' : 
+                activeTab === 'applications' ? '审核' :
+                activeTab === 'predictions' ? '文章' : ''
+              }中搜索...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-white border border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all shadow-sm" 
@@ -256,14 +236,14 @@ const AdminDashboard = () => {
                   <button onClick={() => { setEditingItem(author); setIsModalOpen(true); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg">
                     <Edit className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDelete(author.id)} className="p-2 text-red-50 hover:bg-red-50 rounded-lg">
+                  <button onClick={() => handleDelete(author.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
             ))}
 
-            {activeTab === 'predictions' && data.predictions.map((pred: Prediction) => (
+            {activeTab === 'predictions' && filteredPredictions.map((pred: Prediction) => (
               <div key={pred.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
                 {pred.isHot && (
                   <div className="absolute top-0 left-0 w-8 h-8 bg-orange-500 flex items-center justify-center rounded-br-xl shadow-sm z-10">
@@ -290,7 +270,7 @@ const AdminDashboard = () => {
                     <button onClick={() => { setEditingItem(pred); setIsModalOpen(true); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg">
                       <Edit className="w-4 h-4" />
                     </button>
-                    <button onClick={() => handleDelete(pred.id)} className="p-2 text-red-50 hover:bg-red-50 rounded-lg">
+                    <button onClick={() => handleDelete(pred.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -322,7 +302,7 @@ const AdminDashboard = () => {
                   <button onClick={() => { setEditingItem(user); setIsModalOpen(true); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg">
                     <Edit className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDelete(user.id)} className="p-2 text-red-50 hover:bg-red-50 rounded-lg">
+                  <button onClick={() => handleDelete(user.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -439,7 +419,7 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 <div className="ml-4">
-                  <button onClick={() => handleDelete(order.id)} className="p-2 text-red-50 hover:bg-red-50 rounded-lg">
+                  <button onClick={() => handleDelete(order.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -452,7 +432,7 @@ const AdminDashboard = () => {
                    <h3 className="font-bold text-gray-900">{item.period} - {item.type}</h3>
                    <p className="text-xs text-gray-500">结果: {item.mainPick} | 简报: {item.numbers.join(',')}</p>
                 </div>
-                <button onClick={() => handleDelete(item.id)} className="p-2 text-red-50 hover:bg-red-50 rounded-lg">
+                <button onClick={() => handleDelete(item.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -478,7 +458,7 @@ const AdminDashboard = () => {
                        <span>时间: {msg.time.replace('T', ' ').substring(0, 16)}</span>
                     </div>
                   </div>
-                  <button onClick={() => handleDelete(msg.id)} className="p-2 text-red-50 hover:bg-red-50 rounded-lg shrink-0">
+                  <button onClick={() => handleDelete(msg.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg shrink-0">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -530,6 +510,7 @@ const AdminDashboard = () => {
         )}
       </div>
 
+      {/* Editor Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
