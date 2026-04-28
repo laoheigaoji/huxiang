@@ -104,8 +104,8 @@ async function startServer() {
       let wechatAvatar = avatar;
 
       // Exchange code for real OpenID and UserInfo
-      const appId = process.env.WECHAT_APP_ID || "wxf0ea7bb3386e9d01";
-      const appSecret = process.env.WECHAT_APP_SECRET;
+      const appId = "wxf0ea7bb3386e9d01";
+      const appSecret = "2f7272be6bac718a0e09c393dce8c5aa";
 
       if (appSecret) {
         try {
@@ -294,14 +294,30 @@ async function startServer() {
       };
       await db.collection("settings").insertOne(settings);
     }
-    res.json(settings);
+    const { adminPassword, ...safeSettings } = settings;
+    res.json(safeSettings);
+  });
+
+  app.post("/api/admin/login", async (req, res) => {
+    const { username, password } = req.body;
+    let settings: any = await db.collection("settings").findOne({});
+    const validPass = settings?.adminPassword || 'admin888';
+    
+    if (username === 'admin' && password === validPass) {
+       res.json({ success: true, token: 'admin_token' });
+    } else {
+       res.status(401).json({ error: '账号或密码错误' });
+    }
   });
 
   app.put("/api/settings", async (req, res) => {
     const settings = req.body;
     delete settings._id; // Remove _id to avoid immutable error
+    if (settings.adminPassword === "") {
+        delete settings.adminPassword; // Don't wipe if empty string sent
+    }
     await db.collection("settings").updateOne({}, { $set: settings }, { upsert: true });
-    res.json({ message: "Settings updated", ...settings });
+    res.json({ message: "Settings updated" });
   });
 
   app.post("/api/authors/follow/:id", async (req, res) => {

@@ -103,6 +103,7 @@ const PredictionDetail = () => {
                  if (profileData) setUser(profileData);
                  setIsUnlocked(true);
                  setIsPurchased(true);
+                 setIsProcessingPayment(false);
                  clearInterval(pollInterval);
              }
         }
@@ -120,7 +121,7 @@ const PredictionDetail = () => {
   useEffect(() => {
     if (!prediction?.unlockAt) return;
 
-    const updateTimer = async () => {
+    const updateTimer = () => {
       const target = new Date(prediction.unlockAt!).getTime();
       const now = new Date().getTime();
       const diff = target - now;
@@ -131,7 +132,7 @@ const PredictionDetail = () => {
         
         // Mark as public on backend if not already unlocked/public
         if (!prediction.isUnlocked && prediction.status !== 'public') {
-            await api.markAsPublic(prediction.id).catch(console.error);
+            api.markAsPublic(prediction.id).catch(console.error);
         }
 
         return true; // Finished
@@ -206,6 +207,7 @@ const PredictionDetail = () => {
         if (paymentUrl) {
             setShowPayment(false);
             window.location.href = paymentUrl;
+            setTimeout(() => { setIsProcessingPayment(false); }, 2000);
         } else {
             console.error('Payment failed', payRes);
             alert('支付请求发送失败，请稍后再试');
@@ -236,42 +238,44 @@ const PredictionDetail = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white w-full max-w-sm rounded-[32px] overflow-hidden relative shadow-2xl"
+              className="w-full max-w-sm relative"
             >
-              {/* Top Header Background */}
-              <div className="h-24 bg-gradient-to-b from-pink-50 to-white relative flex items-center justify-center overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(255,182,193,0.3),transparent)]"></div>
-                
-                {/* Decorative Elements */}
-                <div className="absolute top-6 left-10 w-12 h-8 bg-white/80 rounded-xl flex items-center justify-center shadow-sm">
-                   <div className="flex space-x-1">
-                      <div className="w-1 h-1 bg-pink-300 rounded-full"></div>
-                      <div className="w-1 h-1 bg-pink-300 rounded-full"></div>
-                      <div className="w-1 h-1 bg-pink-300 rounded-full"></div>
-                   </div>
-                </div>
-                <div className="absolute top-8 right-10 w-16 h-10 bg-white/80 rounded-xl shadow-sm flex flex-col p-1.5 space-y-1">
-                   <div className="w-full h-1 bg-pink-100 rounded-full"></div>
-                   <div className="w-3/4 h-1 bg-pink-100 rounded-full"></div>
-                </div>
-
-                {/* Floating Bell Icon Wrapper */}
-                <div className="absolute -top-6 flex flex-col items-center">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-pink-200 blur-2xl opacity-50 translate-y-8"></div>
-                    <img 
-                      src="https://img.icons8.com/color/240/notification-bell.png" 
-                      alt="bell" 
-                      className="w-24 h-24 object-contain relative z-10" 
-                    />
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/40 blur-sm rounded-full"></div>
-                  </div>
+              {/* Floating Bell Icon Wrapper (Outside clipping container) */}
+              <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-pink-200 blur-2xl opacity-50 translate-y-8"></div>
+                  <img 
+                    src="https://api.iconify.design/noto/bell.svg" 
+                    alt="bell" 
+                    className="w-24 h-24 object-contain relative z-10 drop-shadow-xl" 
+                  />
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/40 blur-sm rounded-full"></div>
                 </div>
               </div>
 
-              {/* Modal Content */}
-              <div className="px-6 pb-8 text-center">
-                <h3 className="text-xl font-black text-gray-900 mb-4 tracking-wider">免费声明</h3>
+              {/* Main Modal Card */}
+              <div className="bg-white w-full rounded-[32px] overflow-hidden shadow-2xl mt-8">
+                {/* Top Header Background */}
+                <div className="h-20 bg-gradient-to-b from-pink-50 to-white relative flex items-center justify-center overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(255,182,193,0.3),transparent)]"></div>
+                  
+                  {/* Decorative Elements */}
+                  <div className="absolute top-6 left-10 w-12 h-8 bg-white/80 rounded-xl flex items-center justify-center shadow-sm">
+                     <div className="flex space-x-1">
+                        <div className="w-1 h-1 bg-pink-300 rounded-full"></div>
+                        <div className="w-1 h-1 bg-pink-300 rounded-full"></div>
+                        <div className="w-1 h-1 bg-pink-300 rounded-full"></div>
+                     </div>
+                  </div>
+                  <div className="absolute top-8 right-10 w-16 h-10 bg-white/80 rounded-xl shadow-sm flex flex-col p-1.5 space-y-1">
+                     <div className="w-full h-1 bg-pink-100 rounded-full"></div>
+                     <div className="w-3/4 h-1 bg-pink-100 rounded-full"></div>
+                  </div>
+                </div>
+
+                {/* Modal Content */}
+                <div className="px-6 pb-8 text-center pt-2">
+                  <h3 className="text-xl font-black text-gray-900 mb-4 tracking-wider">免费声明</h3>
                 
                 <div className="text-[14px] text-gray-600 leading-relaxed space-y-4 font-medium mb-6">
                   <p>
@@ -303,6 +307,7 @@ const PredictionDetail = () => {
                   <span className="text-gray-400 text-sm font-medium">今日不再弹出</span>
                 </div>
               </div>
+            </div>
             </motion.div>
           </div>
         )}
@@ -416,28 +421,33 @@ const PredictionDetail = () => {
         )}
 
         {(prediction.isFree || isPurchased || isUnlocked) && (
-          <div className="mt-4 bg-white rounded-2xl p-6 border border-gray-100 card-shadow text-center relative overflow-hidden">
+          <div className="mt-4 bg-[#fff7ed] rounded-2xl p-6 border border-orange-100 card-shadow text-center relative overflow-hidden">
             <div className="absolute top-4 right-4 text-gray-400">
               <Share2 className="w-5 h-5 cursor-pointer" onClick={() => setShowShare(true)} />
             </div>
             
-            <h4 className="text-gray-800 font-bold text-lg mb-6">推荐内容</h4>
+            <h4 className="text-[#ea580c] font-black text-lg mb-6 flex justify-center items-center space-x-2 tracking-widest">
+              <Star className="w-5 h-5 fill-[#ea580c]" />
+              <span>付费内容</span>
+              <Star className="w-5 h-5 fill-[#ea580c]" />
+            </h4>
             
             <div className="space-y-6">
               <div className="flex flex-col items-center">
-                <span className="text-sm text-gray-500 mb-2">精选内容</span>
-                <div className="flex space-x-3">
-                  {(prediction.mainPicks || [36, 24, 12]).map((n, i) => (
-                    <div key={i} className="w-12 h-12 rounded-full bg-[#f44336] flex items-center justify-center text-white text-lg font-black shadow-lg">
-                      {n}
+                <div className="flex flex-wrap justify-center gap-3 px-2">
+                  {(prediction.mainPicks || [32, 41, 46, 24, 7, 34, 19, 8, 35, 17, 29, 10, 47, 5, 22, 43]).map((n, i) => (
+                    <div key={i} className="w-[42px] h-[42px] rounded-full bg-gradient-to-b from-[#f97316] to-[#ef4444] flex items-center justify-center text-white text-[15px] font-bold shadow-md">
+                      {n.toString().padStart(2, '0')}
                     </div>
                   ))}
                 </div>
               </div>
               
-              <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-                {prediction.content || '这是作者为您精心挑选的号码，基于大数据模拟分析得出。'}
-              </div>
+              {prediction.content && (
+                 <div className="bg-white/50 rounded-xl p-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap text-left shadow-sm border border-orange-50">
+                   {prediction.content}
+                 </div>
+              )}
             </div>
           </div>
         )}
@@ -456,15 +466,22 @@ const PredictionDetail = () => {
 
         {/* Past Records */}
         <div className="mt-8">
-          <div className="flex items-center space-x-2 mb-4">
-            <span className="font-bold text-gray-800">往期方案</span>
-            {author?.history && (
-              <div className="flex space-x-1">
-                {author.history.map((c: string, i: number) => (
-                  <span key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-xs text-white ${c === '红' ? 'bg-red-500' : 'bg-gray-800'}`}>
-                    {c}
-                  </span>
-                ))}
+          <div className="flex items-center space-x-2 mb-4 overflow-x-auto pb-1 hide-scrollbar">
+            <span className="font-bold text-gray-800 text-lg mr-1 whitespace-nowrap">往期方案</span>
+            {history && history.length > 0 && (
+              <div className="flex space-x-1.5 items-center flex-nowrap">
+                {[...history].sort((a, b) => {
+                  const numA = parseInt(a.period.replace(/[^\d]/g, '')) || 0;
+                  const numB = parseInt(b.period.replace(/[^\d]/g, '')) || 0;
+                  return numA - numB;
+                }).map((item, i) => {
+                  const isRed = item.result === 'red' || item.result === '红';
+                  return (
+                    <span key={i} className={`w-[26px] h-[26px] rounded-full flex items-center justify-center text-[11px] font-bold text-white shadow-sm flex-shrink-0 ${isRed ? 'bg-[#ef4444]' : 'bg-black'}`}>
+                      {isRed ? '红' : '黑'}
+                    </span>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -486,18 +503,20 @@ const PredictionDetail = () => {
                 </div>
                 
                 <div className="mt-3 flex items-center">
-                  <span className="text-sm text-gray-500 mr-3">正文</span>
+                  <span className="text-[13px] text-gray-400 mr-4 whitespace-nowrap">正文</span>
                   <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded text-sm font-bold">{item.content || '暂无'}</span>
                 </div>
                 
                 <div className="mt-3 flex items-start">
-                  <span className="text-sm text-gray-500 mr-3 mt-1">核对</span>
+                  <span className="text-[13px] text-gray-400 mr-4 mt-1 whitespace-nowrap">核对</span>
                   <div className="flex flex-wrap gap-2 text-sm font-bold text-gray-800">
-                    {(item.mainPicks || []).map((p: any, i: number) => (
-                      <div key={i} className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-[#ef4444]">
+                    {Array.isArray(item.mainPicks) ? item.mainPicks.map((p: any, i: number) => (
+                      <div key={i} className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-[#ef4444] shadow-sm">
                         {p}
                       </div>
-                    ))}
+                    )) : (
+                      <span className="text-gray-800 mt-1">{item.mainPicks || '无'}</span>
+                    )}
                   </div>
                 </div>
                 

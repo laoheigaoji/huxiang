@@ -28,6 +28,7 @@ const TopUp = () => {
         const url = res.payurl || res.qrcode || res.urlscheme;
         if (url.startsWith('http')) {
           window.location.href = url;
+          setTimeout(() => setLoading(false), 2000);
         } else {
           // For qrcode or urlscheme that aren't direct http links
           alert(`请使用支付应用扫码或打开: ${url}`);

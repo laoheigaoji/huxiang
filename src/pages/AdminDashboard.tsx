@@ -61,29 +61,31 @@ const AdminDashboard = () => {
   };
 
   const handleApproveWithdrawal = async (id: string, approve: boolean) => {
-    if (!window.confirm(`确定要${approve ? '通过' : '拒绝'}该提现申请吗？`)) return;
     try {
       await api.updateAdminWithdrawal(id, approve ? 'approved' : 'rejected');
       await fetchData();
+      alert(`已${approve ? '打款' : '拒绝'}`);
     } catch (err) {
       alert('操作失败');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('确定要删除吗？')) return;
     try {
       if (activeTab === 'authors') await api.deleteAuthor(id);
       if (activeTab === 'predictions') await api.deletePrediction(id);
-      if (activeTab === 'users') await api.deleteAdminUser(id);
-      if (activeTab === 'orders') await api.deleteAdminOrder(id);
-      if (activeTab === 'history') await api.deleteHistory(id);
-      if (activeTab === 'applications') await api.deleteAdminApplication(id);
-      if (activeTab === 'messages') await api.deleteAdminMessage(id);
-      if (activeTab === 'feedbacks') await api.deleteAdminFeedback(id);
+      if (activeTab === 'users') {
+        await api.deleteAdminUser(id);
+      } else {
+        if (activeTab === 'orders') await api.deleteAdminOrder(id);
+        if (activeTab === 'history') await api.deleteHistory(id);
+        if (activeTab === 'applications') await api.deleteAdminApplication(id);
+        if (activeTab === 'messages') await api.deleteAdminMessage(id);
+        if (activeTab === 'feedbacks') await api.deleteAdminFeedback(id);
+      }
       await fetchData();
     } catch (err) {
-      alert('删除失败');
+      console.log('删除失败');
     }
   };
 
@@ -173,7 +175,8 @@ const AdminDashboard = () => {
           {activeTab === 'predictions' && (
             <button 
               onClick={async () => {
-                if (window.confirm('确定要公开所有方案内容吗？此操作不可撤销。')) {
+                const pass = window.prompt('请输入密码确认公开所有方案（可输入1确认）');
+                if (pass === '1' || pass === 'admin123') {
                   try {
                     await api.unlockAllPredictions();
                     alert('已全部公开');
@@ -585,6 +588,10 @@ const AdminDashboard = () => {
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">下载APP链接</label>
                     <input name="downloadLink" defaultValue={data.settings.downloadLink} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" placeholder="https://..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">后台登录密码 <span className="text-gray-400 text-xs font-normal">(不修改请留空)</span></label>
+                    <input name="adminPassword" type="password" className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" placeholder="留空则不修改密码" />
                   </div>
                   <button type="submit" className="w-full bg-red-500 text-white py-5 rounded-2xl font-black shadow-xl shadow-red-100 hover:scale-[1.02] active:scale-95 transition-all">
                     保存设置

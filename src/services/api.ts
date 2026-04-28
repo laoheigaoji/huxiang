@@ -143,6 +143,15 @@ export const api = {
     return handleResponse(res);
   },
 
+  async adminLogin(username: string, password: string) {
+    const res = await fetch(`${API_BASE}/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    return handleResponse(res);
+  },
+
   async login(username: string, password: string) {
     const res = await fetch(`${API_BASE}/login`, {
       method: 'POST',

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
+import { api } from '../services/api';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -9,13 +10,14 @@ const AdminLogin = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === 'admin' && password === 'admin888') {
+    try {
+      await api.adminLogin(username, password);
       localStorage.setItem('isAdminAuthenticated', 'true');
       navigate('/admin/dashboard');
-    } else {
-      setError('账号或密码错误');
+    } catch (err: any) {
+      setError(err.message || '账号或密码错误');
     }
   };
 
