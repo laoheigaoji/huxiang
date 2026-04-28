@@ -104,8 +104,8 @@ async function startServer() {
       let wechatAvatar = avatar;
 
       // Exchange code for real OpenID and UserInfo
-      const appId = process.env.WECHAT_APP_ID || "wxf0ea7bb3386e9d01";
-      const appSecret = process.env.WECHAT_APP_SECRET;
+      const appId = "wxf0ea7bb3386e9d01";
+      const appSecret = "2f7272be6bac718a0e09c393dce8c5aa";
 
       if (appSecret) {
         try {
