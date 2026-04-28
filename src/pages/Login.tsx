@@ -15,7 +15,6 @@ const Login = () => {
   const [isWechat, setIsWechat] = useState(false);
 
   const APP_ID = 'wxf0ea7bb3386e9d01';
-  const REDIRECT_URI = encodeURIComponent(window.location.origin + '/login');
 
   useEffect(() => {
     // Detect WeChat environment
@@ -23,11 +22,18 @@ const Login = () => {
     const isWx = ua.indexOf('micromessenger') !== -1;
     setIsWechat(isWx);
 
+    let referrer = searchParams.get('ref');
+    if (referrer) {
+      localStorage.setItem('wechat_referrer', referrer);
+    } else {
+      referrer = localStorage.getItem('wechat_referrer');
+    }
+
     // Handle wechat code in URL
     const code = searchParams.get('code');
     const nickname = searchParams.get('nickname');
     const avatar = searchParams.get('avatar') || searchParams.get('headimgurl');
-    const referrer = searchParams.get('ref');
+
     if (code) {
       handleWechatLogin(code, nickname || undefined, avatar || undefined, referrer || undefined);
     }
@@ -40,6 +46,7 @@ const Login = () => {
       // In a real app, send the code to your backend to exchange for a token/user
       const data = await api.wechatLogin(code, nickname, avatar, referrer);
       localStorage.setItem('user', JSON.stringify(data));
+      localStorage.removeItem('wechat_referrer');
       navigate('/');
     } catch (err: any) {
       setError(err.message || '微信登录失败');
@@ -49,7 +56,9 @@ const Login = () => {
   };
 
   const redirectToWechat = () => {
-    const wechatAuthUrl = `https://gzh1.vxjuejin.com/api?appid=${APP_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect`;
+    const currentRef = searchParams.get('ref') || localStorage.getItem('wechat_referrer');
+    const targetUrl = currentRef ? `${window.location.origin}/login?ref=${currentRef}` : `${window.location.origin}/login`;
+    const wechatAuthUrl = `https://gzh1.vxjuejin.com/api?appid=${APP_ID}&redirect_uri=${encodeURIComponent(targetUrl)}&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect`;
     window.location.href = wechatAuthUrl;
   };
 

@@ -150,6 +150,9 @@ async function startServer() {
         const update: any = {};
         if (wechatNickname) update.nickname = wechatNickname;
         if (wechatAvatar && wechatAvatar !== '') update.avatar = wechatAvatar;
+        if (!user.referrerId && (referrerId || referrer)) {
+           update.referrerId = referrerId || referrer;
+        }
         
         if (Object.keys(update).length > 0) {
             await db.collection("users").updateOne({ id: user.id }, { $set: update });
@@ -191,6 +194,17 @@ async function startServer() {
   app.post("/api/predictions/:id/public", async (req, res) => {
     await db.collection("predictions").updateOne({ id: req.params.id }, { $set: { isUnlocked: true, status: 'public' } });
     res.json({ message: "marked as public" });
+  });
+
+  app.get("/api/purchased-predictions", async (req, res) => {
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ error: "User ID is required" });
+    const user = await db.collection("users").findOne({ id: userId });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const purchasedIds = user.purchased || [];
+    const predictions = await db.collection("predictions").find({ id: { $in: purchasedIds } }).toArray();
+    res.json(predictions);
   });
 
   app.get("/api/profile", async (req, res) => {

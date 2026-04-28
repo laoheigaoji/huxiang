@@ -136,6 +136,13 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getPurchasedPredictions(): Promise<Prediction[]> {
+    const userStr = localStorage.getItem('user');
+    const userId = userStr ? JSON.parse(userStr).id : null;
+    const res = await fetch(`${API_BASE}/purchased-predictions${userId ? `?userId=${userId}` : ''}`);
+    return handleResponse(res);
+  },
+
   async login(username: string, password: string) {
     const res = await fetch(`${API_BASE}/login`, {
       method: 'POST',

@@ -154,11 +154,6 @@ const AuthorDashboard = () => {
                   }`}>
                     {pred.isUnlocked ? '已公开' : '锁定中'}
                   </span>
-                  {pred.tags && pred.tags.map((tag, idx) => (
-                    <span key={idx} className="text-[10px] bg-red-50 text-red-500 px-2 py-0.5 rounded-md font-bold">
-                      {tag}
-                    </span>
-                  ))}
                   <span className="text-[10px] text-gray-400 font-medium">{pred.time}</span>
                 </div>
                 <h3 className="font-bold text-gray-800 truncate leading-snug">{pred.title}</h3>
