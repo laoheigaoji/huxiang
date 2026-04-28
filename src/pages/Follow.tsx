@@ -6,56 +6,69 @@ import { api } from '../services/api';
 import { Author, Prediction } from '../types';
 
 const PredictionCard = ({ prediction }: { prediction: Prediction, key?: React.Key }) => (
-  <Link to={`/prediction/${prediction.id}`} className="block bg-white rounded-lg p-4 mb-3 shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-100">
-    <div className="flex items-center justify-between mb-3">
-      <div className="flex items-center">
-        <div className="relative">
-          <img src={prediction.authorAvatar} alt={prediction.authorName} className="w-10 h-10 rounded-full object-cover" />
-          {prediction.authorStreak > 0 && (
-            <div className="absolute -bottom-1 -right-1 bg-red-500 text-white text-[10px] px-1 rounded-sm border border-white">
-              {prediction.authorStreak}连红
+  <Link to={`/prediction/${prediction.id}`} className="block bg-white rounded-xl mb-4 overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] relative border border-gray-100/30">
+    {prediction.isUnlocked && (
+      <div className="absolute top-0 right-0 z-20 bg-green-500 text-white text-[10px] font-black px-2.5 py-1 rounded-bl-xl shadow-md border-b border-l border-white/20">
+        已公开
+      </div>
+    )}
+    
+    <div className="p-4 relative">
+      {/* Author Info */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center">
+          <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 shadow-sm mr-2.5">
+            <img src={prediction.authorAvatar} alt={prediction.authorName} className="w-full h-full object-cover" />
+          </div>
+          <div className="flex flex-col">
+            <h3 className="text-[14px] font-bold text-gray-900 leading-tight">{prediction.authorName}</h3>
+            <div className="flex items-center mt-0.5 space-x-1">
+              <span className="text-[10px] text-orange-500 font-bold">{prediction.authorFans} 粉丝</span>
+              <span className="text-[9px] text-gray-300">·</span>
+              <span className="text-[10px] text-red-500 font-bold">{prediction.authorRecentRecord}</span>
             </div>
+          </div>
+        </div>
+        <div className="text-right">
+          <span className="text-[10px] text-gray-400 font-medium">{prediction.time}</span>
+        </div>
+      </div>
+
+      {/* Content Title */}
+      <h4 className="text-[15px] font-black text-gray-900 leading-tight mb-3">
+        {prediction.contentTitle}
+      </h4>
+
+      {/* Badges/Tags & Price */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {prediction.tags && prediction.tags.map((tag, idx) => (
+            <div key={idx} className="bg-red-50 text-red-500 text-[10px] font-bold px-2 py-0.5 rounded-[4px] border border-red-100/50">
+              {tag}
+            </div>
+          ))}
+          {prediction.isFree && (
+             <span className="bg-green-50 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded-[4px] border border-green-100/50">免费</span>
           )}
         </div>
-        <div className="ml-3">
-          <div className="flex items-center">
-            <span className="font-medium text-sm text-gray-900">{prediction.authorName}</span>
-            <span className="ml-2 px-1 rounded text-[10px] bg-red-50 text-red-500 border border-red-100">
-              {prediction.authorRecentRecord || '精选'}
-            </span>
-          </div>
-          <div className="text-[10px] text-gray-400 mt-0.5">
-            粉丝：{prediction.authorFans}  ·  方案数：{prediction.viewCount}
-          </div>
+
+        <div className={`text-[14px] font-black shrink-0 ${prediction.isFree || prediction.isUnlocked ? 'text-green-500' : 'text-red-600'}`}>
+          {prediction.isFree || prediction.isUnlocked ? '免费' : `¥ ${prediction.price}`}
         </div>
       </div>
-      <div className="text-right">
-        <div className="text-[10px] text-gray-400 mb-1">{prediction.time}</div>
-      </div>
-    </div>
-    
-    <div className="mb-3">
-      <div className="text-sm text-gray-700 font-bold line-clamp-2 leading-relaxed">
-        {prediction.contentTitle}
-      </div>
-    </div>
 
-    <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-      <div className="flex gap-2">
-        {prediction.tags && prediction.tags.map((tag: string, idx: number) => (
-          <span key={idx} className="text-[10px] bg-red-50 text-red-500 border border-red-100/50 px-2.5 py-0.5 rounded">
-            {tag}
-          </span>
-        ))}
-      </div>
-      <div className="flex items-center">
-        {prediction.isFree ? (
-          <span className="text-sm font-bold text-green-500">免费公开</span>
-        ) : (
-          <div className="flex items-center">
-            <span className="text-sm font-bold text-red-500">{prediction.price}金币</span>
-          </div>
-        )}
+      {/* Card Footer */}
+      <div className="flex items-center justify-between pt-3 border-t border-gray-50/80">
+        <div className="flex -space-x-1 mr-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="w-4 h-4 rounded-full border border-white overflow-hidden bg-gray-100 shadow-sm">
+              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${prediction.id}${i}`} className="w-full h-full object-cover" alt="viewer" />
+            </div>
+          ))}
+        </div>
+        <span className="text-[11px] text-gray-400 font-bold tracking-tight">
+          {prediction.viewCount || 888}次
+        </span>
       </div>
     </div>
   </Link>

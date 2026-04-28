@@ -179,6 +179,11 @@ const AuthorProfile = () => {
                 to={`/prediction/${prediction.id}`}
                 className="block bg-white rounded-xl p-5 shadow-[0_4px_20px_rgb(0,0,0,0.02)] border border-gray-50 relative overflow-hidden active:bg-gray-50 transition-colors"
               >
+                {prediction.isUnlocked && (
+                  <div className="absolute top-0 right-0 z-20 bg-green-500 text-white text-[10px] font-black px-2.5 py-1 rounded-bl-xl shadow-md border-b border-l border-white/20">
+                    已公开
+                  </div>
+                )}
                 <div className="flex items-start justify-between">
                   <div className="flex items-center">
                     <img src={author.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
@@ -217,27 +222,36 @@ const AuthorProfile = () => {
                   </h5>
                 </div>
 
-                <div className="mt-5 flex items-center justify-between">
-                  <div className="flex items-center space-x-3 text-[12px] text-gray-400 font-medium">
-                    <span>{prediction.time}</span>
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="flex items-center space-x-1.5 flex-wrap">
                     {prediction.tags && prediction.tags.map((tag, idx) => (
-                      <span key={idx} className="bg-[#f0f7ff] text-[#40c4ff] px-2 py-0.5 rounded-sm text-[11px] font-bold">
+                      <span key={idx} className="bg-red-50 text-red-500 text-[10px] font-bold px-2 py-0.5 rounded-[4px] border border-red-100/50">
                         {tag}
                       </span>
                     ))}
+                    {prediction.isFree && (
+                       <span className="bg-green-50 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded-[4px] border border-green-100/50">免费</span>
+                    )}
                   </div>
+                  <div className={`text-[15px] font-black shrink-0 ${prediction.isFree || prediction.isUnlocked ? 'text-green-500' : 'text-red-600'}`}>
+                    {prediction.isFree || prediction.isUnlocked ? '免费' : `¥ ${prediction.price}`}
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between">
+                  <span className="text-[11px] text-gray-400 font-medium">{prediction.time}</span>
                   <div className="flex items-center">
                     <div className="flex -space-x-1.5 mr-2">
                        {[1, 2, 3].map(j => (
                          <img 
                            key={j} 
-                           className="w-5 h-5 rounded-full ring-2 ring-white" 
+                           className="w-4 h-4 rounded-full border border-white shadow-sm ring-1 ring-gray-100" 
                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${j*prediction.id.length+100}`} 
                            alt=""
                          />
                        ))}
                     </div>
-                    <span className="text-[12px] text-gray-400 font-medium">{prediction.viewCount}人查看</span>
+                    <span className="text-[11px] text-gray-400 font-bold tracking-tight">{prediction.viewCount || 888}次</span>
                   </div>
                 </div>
               </Link>

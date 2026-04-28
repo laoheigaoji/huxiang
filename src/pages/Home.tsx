@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, Trophy, Pencil, User as UserIcon, X, ChevronRight, Check } from 'lucide-react';
+import { Search, SlidersHorizontal, Trophy, Pencil, User as UserIcon, X, ChevronRight, Check, ArrowLeftRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../services/api';
@@ -98,18 +98,14 @@ const SortModal = ({ isOpen, onClose, selected, onSelect }: { isOpen: boolean, o
 };
 
 const AuthorAvatarGrid = ({ author }: { author: Author, key?: React.Key }) => (
-  <Link to={`/author/${author.id}`} className="flex flex-col items-center min-w-[72px] mb-4">
-    <div className="relative">
-      <div className="w-14 h-14 rounded-full overflow-hidden border-[1.5px] border-white shadow-sm ring-1 ring-gray-100">
-        <img src={author.avatar} alt={author.name} className="w-full h-full object-cover" />
-      </div>
+  <Link to={`/author/${author.id}`} className="flex flex-col items-center min-w-[62px] px-0.5">
+    <div className="w-[48px] h-[48px] rounded-full overflow-hidden mb-1 shadow-sm border border-gray-50">
+      <img src={author.avatar} alt={author.name} className="w-full h-full object-cover" />
     </div>
-    <span className="text-[12px] text-gray-800 font-bold mt-1.5 mb-1 truncate w-full text-center">{author.name}</span>
-    <div className="flex items-center">
-      <div className="flex bg-white border border-red-500 rounded-[3px] overflow-hidden scale-90">
-        <span className="text-[9px] text-red-500 px-1 font-bold whitespace-nowrap">{author.recentRecord}</span>
-        <span className="bg-red-500 text-white text-[9px] px-1.5 font-bold">{author.streak}</span>
-      </div>
+    <span className="text-[11px] text-gray-700 font-bold mb-1 truncate w-full text-center tracking-tighter">{author.name}</span>
+    <div className="flex bg-white border border-[#ef5350] rounded-[2px] overflow-hidden scale-90 origin-top">
+      <span className="text-[8px] text-[#ef5350] px-1 font-bold whitespace-nowrap bg-white border-r border-[#ef5350]/30">{author.recentRecord}</span>
+      <span className="bg-[#ef5350] text-white text-[9px] px-1.5 py-0.5 font-black leading-none min-w-[16px] text-center">{author.streak}</span>
     </div>
   </Link>
 );
@@ -157,6 +153,20 @@ const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
       </div>
     </div>
   );
+};
+
+const JumpingNumber = ({ base, range = 5, interval = 3000 }: { base: number, range?: number, interval?: number }) => {
+  const [num, setNum] = useState(base);
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const change = Math.floor(Math.random() * (range * 2 + 1)) - range;
+      setNum(prev => Math.max(1, prev + change));
+    }, interval);
+    return () => clearInterval(timer);
+  }, [range, interval]);
+
+  return <>{num}</>;
 };
 
 const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Prediction, isFollowed?: boolean, onFollow?: (e: React.MouseEvent) => void, key?: React.Key }) => (
@@ -218,43 +228,47 @@ const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Pred
         {prediction.contentTitle}
       </h4>
 
-      {/* Badges/Tags */}
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <div className="flex bg-white border border-red-500 rounded-[5px] overflow-hidden scale-95 origin-left shrink-0">
-          <span className="text-[10px] text-red-500 px-2 py-0.5 font-bold bg-white">{prediction.authorRecentRecord || '精选'}</span>
-          {prediction.authorStreak > 0 && (
-            <div className="flex items-center bg-[#ef5350] text-white text-[10px] px-2 py-0.5 font-bold space-x-1 shrink-0">
-              <span>{prediction.authorStreak}连红</span>
-              <span className="text-[9px]">👍</span>
+      {/* Badges/Tags & Price */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex bg-white border border-red-500 rounded-[5px] overflow-hidden scale-95 origin-left shrink-0">
+            <span className="text-[10px] text-red-500 px-2 py-0.5 font-bold bg-white">{prediction.authorRecentRecord || '精选'}</span>
+            {prediction.authorStreak > 0 && (
+              <div className="flex items-center bg-[#ef5350] text-white text-[10px] px-2 py-0.5 font-bold space-x-1 shrink-0">
+                <span>{prediction.authorStreak}连红</span>
+                <span className="text-[9px]">👍</span>
+              </div>
+            )}
+          </div>
+          
+          {prediction.tags && prediction.tags.map((tag, idx) => (
+            <div key={idx} className="bg-red-50 text-red-500 text-[10px] font-bold px-2.5 py-0.5 rounded-[5px] border border-red-100/50 scale-95 origin-left shrink-0">
+              {tag}
             </div>
-          )}
+          ))}
         </div>
-        
-        {prediction.tags && prediction.tags.map((tag, idx) => (
-          <div key={idx} className="bg-red-50 text-red-500 text-[10px] font-bold px-2.5 py-0.5 rounded-[5px] border border-red-100/50 scale-95 origin-left shrink-0">
-            {tag}
-          </div>
-        ))}
-        
-        {prediction.isFree && (
-          <div className="bg-[#4caf50] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-[5px] scale-95 origin-left transition-transform shadow-sm shrink-0">
-            免费
-          </div>
-        )}
+
+        <div className={`text-[15px] font-black shrink-0 ${prediction.isFree || prediction.isUnlocked ? 'text-green-500' : 'text-red-600'}`}>
+          {prediction.isFree || prediction.isUnlocked ? '免费' : `¥ ${prediction.price}`}
+        </div>
       </div>
 
       {/* Card Footer */}
       <div className="flex items-center justify-between pt-3 border-t border-gray-50/80">
         <span className="text-[11px] text-gray-400 font-medium">{prediction.time}</span>
         <div className="flex items-center">
-          <div className="flex -space-x-1.5 mr-2">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="w-5 h-5 rounded-full border border-white overflow-hidden bg-gray-100 ring-1 ring-gray-50">
-                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${prediction.id}${i}`} className="w-full h-full object-cover" alt="viewer" />
-              </div>
-            ))}
+          <div className="flex flex-col items-end mr-3">
+            <div className="flex -space-x-1.5">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="w-4 h-4 rounded-full border border-white overflow-hidden bg-gray-100 ring-1 ring-gray-100">
+                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${prediction.id}${i}`} className="w-full h-full object-cover" alt="viewer" />
+                </div>
+              ))}
+            </div>
           </div>
-          <span className="text-[11px] text-gray-400 font-bold tracking-tight">{prediction.viewCount}次</span>
+          <span className="text-[11px] text-gray-400 font-bold tracking-tight">
+            <JumpingNumber base={prediction.viewCount || 888} range={3} interval={2000} />次
+          </span>
         </div>
       </div>
     </div>
@@ -328,110 +342,100 @@ const Home = () => {
         onSelect={setSelectedSort}
       />
 
-      {/* Sticky Header Section */}
-      <div className="bg-gradient-to-b from-[#fff0f1] to-white px-4 pt-10 pb-5 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] border-b border-gray-100">
-        {/* User & Online Stats */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center">
-            <div className="w-14 h-14 rounded-full overflow-hidden border-[2.5px] border-white shadow-md ring-1 ring-red-50">
-              <img 
-                src={user?.avatar || "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=400"} 
-                alt="Avatar" 
-                className="w-full h-full object-cover" 
-              />
-            </div>
-            <div className="ml-3">
-              <h2 className="text-[17px] font-black text-gray-900 leading-tight tracking-tight">{user?.nickname || user?.username || '智汇达人'}</h2>
-              <p className="text-[11px] text-gray-400 font-medium mt-0.5">欢迎使用{settings?.siteName || '智料汇享'}</p>
-            </div>
-          </div>
-          
-          <div className="text-right flex flex-col items-end">
-            <div className="flex items-center space-x-1 mb-0.5">
-              <span className="text-[10px] text-gray-400 font-medium">平台当前在线人数:</span>
-              <span className="text-[11px] text-[#ef5350] font-black italic">4035</span>
-              <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap">人</span>
-            </div>
-            <div className="text-[9.5px] text-gray-400 font-medium italic opacity-80 leading-none">
-              **楼台27分钟前，解锁作者: 钱大师
-            </div>
-          </div>
+      {/* Main Top Content Container */}
+      <div className="bg-white px-3 py-2.5 rounded-b-[12px] shadow-sm mb-1 border-b border-gray-100 mt-4">
+        {/* User & Search Area */}
+        <div className="flex items-center justify-between mb-3">
+           <div className="flex items-center shrink-0">
+              <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm border-[1.5px] border-white ring-1 ring-gray-100">
+                <img 
+                  src={user?.avatar || "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=400"} 
+                  alt="Avatar" 
+                  className="w-full h-full object-cover" 
+                />
+              </div>
+              <div className="ml-2 max-w-[120px]">
+                <h2 className="text-[14px] font-black text-gray-900 leading-none truncate">{user?.nickname || user?.username || '全村人的希望'}</h2>
+                <p className="text-[9px] text-gray-400 mt-1 font-medium italic">欢迎使用智料汇享</p>
+              </div>
+           </div>
+           
+           <div className="flex items-center space-x-2 flex-1 justify-end ml-3">
+              <div className="bg-gray-50 border border-gray-100 rounded-full h-8 flex items-center px-4 flex-1 max-w-[140px]">
+                <Search className="w-3.5 h-3.5 text-gray-300 mr-2" />
+                <input 
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="输入搜索内容"
+                  className="text-[11px] text-gray-800 font-medium flex-1 outline-none bg-transparent placeholder:text-gray-300"
+                />
+              </div>
+              <Link to="/author-search" className="text-[#ef5350] active:scale-95 transition-transform">
+                <ArrowLeftRight className="w-5 h-5" strokeWidth={2.5} />
+              </Link>
+           </div>
         </div>
 
-        {/* Search Line */}
-        <div className="flex items-center mb-5">
-          <div className="flex-1 bg-white rounded-full h-10 px-4 flex items-center shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-red-50/50 transition-shadow">
-             <Search className="w-4 h-4 text-gray-300 mr-2" />
-             <input 
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="输入搜索内容"
-                className="text-[14px] text-gray-800 font-medium flex-1 outline-none bg-transparent placeholder:text-gray-300"
-             />
+        {/* Tab Buttons & Stats */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-1.5">
+            <button 
+              onClick={() => setAuthorType('top')}
+              className={`h-7 px-3 rounded flex items-center font-black transition-all ${
+                authorType === 'top' 
+                  ? 'bg-[#ef5350] text-white shadow-md' 
+                  : 'bg-gray-100 text-gray-400'
+              }`}
+            >
+              <Trophy className={`w-3.5 h-3.5 mr-1 ${authorType === 'top' ? 'text-white' : 'text-gray-400'}`} />
+              <span className="text-[12px]">战绩榜</span>
+            </button>
+            
+            <button 
+              onClick={() => setAuthorType('new')}
+              className={`h-7 px-3 rounded flex items-center font-black transition-all ${
+                authorType === 'new' 
+                  ? 'bg-[#ef5350] text-white shadow-md' 
+                  : 'bg-gray-100 text-gray-400'
+              }`}
+            >
+              <div className="w-3.5 h-3.5 rounded-full border border-white/60 flex items-center justify-center mr-1 scale-90">
+                <span className={`text-[8px] font-black ${authorType === 'new' ? 'text-white' : 'text-gray-400'}`}>¥</span>
+              </div>
+              <span className="text-[12px]">新作者</span>
+            </button>
           </div>
-          <div className="flex items-center ml-4">
-             <Link 
-                to="/author-search"
-                className="flex items-center justify-center p-2 bg-white rounded-full shadow-sm border border-red-50 active:scale-90 transition-transform"
-             >
-                <div className="flex flex-col space-y-[3.5px] items-center">
-                   <div className="w-5 h-[2px] bg-[#ef5350] rounded-full"></div>
-                   <div className="w-5 h-[2px] bg-[#ef5350] rounded-full"></div>
-                   <div className="w-5 h-[2px] bg-[#ef5350] rounded-full"></div>
-                </div>
-             </Link>
-          </div>
-        </div>
-
-        {/* Action Tabs */}
-        <div className="flex space-x-3 mb-5">
-          <button 
-            onClick={() => setAuthorType('top')}
-            className={`flex-1 h-12 rounded-xl flex items-center px-4 transition-all active:scale-95 ${
-              authorType === 'top' 
-                ? 'bg-gradient-to-br from-[#ff6e40] to-[#ffab40] text-white shadow-lg shadow-orange-100 font-black' 
-                : 'bg-gray-100 text-gray-400'
-            }`}
-          >
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ring-1 ${authorType === 'top' ? 'bg-white/20 ring-white/10' : 'bg-gray-200 ring-gray-300'}`}>
-              <Trophy className={`w-3.5 h-3.5 ${authorType === 'top' ? 'text-white' : 'text-gray-400'}`} />
-            </div>
-            <span className="text-[15px] italic tracking-widest leading-none">战绩榜</span>
-          </button>
           
-          <button 
-            onClick={() => setAuthorType('new')}
-            className={`flex-1 h-12 rounded-xl flex items-center px-4 transition-all active:scale-95 ${
-              authorType === 'new' 
-                ? 'bg-gradient-to-br from-[#ef5350] to-[#f44336] text-white shadow-lg shadow-red-100 font-black' 
-                : 'bg-gray-100 text-gray-400'
-            }`}
-          >
-             <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ring-1 ${authorType === 'new' ? 'bg-white/20 ring-white/10' : 'bg-gray-200 ring-gray-300'}`}>
-                <span className={`text-[12px] font-black ${authorType === 'new' ? 'text-white' : 'text-gray-400'}`}>¥</span>
+          <div className="text-right">
+             <div className="flex items-center justify-end text-[10.5px] font-bold space-x-1 leading-none text-gray-900">
+               <span>平台当前在线人数:</span>
+               <span className="text-red-500 font-black italic tracking-tighter text-[11.5px]">
+                  <JumpingNumber base={4089} range={10} interval={1500} />
+               </span>
+               <span>人</span>
              </div>
-             <span className="text-[15px] italic tracking-widest leading-none">新作者</span>
-          </button>
+             <p className="text-[9.5px] text-gray-800 font-bold tracking-tighter italic leading-none mt-1">
+               **似锦11分钟前，解锁作者: 飞哥
+             </p>
+          </div>
         </div>
 
-        {/* Scrollable Author List */}
-        <div className="flex overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide space-x-1.5 mask-fade-right">
-          {(authorType === 'top' ? authors : authors.slice().reverse()).map(author => (
-            <AuthorAvatarGrid key={author.id} author={author} />
-          ))}
+
+        {/* Author Avatars Grid - Scrollable Horizontal */}
+        <div className="flex overflow-x-auto pb-1 scrollbar-hide space-x-1 mt-1">
+           {(authorType === 'top' ? authors : authors.slice().reverse()).map((author, index) => (
+             <AuthorAvatarGrid key={author.id + index} author={author} />
+           ))}
         </div>
       </div>
 
-      {/* Marquee Notice Bar */}
-      <div className="bg-[#fff9c4]/60 px-4 py-2.5 flex items-center justify-between border-b border-[#fff9c4]/30 backdrop-blur-sm">
-        <div className="flex items-center flex-1 overflow-hidden space-x-2">
-          <div className="w-1 h-1 bg-orange-400 rounded-full animate-pulse"></div>
-          <span className="text-[12px] text-[#ef6c00] font-bold whitespace-nowrap overflow-hidden">
-            {settings?.announcement || '如没有微信支付通知，请联系客服查询。'}
-          </span>
-        </div>
-        <X className="w-4 h-4 text-orange-300 ml-2 shrink-0 cursor-pointer hover:text-orange-500" />
+      {/* Yellow Notice Bar */}
+      <div className="bg-[#fffef2] px-4 py-1.5 flex items-center justify-between border-b border-orange-100/30 mb-0.5">
+        <span className="text-[11.5px] text-orange-400 font-bold tracking-tight">
+           {settings?.announcement || '关系推荐人进行开通'}
+        </span>
+        <X className="w-3.5 h-3.5 text-orange-200 cursor-pointer" />
       </div>
 
       <div className="flex-1 pb-24">

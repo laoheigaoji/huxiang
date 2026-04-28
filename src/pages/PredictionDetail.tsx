@@ -6,6 +6,20 @@ import { QRCodeSVG } from 'qrcode.react';
 import { api } from '../services/api';
 import { Prediction, HistoryItem } from '../types';
 
+const JumpingNumber = ({ base, range = 5, interval = 3000 }: { base: number, range?: number, interval?: number }) => {
+  const [num, setNum] = useState(base);
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const change = Math.floor(Math.random() * (range * 2 + 1)) - range;
+      setNum(prev => Math.max(1, prev + change));
+    }, interval);
+    return () => clearInterval(timer);
+  }, [range, interval]);
+
+  return <>{num}</>;
+};
+
 const PredictionDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -363,7 +377,9 @@ const PredictionDetail = () => {
               </span>
             ))}
             <div className="flex-grow"></div>
-            <span className="text-[10px] text-gray-400">近七日人气 <span className="text-red-500 font-bold">{prediction.viewCount + 15000}</span></span>
+            <span className="text-[10px] text-gray-400">近七日人气 <span className="text-red-500 font-bold">
+              <JumpingNumber base={prediction.viewCount + 15000} range={20} interval={1200} />
+            </span></span>
           </div>
 
           <div className="mt-6">
@@ -378,7 +394,7 @@ const PredictionDetail = () => {
                     <img key={i} className="h-4 w-4 rounded-full ring-1 ring-white" src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i + 100}`} alt="" />
                   ))}
                 </div>
-                <span>3616人查看</span>
+                <span><JumpingNumber base={3616} range={5} interval={2500} />人查看</span>
               </div>
             </div>
           </div>
@@ -421,33 +437,37 @@ const PredictionDetail = () => {
         )}
 
         {(prediction.isFree || isPurchased || isUnlocked) && (
-          <div className="mt-4 bg-[#fff7ed] rounded-2xl p-6 border border-orange-100 card-shadow text-center relative overflow-hidden">
-            <div className="absolute top-4 right-4 text-gray-400">
+          <div className="mt-4 bg-[#fff0f1] rounded-[32px] p-5 pb-6 border border-[#fee2e2] shadow-sm relative overflow-hidden">
+            <div className="absolute top-4 right-4 text-gray-400 z-10">
               <Share2 className="w-5 h-5 cursor-pointer" onClick={() => setShowShare(true)} />
             </div>
             
-            <h4 className="text-[#ea580c] font-black text-lg mb-6 flex justify-center items-center space-x-2 tracking-widest">
+            <h4 className="text-[#ea580c] font-black text-lg mb-4 flex justify-center items-center space-x-2 tracking-widest">
               <Star className="w-5 h-5 fill-[#ea580c]" />
               <span>付费内容</span>
               <Star className="w-5 h-5 fill-[#ea580c]" />
             </h4>
             
-            <div className="space-y-6">
-              <div className="flex flex-col items-center">
-                <div className="flex flex-wrap justify-center gap-3 px-2">
-                  {(prediction.mainPicks || [32, 41, 46, 24, 7, 34, 19, 8, 35, 17, 29, 10, 47, 5, 22, 43]).map((n, i) => (
-                    <div key={i} className="w-[42px] h-[42px] rounded-full bg-gradient-to-b from-[#f97316] to-[#ef4444] flex items-center justify-center text-white text-[15px] font-bold shadow-md">
-                      {n.toString().padStart(2, '0')}
-                    </div>
-                  ))}
+            <div className="bg-[#fff9c4] rounded-2xl p-5 border border-dashed border-[#ffb74d]/50 relative">
+              <div className="space-y-6">
+                <div className="flex items-start">
+                  <span className="text-[13px] text-gray-400 mr-4 mt-1 whitespace-nowrap">正文</span>
+                  <div className="text-gray-800 text-sm font-bold pt-0.5 leading-relaxed">
+                    {prediction.content || '测试'}
+                  </div>
+                </div>
+
+                <div className="flex items-start">
+                  <span className="text-[13px] text-gray-400 mr-4 mt-2.5 whitespace-nowrap">核对</span>
+                  <div className="flex flex-wrap gap-2.5">
+                    {(prediction.mainPicks || [1, 2, 5, 8, 12, 19, 24]).map((n, i) => (
+                      <div key={i} className="w-9 h-9 rounded-full bg-[#ef4444] flex items-center justify-center text-white text-[14px] font-bold shadow-sm">
+                        {n.toString().padStart(2, '0')}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-              
-              {prediction.content && (
-                 <div className="bg-white/50 rounded-xl p-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap text-left shadow-sm border border-orange-50">
-                   {prediction.content}
-                 </div>
-              )}
             </div>
           </div>
         )}
@@ -502,28 +522,28 @@ const PredictionDetail = () => {
                    <span className="text-[11px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded font-medium">{item.title}</span>
                 </div>
                 
-                <div className="mt-3 flex items-center">
-                  <span className="text-[13px] text-gray-400 mr-4 whitespace-nowrap">正文</span>
-                  <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded text-sm font-bold">{item.content || '暂无'}</span>
+                <div className="mt-4 flex items-start">
+                  <span className="text-[13px] text-gray-400 mr-4 mt-1 whitespace-nowrap">正文</span>
+                  <div className="text-gray-800 text-sm font-bold pt-0.5 whitespace-pre-wrap">
+                    {item.content || '测试'}
+                  </div>
                 </div>
                 
-                <div className="mt-3 flex items-start">
-                  <span className="text-[13px] text-gray-400 mr-4 mt-1 whitespace-nowrap">核对</span>
-                  <div className="flex flex-wrap gap-2 text-sm font-bold text-gray-800">
-                    {Array.isArray(item.mainPicks) ? item.mainPicks.map((p: any, i: number) => (
-                      <div key={i} className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-[#ef4444] shadow-sm">
-                        {p}
+                <div className="mt-4 flex items-start">
+                  <span className="text-[13px] text-gray-400 mr-4 mt-2.5 whitespace-nowrap">核对</span>
+                  <div className="flex flex-wrap gap-2">
+                    {(item.mainPicks || [14, 5, 48, 23, 31, 44, 36]).map((p: any, i: number) => (
+                      <div key={i} className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[13px] font-bold bg-[#ef4444] shadow-sm">
+                        {p.toString().padStart(2, '0')}
                       </div>
-                    )) : (
-                      <span className="text-gray-800 mt-1">{item.mainPicks || '无'}</span>
-                    )}
+                    ))}
                   </div>
                 </div>
                 
                 <div className="mt-4 flex justify-between items-center text-xs text-gray-400 border-t border-gray-50 pt-3">
                   <span>{item.time}</span>
                   <div className="flex items-center">
-                    <span className="mr-2">{item.viewCount}人查看</span>
+                    <span className="mr-2"><JumpingNumber base={item.viewCount || 500} range={5} interval={2000} />人查看</span>
                   </div>
                 </div>
              </div>
