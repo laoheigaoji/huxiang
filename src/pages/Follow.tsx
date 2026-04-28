@@ -42,8 +42,8 @@ const PredictionCard = ({ prediction }: { prediction: Prediction, key?: React.Ke
 
     <div className="flex items-center justify-between pt-3 border-t border-gray-50">
       <div className="flex gap-2">
-        {prediction.tags.map((tag: string, idx: number) => (
-          <span key={idx} className="text-[10px] bg-gray-50 text-gray-500 px-2 py-0.5 rounded">
+        {prediction.tags && prediction.tags.map((tag: string, idx: number) => (
+          <span key={idx} className="text-[10px] bg-red-50 text-red-500 border border-red-100/50 px-2.5 py-0.5 rounded">
             {tag}
           </span>
         ))}

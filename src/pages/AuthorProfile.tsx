@@ -220,11 +220,11 @@ const AuthorProfile = () => {
                 <div className="mt-5 flex items-center justify-between">
                   <div className="flex items-center space-x-3 text-[12px] text-gray-400 font-medium">
                     <span>{prediction.time}</span>
-                    {prediction.tags?.[0] && (
-                      <span className="bg-[#f0f7ff] text-[#40c4ff] px-2 py-0.5 rounded-sm text-[11px] font-bold">
-                        {prediction.tags[0]}
+                    {prediction.tags && prediction.tags.map((tag, idx) => (
+                      <span key={idx} className="bg-[#f0f7ff] text-[#40c4ff] px-2 py-0.5 rounded-sm text-[11px] font-bold">
+                        {tag}
                       </span>
-                    )}
+                    ))}
                   </div>
                   <div className="flex items-center">
                     <div className="flex -space-x-1.5 mr-2">

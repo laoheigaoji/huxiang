@@ -91,11 +91,11 @@ export const api = {
     return handleResponse(res);
   },
 
-  async createPayment(amount: number, type: string, orderName: string, userId?: string) {
+  async createPayment(amount: number, type: string, orderName: string, userId?: string, predictionId?: string) {
     const res = await fetch(`${API_BASE}/pay/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount, type, orderName, userId })
+      body: JSON.stringify({ amount, type, orderName, userId, predictionId })
     });
     return handleResponse(res);
   },
@@ -297,6 +297,41 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     });
+    return handleResponse(res);
+  },
+
+  async getAdminWithdrawals() {
+    const res = await fetch(`${API_BASE}/admin/withdrawals`);
+    return handleResponse(res);
+  },
+
+  async updateAdminWithdrawal(id: string, status: string) {
+    const res = await fetch(`${API_BASE}/admin/withdrawals/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    return handleResponse(res);
+  },
+
+  async submitFeedback(data: any) {
+    const userStr = localStorage.getItem('user');
+    const userId = userStr ? JSON.parse(userStr).id : null;
+    const res = await fetch(`${API_BASE}/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...data, userId })
+    });
+    return handleResponse(res);
+  },
+
+  async getAdminFeedbacks() {
+    const res = await fetch(`${API_BASE}/admin/feedbacks`);
+    return handleResponse(res);
+  },
+
+  async deleteAdminFeedback(id: string) {
+    const res = await fetch(`${API_BASE}/admin/feedbacks/${id}`, { method: 'DELETE' });
     return handleResponse(res);
   },
 

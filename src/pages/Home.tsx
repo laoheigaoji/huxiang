@@ -219,19 +219,25 @@ const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Pred
       </h4>
 
       {/* Badges/Tags */}
-      <div className="flex items-center space-x-2 mb-4">
-        <div className="flex bg-white border border-red-500 rounded-[5px] overflow-hidden scale-95 origin-left">
-          <span className="text-[10px] text-red-500 px-2 py-0.5 font-bold bg-white">{prediction.authorRecentRecord}</span>
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="flex bg-white border border-red-500 rounded-[5px] overflow-hidden scale-95 origin-left shrink-0">
+          <span className="text-[10px] text-red-500 px-2 py-0.5 font-bold bg-white">{prediction.authorRecentRecord || '精选'}</span>
           {prediction.authorStreak > 0 && (
-            <div className="flex items-center bg-[#ef5350] text-white text-[10px] px-2 py-0.5 font-bold space-x-1">
+            <div className="flex items-center bg-[#ef5350] text-white text-[10px] px-2 py-0.5 font-bold space-x-1 shrink-0">
               <span>{prediction.authorStreak}连红</span>
               <span className="text-[9px]">👍</span>
             </div>
           )}
         </div>
         
+        {prediction.tags && prediction.tags.map((tag, idx) => (
+          <div key={idx} className="bg-red-50 text-red-500 text-[10px] font-bold px-2.5 py-0.5 rounded-[5px] border border-red-100/50 scale-95 origin-left shrink-0">
+            {tag}
+          </div>
+        ))}
+        
         {prediction.isFree && (
-          <div className="bg-[#4caf50] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-[5px] scale-95 origin-left transition-transform shadow-sm">
+          <div className="bg-[#4caf50] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-[5px] scale-95 origin-left transition-transform shadow-sm shrink-0">
             免费
           </div>
         )}

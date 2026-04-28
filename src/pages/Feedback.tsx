@@ -2,9 +2,35 @@ import React, { useState } from 'react';
 import { ChevronLeft, X, MoreHorizontal, ChevronDown, Camera, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { api } from '../services/api';
 
 const Feedback = () => {
   const navigate = useNavigate();
+  const [scenario, setScenario] = useState('');
+  const [content, setContent] = useState('');
+  const [phone, setPhone] = useState('');
+  const [images, setImages] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Note: we'll use a simple generic mockup for scenario select and images
+  const scenarios = ['功能建议', '遇到Bug', '账号问题', '支付问题', '其他'];
+
+  const handleSubmit = async () => {
+    if (!content) {
+      alert('请填写改善方式/文字描述');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.submitFeedback({ scenario, content, phone, images });
+      alert('提交成功，感谢您的反馈！');
+      navigate(-1);
+    } catch (err) {
+      alert('提交失败，请重试');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <motion.div 
@@ -51,9 +77,16 @@ const Feedback = () => {
         {/* Scenario Selection */}
         <div className="space-y-4">
           <label className="text-[17px] font-bold text-gray-900">场景问题：</label>
-          <div className="bg-white rounded-xl h-14 px-5 flex items-center justify-between border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] active:bg-gray-50 cursor-pointer">
-            <span className="text-[#cccccc] text-[15px] font-medium">请选择</span>
-            <ChevronDown className="w-5 h-5 text-gray-300" />
+          <div className="bg-white rounded-xl h-14 px-5 flex items-center justify-between border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] focus-within:ring-2 focus-within:ring-blue-200 overflow-hidden">
+             <select 
+               className="w-full h-full text-[15px] font-medium focus:outline-none bg-transparent appearance-none"
+               value={scenario}
+               onChange={(e) => setScenario(e.target.value)}
+             >
+               <option value="" disabled>请选择</option>
+               {scenarios.map(s => <option key={s} value={s}>{s}</option>)}
+             </select>
+             <ChevronDown className="w-5 h-5 text-gray-300 pointer-events-none" />
           </div>
         </div>
 
@@ -61,12 +94,36 @@ const Feedback = () => {
         <div className="space-y-4 pt-2">
           <label className="text-[17px] font-bold text-gray-900">请上传问题说明图片，最多6张：</label>
           <div className="flex flex-wrap gap-4">
-            <div className="w-[100px] h-[100px] bg-white rounded-xl border border-dashed border-gray-200 flex items-center justify-center active:bg-gray-50 cursor-pointer">
-              <Camera className="w-7 h-7 text-gray-300" strokeWidth={1.5} />
-            </div>
-            <div className="w-[100px] h-[100px] bg-[#f8f9fa] rounded-xl border border-dashed border-gray-200 flex items-center justify-center active:bg-gray-50 cursor-pointer">
-              <Plus className="w-8 h-8 text-gray-300" strokeWidth={1} />
-            </div>
+            {images.map((img, i) => (
+              <div key={i} className="w-[100px] h-[100px] bg-white rounded-xl border border-gray-200 overflow-hidden relative">
+                <img src={img} className="w-full h-full object-cover" />
+                <button onClick={() => setImages(imgs => imgs.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-black/50 p-1 rounded-full"><X className="w-3 h-3 text-white" /></button>
+              </div>
+            ))}
+            {images.length < 6 && (
+              <label className="w-[100px] h-[100px] bg-white rounded-xl border border-dashed border-gray-200 flex items-center justify-center active:bg-gray-50 cursor-pointer">
+                <Camera className="w-7 h-7 text-gray-300" strokeWidth={1.5} />
+                <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => setImages([...images, e.target?.result as string]);
+                    reader.readAsDataURL(e.target.files[0]);
+                  }
+                }} />
+              </label>
+            )}
+            {images.length === 0 && (
+              <label className="w-[100px] h-[100px] bg-[#f8f9fa] rounded-xl border border-dashed border-gray-200 flex items-center justify-center active:bg-gray-50 cursor-pointer">
+                <Plus className="w-8 h-8 text-gray-300" strokeWidth={1} />
+                <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => setImages([...images, e.target?.result as string]);
+                    reader.readAsDataURL(e.target.files[0]);
+                  }
+                }} />
+              </label>
+            )}
           </div>
           <p className="text-[13px] text-gray-400 font-medium">
             单张图片建议1M以内，超过1M的图片会被过滤
@@ -79,6 +136,8 @@ const Feedback = () => {
           <div className="bg-white rounded-xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-100">
             <textarea 
               placeholder="请输入文字描述" 
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
               className="w-full h-36 p-5 text-[15px] font-medium focus:outline-none placeholder:text-[#cccccc] resize-none"
             ></textarea>
           </div>
@@ -91,6 +150,8 @@ const Feedback = () => {
             <input 
               type="tel" 
               placeholder="请输入联系电话" 
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               className="w-full bg-transparent text-[15px] font-medium focus:outline-none placeholder:text-[#cccccc]" 
             />
           </div>
@@ -98,8 +159,12 @@ const Feedback = () => {
 
         {/* Submit Button */}
         <div className="fixed bottom-10 left-0 right-0 px-6 z-50">
-          <button className="w-full bg-[#ef5350] text-white font-bold py-[15px] rounded-full text-lg shadow-xl shadow-red-100 active:scale-95 transition-transform">
-            提交
+          <button 
+            disabled={submitting}
+            onClick={handleSubmit}
+            className="w-full bg-[#ef5350] text-white font-bold py-[15px] rounded-full text-lg shadow-xl shadow-red-100 active:scale-95 transition-transform disabled:opacity-50"
+          >
+            {submitting ? '提交中...' : '提交'}
           </button>
         </div>
       </div>

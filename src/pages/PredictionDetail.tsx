@@ -25,6 +25,26 @@ const PredictionDetail = () => {
   const [user, setUser] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState({ h: '00', m: '00', s: '00' });
   const [showPayment, setShowPayment] = useState(false);
+  const posterRef = React.useRef<HTMLDivElement>(null);
+
+  const handleDownloadPoster = async () => {
+      if (!posterRef.current) return;
+      try {
+          const { toPng } = await import('html-to-image');
+          const dataUrl = await toPng(posterRef.current, {
+              cacheBust: true,
+              pixelRatio: 2,
+              backgroundColor: '#ffffff',
+          });
+          const link = document.createElement('a');
+          link.download = `prediction-${prediction?.id || Date.now()}.png`;
+          link.href = dataUrl;
+          link.click();
+      } catch (err) {
+          console.error('Failed to generate poster', err);
+          alert('保存海报失败，请尝试截图保存');
+      }
+  };
 
   useEffect(() => {
     isPurchasedRef.current = isPurchased;
@@ -178,7 +198,7 @@ const PredictionDetail = () => {
         alert('购买成功！');
       } else {
         // Alipay flow
-        const payRes = await api.createPayment(prediction!.price, 'alipay', prediction!.title, user.id);
+        const payRes = await api.createPayment(prediction!.price, 'alipay', prediction!.title, user.id, id);
         const paymentUrl = payRes.url || payRes.payurl || payRes.payment_url || payRes.qrcode;
         if (paymentUrl) {
             setShowPayment(false);
@@ -325,10 +345,15 @@ const PredictionDetail = () => {
             </button>
           </div>
 
-          <div className="mt-2 flex space-x-2">
-            <span className="text-[10px] text-red-500 bg-red-50 px-1 border border-red-100 rounded-sm">
-              {prediction.authorRecentRecord}
+          <div className="mt-2 flex items-center flex-wrap gap-2">
+            <span className="text-[10px] text-red-500 bg-red-50 px-1.5 py-0.5 border border-red-100 rounded-sm">
+              {prediction.authorRecentRecord || '精选'}
             </span>
+            {prediction.tags && prediction.tags.map((tag, idx) => (
+              <span key={idx} className="text-[10px] text-red-500 bg-red-50 px-1.5 py-0.5 border border-red-100 rounded-sm">
+                {tag}
+              </span>
+            ))}
             <div className="flex-grow"></div>
             <span className="text-[10px] text-gray-400">近七日人气 <span className="text-red-500 font-bold">{prediction.viewCount + 15000}</span></span>
           </div>
@@ -605,134 +630,140 @@ const PredictionDetail = () => {
               </div>
 
               {/* Poster Content Area */}
-              <div className="relative p-5">
-                {/* Background Watermark Pattern */}
-                <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none overflow-hidden select-none" style={{ 
-                  backgroundImage: 'radial-gradient(#000 1px, transparent 1px)',
-                  backgroundSize: '24px 24px'
-                }}>
-                  {Array.from({ length: 30 }).map((_, i) => (
-                    <div key={i} className="absolute text-[9px] font-black whitespace-nowrap rotate-[-30deg]" style={{
-                      left: `${(i % 4) * 30}%`,
-                      top: `${Math.floor(i / 4) * 18}%`,
-                    }}>
-                      智料汇享 智料汇享
-                    </div>
-                  ))}
-                </div>
-                {/* Poster Content Area */}
-                <div className="relative z-10">
-                  {/* Poster Header */}
-                  <div className="text-center mb-5">
-                    <h3 className="text-[20px] font-black text-gray-900 tracking-tight">{prediction.authorName}</h3>
-                    <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-widest">{prediction.period} 专属方案</p>
+              <div className="relative">
+                <div ref={posterRef} className="relative p-5 bg-white">
+                  {/* Background Watermark Pattern */}
+                  <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none overflow-hidden select-none" style={{ 
+                    backgroundImage: 'radial-gradient(#000 1px, transparent 1px)',
+                    backgroundSize: '24px 24px'
+                  }}>
+                    {Array.from({ length: 30 }).map((_, i) => (
+                      <div key={i} className="absolute text-[9px] font-black whitespace-nowrap rotate-[-30deg]" style={{
+                        left: `${(i % 4) * 30}%`,
+                        top: `${Math.floor(i / 4) * 18}%`,
+                        color: '#000000'
+                      }}>
+                        智料汇享 智料汇享
+                      </div>
+                    ))}
                   </div>
-
-                  {/* Prediction Summary Section - Conditional Rendering */}
-                  {!prediction.isFree && !isPurchased && !isUnlocked ? (
-                    /* Locked Version */
-                    <div className="bg-red-50/60 rounded-2xl p-5 border border-red-100 flex flex-col items-center mb-6 overflow-hidden relative">
-                      <div className="absolute top-0 left-0 w-full h-1 bg-red-500 overflow-hidden">
-                        <motion.div 
-                          animate={{ x: ["-100%", "100%"] }} 
-                          transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-                          className="w-1/2 h-full bg-gradient-to-r from-transparent via-white/50 to-transparent"
-                        />
-                      </div>
-                      
-                      <h4 className="text-red-500 font-black text-[15px] mb-4 tracking-widest flex items-center">
-                        <Lock className="w-3.5 h-3.5 mr-1.5 fill-red-500" />
-                        解锁公开倒计时
-                      </h4>
-                      
-                      {/* Countdown Timer in Poster */}
-                      <div className="flex justify-center items-center space-x-1.5 mb-5 transition-all">
-                        {['h', 'm', 's'].map((key) => (
-                          <React.Fragment key={key}>
-                            <div className="bg-[#e53935] text-white text-base font-bold w-9 h-9 flex items-center justify-center rounded-lg shadow-sm">
-                              {timeLeft[key as keyof typeof timeLeft]}
-                            </div>
-                            {key !== 's' && <span className="text-red-500 text-lg font-black">:</span>}
-                          </React.Fragment>
-                        ))}
-                      </div>
-
-                      {/* Payment Info */}
-                      <div className="bg-white/80 backdrop-blur-sm px-5 py-2.5 rounded-full border border-red-100 flex items-center justify-center space-x-2 text-gray-900 font-black text-[13px] mb-4 shadow-sm">
-                        <span>付费 ¥ {prediction.price} 立即解锁</span>
-                      </div>
-
-                      {/* Disclaimer Text */}
-                      <div className="text-[9px] text-gray-400 leading-tight text-center px-4 font-medium italic">
-                        付费解锁后永久查看，不限次数。
-                      </div>
+                  {/* Poster Content Area */}
+                  <div className="relative z-10">
+                    {/* Poster Header */}
+                    <div className="text-center mb-5">
+                      <h3 className="text-[20px] font-black text-gray-900 tracking-tight" style={{ color: '#111827' }}>{prediction.authorName}</h3>
+                      <p className="text-[10px] font-bold mt-1 uppercase tracking-widest" style={{ color: '#9ca3af' }}>{prediction.period} 专属方案</p>
                     </div>
-                  ) : (
-                    /* Unlocked Version */
-                    <div className="bg-orange-50/60 rounded-2xl p-5 border border-orange-100 flex flex-col items-center mb-6">
-                      <h4 className="text-orange-600 font-black text-[15px] mb-4 tracking-widest flex items-center">
-                        <Star className="w-3.5 h-3.5 mr-1.5 fill-orange-500" />
-                        付费推荐内容
-                      </h4>
-                      
-                      {/* Paid Content Box */}
-                      <div className="w-full bg-white/60 backdrop-blur-sm border-2 border-dashed border-orange-200 rounded-xl py-5 flex flex-col items-center shadow-sm">
-                        <div className="flex space-x-3 mb-4">
-                          {(prediction.mainPicks || [36, 24, 12]).map((n, i) => (
-                            <motion.div 
-                              key={i}
-                              initial={{ scale: 0.8, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-lg font-black shadow-md"
-                            >
-                              {n}
-                            </motion.div>
+
+                    {/* Prediction Summary Section - Conditional Rendering */}
+                    {!prediction.isFree && !isPurchased && !isUnlocked ? (
+                      /* Locked Version */
+                      <div className="rounded-2xl p-5 border flex flex-col items-center mb-6 overflow-hidden relative" style={{ backgroundColor: '#fff5f5', borderColor: '#fee2e2' }}>
+                        <div className="absolute top-0 left-0 w-full h-1 overflow-hidden" style={{ backgroundColor: '#ef4444' }}>
+                          <motion.div 
+                            animate={{ x: ["-100%", "100%"] }} 
+                            transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                            className="w-1/2 h-full bg-gradient-to-r from-transparent via-white/50 to-transparent"
+                          />
+                        </div>
+                        
+                        <h4 className="font-black text-[15px] mb-4 tracking-widest flex items-center" style={{ color: '#ef4444' }}>
+                          <Lock className="w-3.5 h-3.5 mr-1.5" style={{ fill: '#ef4444' }} />
+                          解锁公开倒计时
+                        </h4>
+                        
+                        {/* Countdown Timer in Poster */}
+                        <div className="flex justify-center items-center space-x-1.5 mb-5 transition-all">
+                          {['h', 'm', 's'].map((key) => (
+                            <React.Fragment key={key}>
+                              <div className="text-white text-base font-bold w-9 h-9 flex items-center justify-center rounded-lg shadow-sm" style={{ backgroundColor: '#e53935' }}>
+                                {timeLeft[key as keyof typeof timeLeft]}
+                              </div>
+                              {key !== 's' && <span className="text-lg font-black" style={{ color: '#ef4444' }}>:</span>}
+                            </React.Fragment>
                           ))}
                         </div>
-                        <div className="px-4 py-1.5 bg-orange-100 rounded-full text-[10px] text-orange-600 font-black uppercase">
-                          VIP 内部精选方案
-                        </div>
-                        {prediction.content && (
-                          <div className="mt-3 px-4 text-[10px] text-gray-600 text-center font-bold">
-                            {prediction.content.substring(0, 40)}{prediction.content.length > 40 ? '...' : ''}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="mt-4 text-[9px] text-gray-400 font-medium text-center">
-                        * 这是为您精心挑选的号码，基于大数据模拟分析。
-                      </div>
-                    </div>
-                  )}
 
-                  {/* QR Code Section */}
-                  <div className="flex items-center justify-between px-2 mb-6">
-                    <div className="flex-1">
-                       <h4 className="text-gray-900 font-black text-[15px] mb-1">智料汇享</h4>
-                       <p className="text-[10px] text-gray-400 font-bold leading-relaxed pr-4">
-                         专业数字概率分析平台<br />
-                         每日更新独家数据方案
-                       </p>
-                       <div className="mt-3 text-[9px] text-gray-300 font-medium">
-                         {new Date().toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-')}
-                       </div>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <div className="bg-white p-2 rounded-xl border border-gray-100 shadow-md mb-1.5">
-                        <QRCodeSVG 
-                          value={`https://${window.location.host}/prediction/${id}`} 
-                          size={70}
-                          bgColor="#ffffff"
-                          fgColor="#000000"
-                          level="H"
-                        />
+                        {/* Payment Info */}
+                        <div className="bg-white/80 backdrop-blur-sm px-5 py-2.5 rounded-full border flex items-center justify-center space-x-2 font-black text-[13px] mb-4 shadow-sm" style={{ borderColor: '#fee2e2', color: '#111827' }}>
+                          <span>付费 ¥ {prediction.price} 立即解锁</span>
+                        </div>
+
+                        {/* Disclaimer Text */}
+                        <div className="text-[9px] leading-tight text-center px-4 font-medium italic" style={{ color: '#9ca3af' }}>
+                          付费解锁后永久查看，不限次数。
+                        </div>
                       </div>
-                      <p className="text-gray-900 font-black text-[10px] tracking-widest">扫码查看详情</p>
+                    ) : (
+                      /* Unlocked Version */
+                      <div className="rounded-2xl p-5 border flex flex-col items-center mb-6" style={{ backgroundColor: '#fff7ed', borderColor: '#ffedd5' }}>
+                        <h4 className="font-black text-[15px] mb-4 tracking-widest flex items-center" style={{ color: '#ea580c' }}>
+                          <Star className="w-3.5 h-3.5 mr-1.5" style={{ fill: '#f97316' }} />
+                          付费推荐内容
+                        </h4>
+                        
+                        {/* Paid Content Box */}
+                        <div className="w-full bg-white/60 backdrop-blur-sm border-2 border-dashed rounded-xl py-5 flex flex-col items-center shadow-sm" style={{ borderColor: '#fed7aa' }}>
+                          <div className="flex space-x-3 mb-4">
+                            {(prediction.mainPicks || [36, 24, 12]).map((n, i) => (
+                              <motion.div 
+                                key={i}
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                className="w-10 h-10 rounded-full flex items-center justify-center text-white text-lg font-black shadow-md"
+                                style={{ background: 'linear-gradient(to bottom right, #ef4444, #dc2626)' }}
+                              >
+                                {n}
+                              </motion.div>
+                            ))}
+                          </div>
+                          <div className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase" style={{ backgroundColor: '#ffedd5', color: '#ea580c' }}>
+                            VIP 内部精选方案
+                          </div>
+                          {prediction.content && (
+                            <div className="mt-3 px-4 text-[10px] text-center font-bold" style={{ color: '#4b5563' }}>
+                              {prediction.content.substring(0, 40)}{prediction.content.length > 40 ? '...' : ''}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="mt-4 text-[9px] font-medium text-center" style={{ color: '#9ca3af' }}>
+                          * 这是为您精心挑选的号码，基于大数据模拟分析。
+                        </div>
+                      </div>
+                    )}
+
+                    {/* QR Code Section */}
+                    <div className="flex items-center justify-between px-2 mb-2">
+                      <div className="flex-1">
+                         <h4 className="font-black text-[15px] mb-1" style={{ color: '#111827' }}>智料汇享</h4>
+                         <p className="text-[10px] font-bold leading-relaxed pr-4" style={{ color: '#9ca3af' }}>
+                           专业数字概率分析平台<br />
+                           每日更新独家数据方案
+                         </p>
+                         <div className="mt-3 text-[9px] font-medium" style={{ color: '#d1d5db' }}>
+                           {new Date().toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-')}
+                         </div>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <div className="bg-white p-2 rounded-xl border shadow-md mb-1.5" style={{ borderColor: '#f3f4f6' }}>
+                          <QRCodeSVG 
+                            value={`https://${window.location.host}/prediction/${id}`} 
+                            size={70}
+                            bgColor="#ffffff"
+                            fgColor="#000000"
+                            level="H"
+                          />
+                        </div>
+                        <p className="font-black text-[10px] tracking-widest" style={{ color: '#111827' }}>扫码查看详情</p>
+                      </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Action Button */}
-                  <button className="w-full bg-[#e53935] text-white font-bold py-3.5 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-red-100 active:scale-[0.98] transition-transform">
+                {/* Action Button */}
+                <div className="px-5 pb-5">
+                  <button onClick={handleDownloadPoster} className="w-full bg-[#e53935] text-white font-bold py-3.5 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-red-100 active:scale-[0.98] transition-transform">
                     <Download className="w-4 h-4" />
                     <span className="text-[15px] tracking-widest">下载高清海报</span>
                   </button>

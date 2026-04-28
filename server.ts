@@ -95,29 +95,61 @@ async function startServer() {
   });
 
   app.post("/api/wechat-login", async (req, res) => {
-    const { code, nickname, avatar, referrer } = req.body;
+    const { code, nickname, avatar, referrerId, referrer } = req.body;
     if (!code) return res.status(400).json({ error: "Code is required" });
 
     try {
-      const wechatOpenId = "wx_" + code.substring(0, 10);
+      let wechatOpenId = "wx_" + code.substring(0, 10);
+      let wechatNickname = nickname;
+      let wechatAvatar = avatar;
+
+      // Exchange code for real OpenID and UserInfo
+      const appId = process.env.WECHAT_APP_ID || "wxf0ea7bb3386e9d01";
+      const appSecret = process.env.WECHAT_APP_SECRET;
+
+      if (appSecret) {
+        try {
+          const tokenUrl = `https://api.weixin.qq.com/sns/oauth2/access_token?appid=${appId}&secret=${appSecret}&code=${code}&grant_type=authorization_code`;
+          const tokenResponse = await axios.get(tokenUrl);
+          
+          if (tokenResponse.data && tokenResponse.data.access_token && tokenResponse.data.openid) {
+            wechatOpenId = tokenResponse.data.openid;
+            const accessToken = tokenResponse.data.access_token;
+
+            const userUrl = `https://api.weixin.qq.com/sns/userinfo?access_token=${accessToken}&openid=${wechatOpenId}&lang=zh_CN`;
+            const userResponse = await axios.get(userUrl);
+
+            if (userResponse.data && !userResponse.data.errcode) {
+              wechatNickname = userResponse.data.nickname || wechatNickname;
+              wechatAvatar = userResponse.data.headimgurl || wechatAvatar;
+            }
+          }
+        } catch (wechatErr: any) {
+          console.error("Wechat API request failed:", wechatErr.message);
+        }
+      }
+
       let user = await db.collection("users").findOne({ wechatOpenId });
 
       if (!user) {
+        const mockNames = ['追梦人', '风起云涌', '岁月静好', '星辰大海', '浅笑安然', '时光荏苒', '落日余晖', '晨曦微露', '听风挽笑', '一叶知秋'];
+        const randomName = mockNames[Math.floor(Math.random() * mockNames.length)] + '_' + Math.floor(Math.random() * 999);
+        const randomAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${wechatOpenId}`;
+        
         user = {
           id: "u" + Date.now(),
           username: "wx_" + Date.now(),
-          nickname: nickname || ("微信用户_" + Math.floor(Math.random() * 1000)),
-          avatar: avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
-          referrer: referrer || null,
+          nickname: wechatNickname || randomName,
+          avatar: wechatAvatar || randomAvatar,
+          referrerId: referrerId || referrer || null,
           balance: 0.0,
           wechatOpenId: wechatOpenId
         } as any;
         await db.collection("users").insertOne(user);
       } else {
         const update: any = {};
-        // Always update nickname/avatar if provided from WeChat
-        if (nickname) update.nickname = nickname;
-        if (avatar) update.avatar = avatar;
+        if (wechatNickname) update.nickname = wechatNickname;
+        if (wechatAvatar && wechatAvatar !== '') update.avatar = wechatAvatar;
         
         if (Object.keys(update).length > 0) {
             await db.collection("users").updateOne({ id: user.id }, { $set: update });
@@ -125,10 +157,11 @@ async function startServer() {
         }
       }
 
-      res.json(user);
-    } catch (error) {
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error: any) {
       console.error("Wechat login error:", error);
-      res.status(500).json({ error: "微信登录失败" });
+      res.status(500).json({ error: "服务器内部错误" });
     }
   });
 
@@ -228,7 +261,9 @@ async function startServer() {
   });
 
   app.delete("/api/admin/messages/:id", async (req, res) => {
-    await db.collection("messages").deleteOne({ id: req.params.id });
+    let queryArgs: any[] = [{ id: req.params.id }];
+    if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
+    await db.collection("messages").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
   });
 
@@ -293,7 +328,7 @@ async function startServer() {
   });
 
   app.post("/api/pay/create", async (req, res) => {
-    const { amount, type, orderName, userId } = req.body;
+    const { amount, type, orderName, userId, predictionId } = req.body;
     
     const pid = process.env.YIPAY_PID || "1000";
     const key = process.env.YIPAY_KEY || "6fXAB353AFl8Pl9779xAO6598lO9b59P";
@@ -338,6 +373,7 @@ async function startServer() {
           out_trade_no: outTradeNo,
           userId: userId || "u1",
           amount: parseFloat(amount),
+          predictionId: predictionId || null,
           status: 'pending',
           createdAt: new Date().toISOString()
         });
@@ -401,6 +437,58 @@ async function startServer() {
           content: `您已成功充值 ${order.amount} 元`,
           time: new Date().toISOString()
         });
+
+        // AUTO PURCHASE
+        if (order.predictionId) {
+          try {
+            const user = await db.collection("users").findOne({ id: order.userId });
+            const prediction = await db.collection("predictions").findOne({ id: order.predictionId });
+            const settings: any = (await db.collection("settings").findOne({})) || {};
+            
+            if (user && prediction && user.balance >= prediction.price && (!user.purchased || !user.purchased.includes(prediction.id))) {
+                await db.collection("users").updateOne(
+                    { id: user.id }, 
+                    { 
+                      $inc: { balance: -prediction.price },
+                      $addToSet: { purchased: prediction.id }
+                    } as any
+                );
+
+                const authorUser: any = await db.collection("users").findOne({ isAuthor: true, authorId: prediction.authorId });
+                if (authorUser) {
+                    const revenue = prediction.price * (authorUser.authorCommissionRate || settings.authorCommissionRate || 0.7);
+                    await db.collection("users").updateOne({ id: authorUser.id }, { $inc: { balance: revenue, totalEarnings: revenue } });
+                    await db.collection("transactions").insertOne({
+                        id: "t" + Date.now() + "auto_a",
+                        userId: authorUser.id,
+                        type: 'earnings',
+                        amount: revenue,
+                        description: `自动分润: ${prediction.title}`,
+                        time: new Date().toISOString()
+                    });
+                }
+
+                // Log purchase transaction for buyer
+                await db.collection("transactions").insertOne({
+                    id: "t" + Date.now() + "auto_b",
+                    userId: user.id,
+                    type: 'withdraw',
+                    amount: -prediction.price,
+                    description: `自动购买方案: ${prediction.title}`,
+                    time: new Date().toISOString()
+                });
+
+                await db.collection("messages").insertOne({
+                    id: "m" + Date.now() + "auto",
+                    userId: user.id,
+                    type: 'system',
+                    title: '自动解锁成功',
+                    content: `方案《${prediction.title}》已自动为您解锁`,
+                    time: new Date().toISOString()
+                });
+            }
+          } catch (e) { console.error("Auto purchase err:", e); }
+        }
       }
     }
 
@@ -617,7 +705,9 @@ async function startServer() {
   });
 
   app.delete("/api/admin/authors/:id", async (req, res) => {
-    await db.collection("authors").deleteOne({ id: req.params.id });
+    let queryArgs: any[] = [{ id: req.params.id }];
+    if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
+    await db.collection("authors").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
   });
 
@@ -641,7 +731,9 @@ async function startServer() {
   });
 
   app.delete("/api/author/predictions/:id", async (req, res) => {
-    await db.collection("predictions").deleteOne({ id: req.params.id });
+    let queryArgs: any[] = [{ id: req.params.id }];
+    if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
+    await db.collection("predictions").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
   });
 
@@ -706,7 +798,9 @@ async function startServer() {
   });
 
   app.delete("/api/admin/predictions/:id", async (req, res) => {
-    await db.collection("predictions").deleteOne({ id: req.params.id });
+    let queryArgs: any[] = [{ id: req.params.id }];
+    if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
+    await db.collection("predictions").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
   });
 
@@ -739,7 +833,9 @@ async function startServer() {
   });
 
   app.delete("/api/admin/applications/:id", async (req, res) => {
-    await db.collection("applications").deleteOne({ id: req.params.id });
+    let queryArgs: any[] = [{ id: req.params.id }];
+    if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
+    await db.collection("applications").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
   });
 
@@ -775,6 +871,80 @@ async function startServer() {
     }
   });
 
+  // Admin Withdrawals
+  app.get("/api/admin/withdrawals", async (req, res) => {
+    const withdrawals = await db.collection("withdrawals").find().sort({ time: -1 }).toArray();
+    res.json(withdrawals.map(w => ({ ...w, id: w.id || w._id.toString() })));
+  });
+
+  app.put("/api/admin/withdrawals/:id", async (req, res) => {
+    const { status } = req.body;
+    let queryArgs: any[] = [{ id: req.params.id }];
+    if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
+    
+    const withdrawal = await db.collection("withdrawals").findOne({ $or: queryArgs });
+    
+    if (withdrawal && withdrawal.status === 'pending') {
+      await db.collection("withdrawals").updateOne({ _id: withdrawal._id }, { $set: { status } });
+      
+      // If rejected, refund the user
+      if (status === 'rejected') {
+         await db.collection("users").updateOne({ id: withdrawal.userId }, { $inc: { balance: withdrawal.amount } });
+         await db.collection("transactions").insertOne({
+            id: "t" + Date.now() + "rf",
+            userId: withdrawal.userId,
+            type: 'earnings',
+            amount: withdrawal.amount,
+            description: '提现失败退回',
+            time: new Date().toISOString()
+         });
+         await db.collection("messages").insertOne({
+            id: "m" + Date.now() + "rf",
+            userId: withdrawal.userId,
+            type: 'system',
+            title: '提现被拦截',
+            content: `您的提现申请已被拒绝，已退回至余额。金额：¥${withdrawal.amount}`,
+            time: new Date().toISOString()
+         });
+      } else if (status === 'approved') {
+         await db.collection("messages").insertOne({
+            id: "m" + Date.now() + "ap",
+            userId: withdrawal.userId,
+            type: 'system',
+            title: '提现成功通知',
+            content: `您的提现申请已通过审核，提现金额：¥${withdrawal.amount}已打款至您的账户，请注意查收。`,
+            time: new Date().toISOString()
+         });
+      }
+      res.json({ message: "Updated" });
+    } else {
+      res.status(400).json({ error: "Invalid withdrawal or status" });
+    }
+  });
+
+  // Feedback
+  app.post("/api/feedback", async (req, res) => {
+    const newFeedback = {
+      ...req.body,
+      id: "fb" + Date.now(),
+      time: new Date().toISOString()
+    };
+    await db.collection("feedbacks").insertOne(newFeedback);
+    res.json(newFeedback);
+  });
+
+  app.get("/api/admin/feedbacks", async (req, res) => {
+    const feedbacks = await db.collection("feedbacks").find().sort({ time: -1 }).toArray();
+    res.json(feedbacks.map(fb => ({ ...fb, id: fb.id || fb._id.toString() })));
+  });
+
+  app.delete("/api/admin/feedbacks/:id", async (req, res) => {
+    let queryArgs: any[] = [{ id: req.params.id }];
+    if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
+    await db.collection("feedbacks").deleteOne({ $or: queryArgs });
+    res.json({ message: "Deleted" });
+  });
+
   app.put("/api/admin/users/:id", async (req, res) => {
     const updateData = req.body;
     delete updateData._id;
@@ -788,7 +958,9 @@ async function startServer() {
   });
 
   app.delete("/api/admin/users/:id", async (req, res) => {
-    await db.collection("users").deleteOne({ id: req.params.id });
+    let queryArgs: any[] = [{ id: req.params.id }];
+    if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
+    await db.collection("users").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
   });
 
@@ -804,18 +976,39 @@ async function startServer() {
   });
 
   app.delete("/api/admin/history/:id", async (req, res) => {
-    await db.collection("history").deleteOne({ id: req.params.id });
+    let queryArgs: any[] = [{ id: req.params.id }];
+    if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
+    await db.collection("history").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
   });
 
   // CRUD for Orders
   app.get("/api/admin/orders", async (req, res) => {
-    const orders = await db.collection("orders").find().toArray();
-    res.json(orders);
+    const orders = await db.collection("orders").find().sort({ createdAt: -1 }).toArray();
+    const populatedOrders = await Promise.all(orders.map(async (o: any) => {
+      const user = await db.collection("users").findOne({ id: o.userId });
+      let prediction = null;
+      if (o.predictionId) {
+        prediction = await db.collection("predictions").findOne({ id: o.predictionId });
+      }
+      return {
+        id: o.id || o._id.toString(),
+        userId: o.userId,
+        username: user ? (user.nickname || user.username) : "未知用户",
+        amount: o.amount,
+        predictionTitle: prediction ? prediction.title : "账户余额充值",
+        time: o.createdAt || o.time,
+        status: o.status,
+        outTradeNo: o.out_trade_no
+      };
+    }));
+    res.json(populatedOrders);
   });
 
   app.delete("/api/admin/orders/:id", async (req, res) => {
-    await db.collection("orders").deleteOne({ id: req.params.id });
+    let queryArgs: any[] = [{ id: req.params.id }];
+    if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
+    await db.collection("orders").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
   });
 

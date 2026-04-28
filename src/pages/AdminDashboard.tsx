@@ -13,7 +13,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('authors');
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any>({ authors: [], predictions: [], history: [], users: [], orders: [], applications: [], messages: [], settings: null });
+  const [data, setData] = useState<any>({ authors: [], predictions: [], history: [], users: [], orders: [], applications: [], messages: [], settings: null, withdrawals: [], feedbacks: [] });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,7 +26,7 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [authors, predictions, history, users, orders, applications, messages, settings] = await Promise.all([
+      const [authors, predictions, history, users, orders, applications, messages, settings, withdrawals, feedbacks] = await Promise.all([
         api.getAuthors(),
         api.getPredictions(),
         api.getHistory(),
@@ -34,9 +34,11 @@ const AdminDashboard = () => {
         api.getAdminOrders().catch(() => []),
         api.getAdminApplications().catch(() => []),
         api.getMessages().catch(() => []),
-        api.getSettings().catch(() => null)
+        api.getSettings().catch(() => null),
+        api.getAdminWithdrawals().catch(() => []),
+        api.getAdminFeedbacks().catch(() => [])
       ]);
-      setData({ authors, predictions, history, users, orders, applications, messages, settings });
+      setData({ authors, predictions, history, users, orders, applications, messages, settings, withdrawals, feedbacks });
     } catch (err) {
       console.error('Failed to fetch admin data', err);
     } finally {
@@ -58,6 +60,16 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleApproveWithdrawal = async (id: string, approve: boolean) => {
+    if (!window.confirm(`确定要${approve ? '通过' : '拒绝'}该提现申请吗？`)) return;
+    try {
+      await api.updateAdminWithdrawal(id, approve ? 'approved' : 'rejected');
+      await fetchData();
+    } catch (err) {
+      alert('操作失败');
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!window.confirm('确定要删除吗？')) return;
     try {
@@ -68,6 +80,7 @@ const AdminDashboard = () => {
       if (activeTab === 'history') await api.deleteHistory(id);
       if (activeTab === 'applications') await api.deleteAdminApplication(id);
       if (activeTab === 'messages') await api.deleteAdminMessage(id);
+      if (activeTab === 'feedbacks') await api.deleteAdminFeedback(id);
       await fetchData();
     } catch (err) {
       alert('删除失败');
@@ -185,10 +198,12 @@ const AdminDashboard = () => {
           { id: 'authors', label: '专家管理', icon: Users },
           { id: 'predictions', label: '预测管理', icon: BookOpen },
           { id: 'applications', label: '入驻审核', icon: UserCheck },
+          { id: 'withdrawals', label: '提现审核', icon: ShoppingBag },
           { id: 'orders', label: '订单管理', icon: ShoppingBag },
           { id: 'users', label: '用户管理', icon: Settings },
           { id: 'history', label: '历史录入', icon: Clock },
           { id: 'messages', label: '公告通知', icon: Volume2 },
+          { id: 'feedbacks', label: '意见反馈', icon: Volume2 },
           { id: 'settings', label: '基础设置', icon: Settings },
         ].map(tab => (
           <button
@@ -418,7 +433,7 @@ const AdminDashboard = () => {
                   </div>
                   <div className="flex items-center text-[10px] text-gray-400">
                     <span className="mr-3">用户: {order.username} (ID: {order.userId})</span>
-                    <span>时间: {order.time}</span>
+                    <span>时间: {order.time ? new Date(order.time).toLocaleString() : ''}</span>
                   </div>
                 </div>
                 <div className="ml-4">
@@ -464,6 +479,66 @@ const AdminDashboard = () => {
                   <button onClick={() => handleDelete(msg.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg shrink-0">
                     <Trash2 className="w-4 h-4" />
                   </button>
+                </div>
+              </div>
+            ))}
+
+            {activeTab === 'withdrawals' && data.withdrawals.map((w: any) => (
+              <div key={w.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-4">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-lg">提现 ¥{w.amount}</h3>
+                    <p className="text-xs text-gray-500">用户ID: {w.userId}</p>
+                  </div>
+                  <div className={`px-2 py-1 rounded text-xs font-bold ${
+                    w.status === 'pending' ? 'bg-orange-100 text-orange-600' :
+                    w.status === 'approved' ? 'bg-green-100 text-green-600' :
+                    'bg-red-100 text-red-600'
+                  }`}>
+                    {w.status === 'pending' ? '待审核' : w.status === 'approved' ? '已打款' : '已拒绝'}
+                  </div>
+                </div>
+                <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg mb-3">
+                  <p><span className="text-gray-400">收款方式:</span> {w.type}</p>
+                  <p><span className="text-gray-400">收款账号:</span> {w.account}</p>
+                  <p><span className="text-gray-400">真实姓名:</span> {w.name}</p>
+                </div>
+                <div className="flex justify-between items-center text-xs text-gray-400">
+                  <span>申请时间: {new Date(w.time || Date.now()).toLocaleString()}</span>
+                  {w.status === 'pending' && (
+                    <div className="flex space-x-2">
+                       <button onClick={() => handleApproveWithdrawal(w.id, true)} className="px-3 py-1 bg-green-500 text-white rounded font-bold shadow-sm active:scale-95 transition-transform">打款</button>
+                       <button onClick={() => handleApproveWithdrawal(w.id, false)} className="px-3 py-1 bg-gray-200 text-gray-700 rounded font-bold shadow-sm active:scale-95 transition-transform">拒绝</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {activeTab === 'feedbacks' && data.feedbacks.map((fb: any) => (
+              <div key={fb.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-4">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-lg">问题反馈</h3>
+                    <p className="text-xs text-gray-500">反馈场景: {fb.scenario || '通用'}</p>
+                  </div>
+                  <button onClick={() => handleDelete(fb.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg shrink-0">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg mb-3 break-words">
+                  {fb.content}
+                </div>
+                {fb.images && fb.images.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto mb-3">
+                    {fb.images.map((img: string, idx: number) => (
+                      <img key={idx} src={img} className="h-20 w-20 object-cover rounded border border-gray-200 shrink-0" alt="反馈截图" />
+                    ))}
+                  </div>
+                )}
+                <div className="flex justify-between items-center text-xs text-gray-400">
+                  <span>联系电话: {fb.phone || '未提供'}</span>
+                  <span>{new Date(fb.time).toLocaleString()}</span>
                 </div>
               </div>
             ))}

@@ -137,7 +137,11 @@ const AuthorDashboard = () => {
           </div>
         ) : (
           filteredPredictions.map((pred) => (
-            <div key={pred.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center">
+            <div 
+              key={pred.id} 
+              className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center cursor-pointer active:bg-gray-50 transition-colors"
+              onClick={() => navigate(`/prediction/${pred.id}`)}
+            >
               <div className="flex-1 min-w-0 pr-4">
                 <div className="flex items-center space-x-2 mb-1">
                   <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${
@@ -150,6 +154,11 @@ const AuthorDashboard = () => {
                   }`}>
                     {pred.isUnlocked ? '已公开' : '锁定中'}
                   </span>
+                  {pred.tags && pred.tags.map((tag, idx) => (
+                    <span key={idx} className="text-[10px] bg-red-50 text-red-500 px-2 py-0.5 rounded-md font-bold">
+                      {tag}
+                    </span>
+                  ))}
                   <span className="text-[10px] text-gray-400 font-medium">{pred.time}</span>
                 </div>
                 <h3 className="font-bold text-gray-800 truncate leading-snug">{pred.title}</h3>
@@ -163,13 +172,19 @@ const AuthorDashboard = () => {
               
               <div className="flex items-center space-x-1">
                 <button 
-                  onClick={() => navigate(`/publish?edit=${pred.id}`)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/publish?edit=${pred.id}`);
+                  }}
                   className="p-2 text-gray-400 active:text-blue-500 transition-colors"
                 >
                   <Edit3 className="w-5 h-5" />
                 </button>
                 <button 
-                  onClick={() => setShowDeleteConfirm(pred.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDeleteConfirm(pred.id);
+                  }}
                   className="p-2 text-gray-400 active:text-red-500 transition-colors"
                 >
                   <Trash2 className="w-5 h-5" />
