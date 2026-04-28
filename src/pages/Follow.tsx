@@ -52,8 +52,16 @@ const PredictionCard = ({ prediction }: { prediction: Prediction, key?: React.Ke
           )}
         </div>
 
-        <div className={`text-[14px] font-black shrink-0 ${prediction.isFree || prediction.isUnlocked ? 'text-green-500' : 'text-red-600'}`}>
-          {prediction.isFree || prediction.isUnlocked ? '免费' : `¥ ${prediction.price}`}
+        <div className={`shrink-0 ${prediction.isFree || prediction.isUnlocked ? 'text-green-500' : 'text-red-600'}`}>
+          {prediction.isFree || prediction.isUnlocked ? (
+            <span className="text-[14px] font-black">免费</span>
+          ) : (
+            <div className="flex items-baseline">
+              <span className="text-[11px] font-black mr-0.5">¥</span>
+              <span className="text-[16px] font-black">{Math.floor(prediction.price)}</span>
+              <span className="text-[10px] font-medium">.00</span>
+            </div>
+          )}
         </div>
       </div>
 

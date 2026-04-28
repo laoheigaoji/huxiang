@@ -169,7 +169,21 @@ const JumpingNumber = ({ base, range = 5, interval = 3000 }: { base: number, ran
   return <>{num}</>;
 };
 
-const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Prediction, isFollowed?: boolean, onFollow?: (e: React.MouseEvent) => void, key?: React.Key }) => (
+const parseTitle = (title: string) => {
+  const match = title.match(/^(【第.*?期】)(.*)/);
+  if (match) {
+    return {
+      period: match[1],
+      rest: match[2].trim()
+    };
+  }
+  return { period: '', rest: title };
+};
+
+const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Prediction, isFollowed?: boolean, onFollow?: (e: React.MouseEvent) => void, key?: React.Key }) => {
+  const { period, rest } = parseTitle(prediction.contentTitle);
+  
+  return (
   <Link to={`/prediction/${prediction.id}`} className="block bg-white rounded-xl mb-4 overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] relative border border-gray-100/30 mx-3">
     {prediction.isHot && (
       <div className="absolute top-0 left-0 z-10 w-8 h-8 flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 rounded-br-2xl shadow-sm">
@@ -224,8 +238,9 @@ const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Pred
       </div>
 
       {/* Content Title */}
-      <h4 className="text-[16px] font-black text-gray-900 leading-tight mb-3">
-        {prediction.contentTitle}
+      <h4 className="text-[16px] leading-tight mb-3 flex items-start">
+        {period && <span className="font-black text-gray-900 shrink-0">{period}</span>}
+        <span className="font-normal text-gray-600">{rest}</span>
       </h4>
 
       {/* Badges/Tags & Price */}
@@ -248,8 +263,16 @@ const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Pred
           ))}
         </div>
 
-        <div className={`text-[15px] font-black shrink-0 ${prediction.isFree || prediction.isUnlocked ? 'text-green-500' : 'text-red-600'}`}>
-          {prediction.isFree || prediction.isUnlocked ? '免费' : `¥ ${prediction.price}`}
+        <div className={`shrink-0 ${prediction.isFree || prediction.isUnlocked ? 'text-green-500' : 'text-red-600'}`}>
+          {prediction.isFree || prediction.isUnlocked ? (
+            <span className="text-[15px] font-black">免费</span>
+          ) : (
+            <div className="flex items-baseline">
+              <span className="text-[12px] font-black mr-0.5">¥</span>
+              <span className="text-[17px] font-black">{Math.floor(prediction.price)}</span>
+              <span className="text-[11px] font-medium">.00</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -273,7 +296,8 @@ const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Pred
       </div>
     </div>
   </Link>
-);
+  );
+};
 
 const Home = () => {
   const [isSortModalOpen, setIsSortModalOpen] = useState(false);
@@ -410,7 +434,7 @@ const Home = () => {
           <div className="text-right">
              <div className="flex items-center justify-end text-[10.5px] font-bold space-x-1 leading-none text-gray-900">
                <span>平台当前在线人数:</span>
-               <span className="text-red-500 font-black italic tracking-tighter text-[11.5px]">
+               <span className="text-red-500 font-medium italic tracking-tighter text-[11.5px]">
                   <JumpingNumber base={4089} range={10} interval={1500} />
                </span>
                <span>人</span>
@@ -422,11 +446,13 @@ const Home = () => {
         </div>
 
 
-        {/* Author Avatars Grid - Scrollable Horizontal */}
-        <div className="flex overflow-x-auto pb-1 scrollbar-hide space-x-1 mt-1">
-           {(authorType === 'top' ? authors : authors.slice().reverse()).map((author, index) => (
-             <AuthorAvatarGrid key={author.id + index} author={author} />
-           ))}
+        {/* Author Avatars Grid - Two Rows of Five */}
+        <div className="mt-1">
+          <div className="grid grid-cols-5 gap-y-2 gap-x-1">
+             {(authorType === 'top' ? authors : authors.slice().reverse()).slice(0, 10).map((author, index) => (
+               <AuthorAvatarGrid key={author.id + index} author={author} />
+             ))}
+          </div>
         </div>
       </div>
 

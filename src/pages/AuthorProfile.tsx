@@ -233,8 +233,16 @@ const AuthorProfile = () => {
                        <span className="bg-green-50 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded-[4px] border border-green-100/50">免费</span>
                     )}
                   </div>
-                  <div className={`text-[15px] font-black shrink-0 ${prediction.isFree || prediction.isUnlocked ? 'text-green-500' : 'text-red-600'}`}>
-                    {prediction.isFree || prediction.isUnlocked ? '免费' : `¥ ${prediction.price}`}
+                  <div className={`shrink-0 ${prediction.isFree || prediction.isUnlocked ? 'text-green-500' : 'text-red-600'}`}>
+                    {prediction.isFree || prediction.isUnlocked ? (
+                      <span className="text-[15px] font-black">免费</span>
+                    ) : (
+                      <div className="flex items-baseline">
+                        <span className="text-[12px] font-black mr-0.5">¥</span>
+                        <span className="text-[17px] font-black">{Math.floor(prediction.price)}</span>
+                        <span className="text-[11px] font-medium">.00</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
