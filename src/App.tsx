@@ -51,8 +51,8 @@ const BottomNav = () => {
         const isActive = location.pathname === tab.path;
         return (
           <Link key={tab.path} to={tab.path} className="flex flex-col items-center">
-            <tab.icon className={`w-6 h-6 ${isActive ? 'text-red-500 fill-red-500' : 'text-gray-400'}`} />
-            <span className={`text-xs mt-1 ${isActive ? 'text-red-500' : 'text-gray-500'}`}>{tab.name}</span>
+            <tab.icon className={`w-6 h-6 ${isActive ? 'text-[#b71c1c] fill-[#b71c1c]' : 'text-gray-400'}`} />
+            <span className={`text-xs mt-1 ${isActive ? 'text-[#b71c1c]' : 'text-gray-500'}`}>{tab.name}</span>
           </Link>
         );
       })}

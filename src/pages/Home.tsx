@@ -10,9 +10,9 @@ const SortIcon = ({ type, direction }: { type: string, direction?: 'up' | 'down'
     return (
       <div className="w-8 h-8 flex items-center justify-center">
         <div className="flex flex-col space-y-[2px]">
-          <div className="w-4 h-[2px] bg-red-500 rounded-full"></div>
-          <div className="w-2 h-[2px] bg-red-500 rounded-full"></div>
-          <div className="w-3 h-[2px] bg-red-500 rounded-full"></div>
+          <div className="w-4 h-[2px] bg-[#b71c1c] rounded-full"></div>
+          <div className="w-2 h-[2px] bg-[#b71c1c] rounded-full"></div>
+          <div className="w-3 h-[2px] bg-[#b71c1c] rounded-full"></div>
         </div>
       </div>
     );
@@ -32,7 +32,7 @@ const SortIcon = ({ type, direction }: { type: string, direction?: 'up' | 'down'
 
 const SortModal = ({ isOpen, onClose, selected, onSelect }: { isOpen: boolean, onClose: () => void, selected: string, onSelect: (id: string) => void }) => {
   const options = [
-    { id: 'default', label: '默认排序', type: 'default', icon: <SlidersHorizontal className="w-6 h-6 text-red-500" /> },
+    { id: 'default', label: '默认排序', type: 'default', icon: <SlidersHorizontal className="w-6 h-6 text-[#b71c1c]" /> },
     { id: 'hit_desc', label: '命中率从高到低', type: 'hit', direction: 'down' },
     { id: 'streak_asc', label: '连红从低到高', type: 'streak', direction: 'up' },
     { id: 'streak_desc', label: '连红从高到低', type: 'streak', direction: 'down' },
@@ -69,7 +69,7 @@ const SortModal = ({ isOpen, onClose, selected, onSelect }: { isOpen: boolean, o
                 >
                   <div className="w-10 mr-4 flex justify-center">
                     {opt.id === 'default' ? (
-                      <SlidersHorizontal className="w-6 h-6 text-red-500" />
+                      <SlidersHorizontal className="w-6 h-6 text-[#b71c1c]" />
                     ) : (
                       <div className="font-bold text-[18px] text-gray-800 flex items-center">
                         {opt.type === 'hit' && <span>冲</span>}
@@ -79,11 +79,11 @@ const SortModal = ({ isOpen, onClose, selected, onSelect }: { isOpen: boolean, o
                       </div>
                     )}
                   </div>
-                  <span className={`flex-1 text-[16px] font-medium ${selected === opt.id ? 'text-red-500 font-bold' : 'text-gray-800'}`}>
+                  <span className={`flex-1 text-[16px] font-medium ${selected === opt.id ? 'text-[#b71c1c] font-bold' : 'text-gray-800'}`}>
                     {opt.label}
                   </span>
                   {selected === opt.id && (
-                    <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+                    <div className="w-6 h-6 bg-[#b71c1c] rounded-full flex items-center justify-center">
                       <Check className="w-4 h-4 text-white" strokeWidth={3} />
                     </div>
                   )}
@@ -98,14 +98,14 @@ const SortModal = ({ isOpen, onClose, selected, onSelect }: { isOpen: boolean, o
 };
 
 const AuthorAvatarGrid = ({ author }: { author: Author, key?: React.Key }) => (
-  <Link to={`/author/${author.id}`} className="flex flex-col items-center min-w-[62px] px-0.5">
-    <div className="w-[48px] h-[48px] rounded-full overflow-hidden mb-1 shadow-sm border border-gray-50">
+  <Link to={`/author/${author.id}`} className="flex flex-col items-center min-w-[64px] px-0.5">
+    <div className="w-[50px] h-[50px] rounded-full overflow-hidden mb-1 shadow-sm border border-gray-50">
       <img src={author.avatar} alt={author.name} className="w-full h-full object-cover" />
     </div>
-    <span className="text-[11px] text-gray-700 font-bold mb-1 truncate w-full text-center tracking-tighter">{author.name}</span>
-    <div className="flex bg-white border border-[#ef5350] rounded-[2px] overflow-hidden scale-90 origin-top">
-      <span className="text-[8px] text-[#ef5350] px-1 font-bold whitespace-nowrap bg-white border-r border-[#ef5350]/30">{author.recentRecord}</span>
-      <span className="bg-[#ef5350] text-white text-[9px] px-1.5 py-0.5 font-black leading-none min-w-[16px] text-center">{author.streak}</span>
+    <span className="text-[11px] text-gray-700 font-bold mb-1.5 truncate w-full text-center tracking-tighter">{author.name}</span>
+    <div className="flex bg-white border border-[#b71c1c] rounded-[3px] overflow-hidden shadow-sm">
+      <span className="text-[9px] text-[#b71c1c] px-1.5 py-1 font-bold whitespace-nowrap bg-white border-r border-[#b71c1c]/20 leading-none flex items-center">{author.recentRecord}</span>
+      <span className="bg-[#b71c1c] text-white text-[10px] px-1.5 py-1 font-black leading-none min-w-[18px] text-center flex items-center justify-center">{author.streak}</span>
     </div>
   </Link>
 );
@@ -143,13 +143,13 @@ const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
 
   return (
     <div className="flex flex-col items-end">
-      <span className="text-[10px] text-[#ef5350] font-bold mb-1 tracking-tighter">公开倒计时</span>
+      <span className="text-[10px] text-[#b71c1c] font-bold mb-1 tracking-tighter">公开倒计时</span>
       <div className="flex items-center space-x-1">
-        <span className="bg-[#ef5350] text-white text-[11px] font-black w-5 h-5 flex items-center justify-center rounded-[3px] shadow-sm">{timeLeft.h}</span>
-        <span className="text-[#ef5350] font-black text-xs">:</span>
-        <span className="bg-[#ef5350] text-white text-[11px] font-black w-5 h-5 flex items-center justify-center rounded-[3px] shadow-sm">{timeLeft.m}</span>
-        <span className="text-[#ef5350] font-black text-xs">:</span>
-        <span className="bg-[#ef5350] text-white text-[11px] font-black w-5 h-5 flex items-center justify-center rounded-[3px] shadow-sm">{timeLeft.s}</span>
+        <span className="bg-[#b71c1c] text-white text-[11px] font-black w-5 h-5 flex items-center justify-center rounded-[3px] shadow-sm">{timeLeft.h}</span>
+        <span className="text-[#b71c1c] font-black text-xs">:</span>
+        <span className="bg-[#b71c1c] text-white text-[11px] font-black w-5 h-5 flex items-center justify-center rounded-[3px] shadow-sm">{timeLeft.m}</span>
+        <span className="text-[#b71c1c] font-black text-xs">:</span>
+        <span className="bg-[#b71c1c] text-white text-[11px] font-black w-5 h-5 flex items-center justify-center rounded-[3px] shadow-sm">{timeLeft.s}</span>
       </div>
     </div>
   );
@@ -160,8 +160,8 @@ const JumpingNumber = ({ base, range = 5, interval = 3000 }: { base: number, ran
   
   useEffect(() => {
     const timer = setInterval(() => {
-      const change = Math.floor(Math.random() * (range * 2 + 1)) - range;
-      setNum(prev => Math.max(1, prev + change));
+      const change = Math.floor(Math.random() * range) + 1;
+      setNum(prev => prev + change);
     }, interval);
     return () => clearInterval(timer);
   }, [range, interval]);
@@ -229,7 +229,7 @@ const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Pred
             className={`text-[12px] font-bold px-4 py-1.5 rounded-full active:scale-95 transition-all shadow-sm ${
               isFollowed 
                 ? 'bg-gray-100 text-gray-400' 
-                : 'bg-[#fef2f2] text-[#ef5350]'
+                : 'bg-[#fef2f2] text-[#b71c1c]'
             }`}
           >
             {isFollowed ? '已关注' : '+关注'}
@@ -246,10 +246,10 @@ const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Pred
       {/* Badges/Tags & Price */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex bg-white border border-red-500 rounded-[5px] overflow-hidden scale-95 origin-left shrink-0">
-            <span className="text-[10px] text-red-500 px-2 py-0.5 font-bold bg-white">{prediction.authorRecentRecord || '精选'}</span>
+          <div className="flex bg-white border border-[#b71c1c] rounded-[5px] overflow-hidden scale-95 origin-left shrink-0">
+            <span className="text-[10px] text-[#b71c1c] px-2 py-0.5 font-bold bg-white">{prediction.authorRecentRecord || '精选'}</span>
             {prediction.authorStreak > 0 && (
-              <div className="flex items-center bg-[#ef5350] text-white text-[10px] px-2 py-0.5 font-bold space-x-1 shrink-0">
+              <div className="flex items-center bg-[#b71c1c] text-white text-[10px] px-2 py-0.5 font-bold space-x-1 shrink-0">
                 <span>{prediction.authorStreak}连红</span>
                 <span className="text-[9px]">👍</span>
               </div>
@@ -257,13 +257,13 @@ const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Pred
           </div>
           
           {prediction.tags && prediction.tags.map((tag, idx) => (
-            <div key={idx} className="bg-red-50 text-red-500 text-[10px] font-bold px-2.5 py-0.5 rounded-[5px] border border-red-100/50 scale-95 origin-left shrink-0">
+            <div key={idx} className="bg-red-50 text-[#b71c1c] text-[10px] font-bold px-2.5 py-0.5 rounded-[5px] border border-red-100/50 scale-95 origin-left shrink-0">
               {tag}
             </div>
           ))}
         </div>
 
-        <div className={`shrink-0 ${prediction.isFree || prediction.isUnlocked ? 'text-green-500' : 'text-red-600'}`}>
+        <div className={`shrink-0 ${prediction.isFree || prediction.isUnlocked ? 'text-green-500' : 'text-[#b71c1c]'}`}>
           {prediction.isFree || prediction.isUnlocked ? (
             <span className="text-[15px] font-black">免费</span>
           ) : (
@@ -334,7 +334,7 @@ const Home = () => {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen bg-white">
-      <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="w-8 h-8 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
 
@@ -395,7 +395,7 @@ const Home = () => {
                   className="text-[11px] text-gray-800 font-medium flex-1 outline-none bg-transparent placeholder:text-gray-300"
                 />
               </div>
-              <Link to="/author-search" className="text-[#ef5350] active:scale-95 transition-transform">
+              <Link to="/author-search" className="text-[#b71c1c] active:scale-95 transition-transform">
                 <ArrowLeftRight className="w-5 h-5" strokeWidth={2.5} />
               </Link>
            </div>
@@ -408,7 +408,7 @@ const Home = () => {
               onClick={() => setAuthorType('top')}
               className={`h-7 px-3 rounded flex items-center font-black transition-all ${
                 authorType === 'top' 
-                  ? 'bg-[#ef5350] text-white shadow-md' 
+                  ? 'bg-[#b71c1c] text-white shadow-md' 
                   : 'bg-gray-100 text-gray-400'
               }`}
             >
@@ -420,7 +420,7 @@ const Home = () => {
               onClick={() => setAuthorType('new')}
               className={`h-7 px-3 rounded flex items-center font-black transition-all ${
                 authorType === 'new' 
-                  ? 'bg-[#ef5350] text-white shadow-md' 
+                  ? 'bg-[#b71c1c] text-white shadow-md' 
                   : 'bg-gray-100 text-gray-400'
               }`}
             >
@@ -434,7 +434,7 @@ const Home = () => {
           <div className="text-right">
              <div className="flex items-center justify-end text-[10.5px] font-bold space-x-1 leading-none text-gray-900">
                <span>平台当前在线人数:</span>
-               <span className="text-red-500 font-medium italic tracking-tighter text-[11.5px]">
+               <span className="text-[#b71c1c] font-medium italic tracking-tighter text-[11.5px]">
                   <JumpingNumber base={4089} range={10} interval={1500} />
                </span>
                <span>人</span>
@@ -499,7 +499,7 @@ const Home = () => {
       <div className="fixed bottom-28 right-4 z-50">
         <button 
           onClick={() => setIsSortModalOpen(true)}
-          className="w-14 h-14 bg-[#ef5350] rounded-full flex items-center justify-center text-white shadow-[0_8px_30px_rgba(239,83,80,0.4)] active:scale-90 active:shadow-lg transition-all duration-300"
+          className="w-14 h-14 bg-[#b71c1c] rounded-full flex items-center justify-center text-white shadow-[0_8px_30px_rgba(183,28,28,0.4)] active:scale-90 active:shadow-lg transition-all duration-300"
         >
           <div className="flex flex-col space-y-[4px]">
              <div className="w-6 h-[2.5px] bg-white rounded-full"></div>

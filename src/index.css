@@ -3,7 +3,7 @@
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --color-primary: #e53935;
+  --color-primary: #b71c1c;
 }
 
 :root {
@@ -42,7 +42,7 @@ body {
 }
 
 .red-gradient {
-  background: linear-gradient(135deg, #e53935 0%, #d32f2f 100%);
+  background: linear-gradient(135deg, #b71c1c 0%, #9a1a1a 100%);
 }
 
 .blue-gradient {

@@ -40,12 +40,12 @@ const CountdownTimer = ({ unlockAt }: { unlockAt: string }) => {
 
   return (
     <div className="flex flex-col items-end">
-      <span className="text-[11px] text-[#f44336] font-black mb-1">公开倒计时</span>
+      <span className="text-[11px] text-[#b71c1c] font-black mb-1">公开倒计时</span>
       <div className="flex space-x-0.5">
         {[timeLeft.h, timeLeft.m, timeLeft.s].map((p, idx) => (
           <React.Fragment key={idx}>
-            <span className="bg-[#ef5350] text-white text-[11px] font-bold px-1.5 py-0.5 rounded-sm">{p}</span>
-            {idx < 2 && <span className="text-[#f44336] text-[11px] font-bold self-center">:</span>}
+            <span className="bg-[#b71c1c] text-white text-[11px] font-bold px-1.5 py-0.5 rounded-sm">{p}</span>
+            {idx < 2 && <span className="text-[#b71c1c] text-[11px] font-bold self-center">:</span>}
           </React.Fragment>
         ))}
       </div>
@@ -104,7 +104,7 @@ const AuthorProfile = () => {
 
   if (loading || !author) return (
     <div className="flex items-center justify-center min-h-screen bg-white">
-      <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="w-8 h-8 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
   
@@ -154,7 +154,7 @@ const AuthorProfile = () => {
                 <div 
                   key={idx} 
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold text-white shadow-sm ${
-                    status === '红' ? 'bg-[#ef5350]' : 'bg-[#212121]'
+                    status === '红' ? 'bg-[#b71c1c]' : 'bg-[#212121]'
                   }`}
                 >
                   {status}
@@ -190,11 +190,11 @@ const AuthorProfile = () => {
                     <div className="ml-3">
                       <div className="text-[15px] font-bold text-gray-900">{author.name}</div>
                       <div className="flex items-center mt-0.5 space-x-1">
-                        <span className="px-1.5 py-0.5 bg-[#fff5f5] text-[#f44336] text-[10px] font-black rounded-sm border border-[#ffe0e0]">
+                        <span className="px-1.5 py-0.5 bg-[#fff5f5] text-[#b71c1c] text-[10px] font-black rounded-sm border border-[#ffe0e0]">
                           {author.recentRecord}
                         </span>
                         {author.streak > 0 && (
-                          <span className="px-1.5 py-0.5 bg-[#f44336] text-white text-[10px] font-black rounded-sm flex items-center">
+                          <span className="px-1.5 py-0.5 bg-[#b71c1c] text-white text-[10px] font-black rounded-sm flex items-center">
                             {author.streak}连红 <span className="ml-0.5 text-[8px] transform -translate-y-[1px]">👍</span>
                           </span>
                         )}
@@ -217,7 +217,7 @@ const AuthorProfile = () => {
 
                 <div className="mt-4">
                   <h5 className="text-[16px] font-bold leading-relaxed">
-                    <span className="text-[#f44336]">【{prediction.period}】</span>
+                    <span className="text-[#b71c1c]">【{prediction.period}】</span>
                     <span className="text-gray-800">{prediction.contentTitle}</span>
                   </h5>
                 </div>
@@ -225,7 +225,7 @@ const AuthorProfile = () => {
                 <div className="mt-4 flex items-center justify-between">
                   <div className="flex items-center space-x-1.5 flex-wrap">
                     {prediction.tags && prediction.tags.map((tag, idx) => (
-                      <span key={idx} className="bg-red-50 text-red-500 text-[10px] font-bold px-2 py-0.5 rounded-[4px] border border-red-100/50">
+                      <span key={idx} className="bg-red-50 text-[#b71c1c] text-[10px] font-bold px-2 py-0.5 rounded-[4px] border border-red-100/50">
                         {tag}
                       </span>
                     ))}
@@ -233,7 +233,7 @@ const AuthorProfile = () => {
                        <span className="bg-green-50 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded-[4px] border border-green-100/50">免费</span>
                     )}
                   </div>
-                  <div className={`shrink-0 ${prediction.isFree || prediction.isUnlocked ? 'text-green-500' : 'text-red-600'}`}>
+                  <div className={`shrink-0 ${prediction.isFree || prediction.isUnlocked ? 'text-green-500' : 'text-[#b71c1c]'}`}>
                     {prediction.isFree || prediction.isUnlocked ? (
                       <span className="text-[15px] font-black">免费</span>
                     ) : (

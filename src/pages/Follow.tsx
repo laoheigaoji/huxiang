@@ -25,7 +25,7 @@ const PredictionCard = ({ prediction }: { prediction: Prediction, key?: React.Ke
             <div className="flex items-center mt-0.5 space-x-1">
               <span className="text-[10px] text-orange-500 font-bold">{prediction.authorFans} 粉丝</span>
               <span className="text-[9px] text-gray-300">·</span>
-              <span className="text-[10px] text-red-500 font-bold">{prediction.authorRecentRecord}</span>
+              <span className="text-[10px] text-[#b71c1c] font-bold">{prediction.authorRecentRecord}</span>
             </div>
           </div>
         </div>
@@ -43,7 +43,7 @@ const PredictionCard = ({ prediction }: { prediction: Prediction, key?: React.Ke
       <div className="flex items-center justify-between mb-4">
         <div className="flex flex-wrap items-center gap-1.5">
           {prediction.tags && prediction.tags.map((tag, idx) => (
-            <div key={idx} className="bg-red-50 text-red-500 text-[10px] font-bold px-2 py-0.5 rounded-[4px] border border-red-100/50">
+            <div key={idx} className="bg-red-50 text-[#b71c1c] text-[10px] font-bold px-2 py-0.5 rounded-[4px] border border-red-100/50">
               {tag}
             </div>
           ))}
@@ -52,7 +52,7 @@ const PredictionCard = ({ prediction }: { prediction: Prediction, key?: React.Ke
           )}
         </div>
 
-        <div className={`shrink-0 ${prediction.isFree || prediction.isUnlocked ? 'text-green-500' : 'text-red-600'}`}>
+        <div className={`shrink-0 ${prediction.isFree || prediction.isUnlocked ? 'text-green-500' : 'text-[#b71c1c]'}`}>
           {prediction.isFree || prediction.isUnlocked ? (
             <span className="text-[14px] font-black">免费</span>
           ) : (
@@ -113,7 +113,7 @@ const Follow = () => {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen bg-white">
-      <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="w-8 h-8 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
 
@@ -127,7 +127,7 @@ const Follow = () => {
       {/* Header */}
       <div className="bg-white px-4 py-3 sticky top-0 z-30 flex items-center justify-between border-b border-gray-100">
         <div className="flex items-center gap-2">
-          <Star className="w-5 h-5 text-red-500 fill-red-500" />
+          <Star className="w-5 h-5 text-[#b71c1c] fill-[#b71c1c]" />
           <h1 className="text-lg font-bold">我的关注</h1>
         </div>
         <div className="flex gap-4">
@@ -140,13 +140,13 @@ const Follow = () => {
       <div className="bg-white flex px-4 border-b border-gray-100 sticky top-[53px] z-20">
         <button 
           onClick={() => setActiveTab('feed')}
-          className={`py-3 px-4 font-medium text-sm transition-colors ${activeTab === 'feed' ? 'text-red-500 border-b-2 border-red-500' : 'text-gray-500'}`}
+          className={`py-3 px-4 font-medium text-sm transition-colors ${activeTab === 'feed' ? 'text-[#b71c1c] border-b-2 border-[#b71c1c]' : 'text-gray-500'}`}
         >
           全部动态
         </button>
         <button 
           onClick={() => setActiveTab('authors')}
-          className={`py-3 px-4 font-medium text-sm transition-colors ${activeTab === 'authors' ? 'text-red-500 border-b-2 border-red-500' : 'text-gray-500'}`}
+          className={`py-3 px-4 font-medium text-sm transition-colors ${activeTab === 'authors' ? 'text-[#b71c1c] border-b-2 border-[#b71c1c]' : 'text-gray-500'}`}
         >
           关注专家
         </button>
@@ -162,7 +162,7 @@ const Follow = () => {
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
               <Star className="w-16 h-16 mb-4 opacity-20" />
               <p>暂无关注动态，快去关注大神吧</p>
-              <Link to="/" className="mt-4 px-6 py-2 bg-red-500 text-white rounded-full text-sm font-medium">
+              <Link to="/" className="mt-4 px-6 py-2 bg-[#b71c1c] text-white rounded-full text-sm font-medium">
                 去大厅看看
               </Link>
             </div>
