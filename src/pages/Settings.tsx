@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { api } from '../services/api';
 
-const SettingItem = ({ label }: { label: string }) => (
-  <div className="bg-white px-4 py-4 flex items-center justify-between active:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-b-0">
+const SettingItem = ({ label, onClick }: { label: string, onClick?: () => void }) => (
+  <div onClick={onClick} className="bg-white px-4 py-4 flex items-center justify-between active:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-b-0">
     <span className="text-[17px] text-gray-800 font-medium">{label}</span>
     <ChevronRight className="w-6 h-6 text-gray-300" />
   </div>
@@ -43,12 +43,12 @@ const Settings = () => {
       </div>
 
       <div className="mt-2 shadow-sm">
-        <SettingItem label="隐私协议" />
-        <SettingItem label="用户协议" />
+        <SettingItem label="隐私协议" onClick={() => navigate('/privacy-policy')} />
+        <SettingItem label="用户协议" onClick={() => navigate('/user-agreement')} />
       </div>
 
       <div className="mt-2 shadow-sm">
-        <SettingItem label="关于我们" />
+        <SettingItem label="关于我们" onClick={() => navigate('/about-us')} />
       </div>
 
       {/* Logout Button */}

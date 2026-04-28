@@ -196,6 +196,7 @@ const PredictionDetail = () => {
         const updatedUser = await api.getProfile();
         setUser(updatedUser);
         setShowPayment(false);
+        setIsProcessingPayment(false);
         alert('购买成功！');
       } else {
         // Alipay flow
@@ -208,11 +209,11 @@ const PredictionDetail = () => {
         } else {
             console.error('Payment failed', payRes);
             alert('支付请求发送失败，请稍后再试');
+            setIsProcessingPayment(false);
         }
       }
     } catch (err: any) {
       alert(err.message || '购买失败');
-    } finally {
       setIsProcessingPayment(false);
     }
   };
@@ -259,7 +260,7 @@ const PredictionDetail = () => {
                   <div className="relative">
                     <div className="absolute inset-0 bg-pink-200 blur-2xl opacity-50 translate-y-8"></div>
                     <img 
-                      src="https://wxqun988.vxjuejin.com/icon-%E9%93%83%E9%93%9B.png" 
+                      src="https://img.icons8.com/color/240/notification-bell.png" 
                       alt="bell" 
                       className="w-24 h-24 object-contain relative z-10" 
                     />
@@ -594,10 +595,10 @@ const PredictionDetail = () => {
 
               <button 
                 onClick={(e) => { e.stopPropagation(); handlePurchase(); }}
-                disabled={loading}
+                disabled={isProcessingPayment}
                 className="w-full bg-red-600 text-white font-bold py-4 rounded-full mt-6 shadow-xl shadow-red-100 active:scale-95 transition-transform disabled:opacity-50"
               >
-                {loading ? '正在支付...' : '立即支付'}
+                {isProcessingPayment ? '正在支付...' : '立即支付'}
               </button>
            </motion.div>
         </div>

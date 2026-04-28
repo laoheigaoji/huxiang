@@ -29,6 +29,9 @@ import PublishPrediction from './pages/PublishPrediction';
 import AuthorDashboard from './pages/AuthorDashboard';
 import BindPhone from './pages/BindPhone';
 import RealNameAuth from './pages/RealNameAuth';
+import UserAgreement from './pages/UserAgreement';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import AboutUs from './pages/AboutUs';
 
 const BottomNav = () => {
   const location = useLocation();
@@ -39,7 +42,7 @@ const BottomNav = () => {
     { name: '我的', path: '/profile', icon: User },
   ];
 
-  const hideNavPaths = ['/publish', '/admin', '/admin/dashboard', '/login', '/register', '/partner-join', '/author/dashboard', '/profile/bind-phone', '/profile/real-name'];
+  const hideNavPaths = ['/publish', '/admin', '/admin/dashboard', '/login', '/register', '/partner-join', '/author/dashboard', '/profile/bind-phone', '/profile/real-name', '/settings', '/user-agreement', '/privacy-policy', '/about-us'];
   if (hideNavPaths.includes(location.pathname)) return null;
 
   return (
@@ -121,6 +124,9 @@ const AppContent = () => {
             <Route path="/balance-details" element={<BalanceDetails />} />
             <Route path="/withdraw" element={<Withdraw />} />
             <Route path="/orders" element={<Orders />} />
+            <Route path="/user-agreement" element={<UserAgreement />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/about-us" element={<AboutUs />} />
           </Routes>
         </AnimatePresence>
         <BottomNav />

@@ -31,14 +31,15 @@ const TopUp = () => {
         } else {
           // For qrcode or urlscheme that aren't direct http links
           alert(`请使用支付应用扫码或打开: ${url}`);
+          setLoading(false);
         }
       } else {
         alert(res.msg || '创建支付失败 (错误代码: ' + res.code + ')');
+        setLoading(false);
       }
     } catch (err) {
       console.error('Payment failed', err);
       alert('支付请求失败，请稍后重试');
-    } finally {
       setLoading(false);
     }
   };
@@ -157,6 +158,15 @@ const TopUp = () => {
           {loading ? '创建订单中...' : '确认支付'}
         </button>
       </div>
+
+      {/* Fullscreen Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/20 backdrop-blur-sm">
+            <div className="bg-white p-4 rounded-2xl flex items-center justify-center shadow-2xl">
+                <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        </div>
+      )}
 
     </motion.div>
   );
