@@ -25,6 +25,7 @@ const PredictionDetail = () => {
   const [user, setUser] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState({ h: '00', m: '00', s: '00' });
   const [showPayment, setShowPayment] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const posterRef = React.useRef<HTMLDivElement>(null);
 
   const handleDownloadPoster = async () => {
@@ -188,7 +189,7 @@ const PredictionDetail = () => {
       return;
     }
     try {
-      setLoading(true);
+      setIsProcessingPayment(true);
       if (selectedPaymentMethod === 'balance') {
         await api.purchasePrediction(id);
         setIsPurchased(true);
@@ -212,7 +213,7 @@ const PredictionDetail = () => {
     } catch (err: any) {
       alert(err.message || '购买失败');
     } finally {
-      setLoading(false);
+      setIsProcessingPayment(false);
     }
   };
 
@@ -781,6 +782,13 @@ const PredictionDetail = () => {
            返回
         </button>
       </div>
+      {isProcessingPayment && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/20 backdrop-blur-sm">
+            <div className="bg-white p-4 rounded-2xl flex items-center justify-center shadow-2xl">
+                <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        </div>
+      )}
     </motion.div>
   );
 };

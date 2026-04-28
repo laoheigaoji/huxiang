@@ -81,14 +81,14 @@ const EditProfile = () => {
 
         {/* Phone Number */}
         <div className="flex space-x-2">
-          <div className="flex-1 bg-[#f8f8f8] rounded-[4px] h-[52px] flex items-center px-4">
+          <div className="flex-1 bg-[#f8f8f8] rounded-[4px] h-[52px] flex items-center px-4 overflow-hidden">
             <span className="text-[15px] text-gray-800 font-bold w-20 flex-shrink-0">手机号：</span>
             <input 
               type="tel" 
               value={user?.phone || ""} 
               placeholder="未绑定" 
               readOnly
-              className="flex-1 bg-transparent text-[15px] text-gray-800 font-bold focus:outline-none opacity-60" 
+              className="flex-1 bg-transparent text-[15px] text-gray-800 font-bold focus:outline-none opacity-60 truncate" 
             />
           </div>
           <button 
@@ -101,13 +101,13 @@ const EditProfile = () => {
 
         {/* Password */}
         <div className="flex space-x-2">
-          <div className="flex-1 bg-[#f8f8f8] rounded-[4px] h-[52px] flex items-center px-4">
+          <div className="flex-1 bg-[#f8f8f8] rounded-[4px] h-[52px] flex items-center px-4 overflow-hidden">
             <span className="text-[15px] text-gray-800 font-bold w-20 flex-shrink-0">登录密码：</span>
             <input 
               type="password"
               placeholder="******"
               readOnly
-              className="flex-1 bg-transparent text-[15px] text-gray-800 font-bold focus:outline-none opacity-60"
+              className="flex-1 bg-transparent text-[15px] text-gray-800 font-bold focus:outline-none opacity-60 truncate"
             />
           </div>
           <button 
