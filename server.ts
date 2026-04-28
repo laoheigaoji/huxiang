@@ -331,9 +331,12 @@ async function startServer() {
       const following = (user as any).following || [];
       const index = following.indexOf(id);
       let isFollowing = false;
+      let incValue = 0;
+      
       if (index === -1) {
         await db.collection("users").updateOne({ id: userId }, { $push: { following: id } } as any);
         isFollowing = true;
+        incValue = 1;
         
         // Add notification for author
         const authorUser = await db.collection("users").findOne({ isAuthor: true, authorId: id });
@@ -350,7 +353,15 @@ async function startServer() {
       } else {
         await db.collection("users").updateOne({ id: userId }, { $pull: { following: id } } as any);
         isFollowing = false;
+        incValue = -1;
       }
+
+      // Update author's fans count in authors collection
+      await db.collection("authors").updateOne({ id: id }, { $inc: { fans: incValue } });
+      
+      // Update denormalized authorFans in predictions collection
+      await db.collection("predictions").updateMany({ authorId: id }, { $inc: { authorFans: incValue } });
+
       res.json({ isFollowing });
     } else {
       res.status(404).json({ error: "User not found" });

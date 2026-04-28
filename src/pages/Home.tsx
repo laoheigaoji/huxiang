@@ -307,30 +307,67 @@ const Home = () => {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const fetchData = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    try {
+      const [authorsData, predictionsData, profileData, settingsData] = await Promise.all([
+        api.getAuthors(),
+        api.getPredictions(),
+        api.getProfile().catch(() => null),
+        api.getSettings().catch(() => null)
+      ]);
+      setAuthors(authorsData);
+      setPredictions(predictionsData);
+      setUser(profileData);
+      setSettings(settingsData);
+    } catch (err) {
+      console.error('Failed to fetch data', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [authorsData, predictionsData, profileData, settingsData] = await Promise.all([
-          api.getAuthors(),
-          api.getPredictions(),
-          api.getProfile().catch(() => null),
-          api.getSettings().catch(() => null)
-        ]);
-        setAuthors(authorsData);
-        setPredictions(predictionsData);
-        setUser(profileData);
-        setSettings(settingsData);
-      } catch (err) {
-        console.error('Failed to fetch data', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
+
+  // Pull to refresh logic
+  const [startY, setStartY] = useState(0);
+  const [pullOffset, setPullOffset] = useState(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (window.scrollY === 0) {
+      setStartY(e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (startY === 0) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - startY;
+    if (diff > 0 && window.scrollY === 0) {
+      // Apply resistance
+      const offset = Math.min(diff * 0.4, 80);
+      setPullOffset(offset);
+      // Optional: stop scroll
+      if (diff > 10) {
+        // e.preventDefault(); // Might cause issues in some browsers
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (pullOffset > 50) {
+      fetchData(true);
+    }
+    setStartY(0);
+    setPullOffset(0);
+  };
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen bg-white">
@@ -342,7 +379,24 @@ const Home = () => {
     e.preventDefault();
     e.stopPropagation();
     try {
-      await api.followAuthor(authorId);
+      const { isFollowing } = await api.followAuthor(authorId);
+      
+      // Update local predictions state to reflect fan count change
+      setPredictions(prev => prev.map(p => {
+        if (p.authorId === authorId) {
+          return { ...p, authorFans: p.authorFans + (isFollowing ? 1 : -1) };
+        }
+        return p;
+      }));
+
+      // Update local authors state
+      setAuthors(prev => prev.map(a => {
+        if (a.id === authorId) {
+          return { ...a, fans: (a.fans || 0) + (isFollowing ? 1 : -1) };
+        }
+        return a;
+      }));
+
       const updatedProfile = await api.getProfile();
       setUser(updatedProfile);
       localStorage.setItem('user', JSON.stringify(updatedProfile));
@@ -357,7 +411,41 @@ const Home = () => {
   ) : [];
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-gray-100/50 min-h-screen">
+    <div 
+      className="bg-gray-100/50 min-h-screen relative overflow-x-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Refresh Indicator */}
+      <motion.div 
+        style={{ height: pullOffset }} 
+        className="flex items-center justify-center overflow-hidden bg-gray-50/50"
+      >
+        <div className={`w-6 h-6 border-2 border-[#b71c1c] border-t-transparent rounded-full animate-spin transition-opacity ${pullOffset > 20 ? 'opacity-100' : 'opacity-0'}`} />
+      </motion.div>
+
+      {/* Actual Refreshing Indicator (when loading) */}
+      <AnimatePresence>
+        {refreshing && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-white px-4 py-2 rounded-full shadow-lg border border-gray-100 flex items-center space-x-2"
+          >
+            <div className="w-4 h-4 border-2 border-[#b71c1c] border-t-transparent rounded-full animate-spin" />
+            <span className="text-xs font-bold text-gray-600">正在刷新...</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        exit={{ opacity: 0 }}
+        style={{ y: pullOffset * 0.5 }}
+      >
       {/* Sort Modal */}
       <SortModal 
         isOpen={isSortModalOpen} 
@@ -495,6 +583,8 @@ const Home = () => {
         </div>
       </div>
 
+      </motion.div>
+
       {/* Floating Sticky Sort Button */}
       <div className="fixed bottom-28 right-4 z-50">
         <button 
@@ -508,7 +598,7 @@ const Home = () => {
           </div>
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

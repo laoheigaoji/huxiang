@@ -185,9 +185,20 @@ const PredictionDetail = () => {
   const handleFollow = async () => {
     if (!prediction) return;
     try {
-      await api.followAuthor(prediction.authorId);
-      setIsFollowed(!isFollowed);
-      // Update local profile cache if needed
+      const { isFollowing } = await api.followAuthor(prediction.authorId);
+      setIsFollowed(isFollowing);
+      
+      // Update local state for prediction and author objects to reflect fans count change
+      setPrediction(prev => {
+        if (!prev) return null;
+        return { ...prev, authorFans: prev.authorFans + (isFollowing ? 1 : -1) };
+      });
+      
+      setAuthor(prev => {
+        if (!prev) return null;
+        return { ...prev, fans: (prev.fans || 0) + (isFollowing ? 1 : -1) };
+      });
+
       api.getProfile().then(p => {
         localStorage.setItem('user', JSON.stringify(p));
         setUser(p);

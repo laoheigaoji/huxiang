@@ -92,8 +92,15 @@ const AuthorProfile = () => {
   const toggleFollow = async () => {
     if (!author) return;
     try {
-      await api.followAuthor(author.id);
-      setIsFollowed(!isFollowed);
+      const { isFollowing } = await api.followAuthor(author.id);
+      setIsFollowed(isFollowing);
+      
+      // Update local author fans count
+      setAuthor(prev => {
+        if (!prev) return null;
+        return { ...prev, fans: (prev.fans || 0) + (isFollowing ? 1 : -1) };
+      });
+
       // Update local storage to keep sync
       const updatedProfile = await api.getProfile();
       localStorage.setItem('user', JSON.stringify(updatedProfile));
