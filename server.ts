@@ -342,7 +342,7 @@ async function startServer() {
   });
 
   app.post("/api/pay/create", async (req, res) => {
-    const { amount, type, orderName, userId, predictionId } = req.body;
+    const { amount, type, orderName, userId, predictionId, returnUrl: customReturnUrl } = req.body;
     
     const pid = process.env.YIPAY_PID || "1000";
     const key = process.env.YIPAY_KEY || "6fXAB353AFl8Pl9779xAO6598lO9b59P";
@@ -350,7 +350,7 @@ async function startServer() {
     
     const outTradeNo = Date.now().toString() + Math.floor(Math.random() * 1000);
     const notifyUrl = `https://${req.get('host')}/api/pay/notify`;
-    const returnUrl = `https://${req.get('host')}/top-up?status=success`;
+    const returnUrl = customReturnUrl || `https://${req.get('host')}/top-up?status=success`;
     
     const clientip = (req.headers['x-forwarded-for'] as string || req.ip || '127.0.0.1').split(',')[0].replace('::ffff:', '');
     

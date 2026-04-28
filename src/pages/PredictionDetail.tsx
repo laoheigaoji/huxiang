@@ -198,7 +198,8 @@ const PredictionDetail = () => {
         alert('购买成功！');
       } else {
         // Alipay flow
-        const payRes = await api.createPayment(prediction!.price, 'alipay', prediction!.title, user.id, id);
+        const returnUrl = window.location.href;
+        const payRes = await api.createPayment(prediction!.price, 'alipay', prediction!.title, user.id, id, returnUrl);
         const paymentUrl = payRes.url || payRes.payurl || payRes.payment_url || payRes.qrcode;
         if (paymentUrl) {
             setShowPayment(false);
