@@ -259,7 +259,7 @@ const PredictionDetail = () => {
                   <div className="relative">
                     <div className="absolute inset-0 bg-pink-200 blur-2xl opacity-50 translate-y-8"></div>
                     <img 
-                      src="https://img.icons8.com/color/240/notification-bell.png" 
+                      src="https://wxqun988.vxjuejin.com/icon-%E9%93%83%E9%93%9B.png" 
                       alt="bell" 
                       className="w-24 h-24 object-contain relative z-10" 
                     />
