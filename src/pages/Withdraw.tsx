@@ -9,6 +9,7 @@ const Withdraw = () => {
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<'alipay' | 'bank'>('alipay');
   const [account, setAccount] = useState('');
+  const [bankName, setBankName] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -29,6 +30,7 @@ const Withdraw = () => {
 
   const handleSubmit = async () => {
     if (!amount || parseFloat(amount) <= 0) return alert('请输入正确的提现金额');
+    if (type === 'bank' && !bankName) return alert('请输入结算银行');
     if (!account) return alert('请输入结算账号');
     if (!name) return alert('请输入结算姓名');
     
@@ -37,6 +39,7 @@ const Withdraw = () => {
       await api.withdraw({ 
         amount: parseFloat(amount), 
         account, 
+        bankName: type === 'bank' ? bankName : undefined,
         name, 
         type 
       });
@@ -116,6 +119,18 @@ const Withdraw = () => {
              </div>
 
              <div className="space-y-4">
+                {type === 'bank' && (
+                  <div>
+                    <label className="text-[11px] text-gray-400 block mb-1">结算银行</label>
+                    <input 
+                      type="text" 
+                      value={bankName}
+                      onChange={(e) => setBankName(e.target.value)}
+                      placeholder="请输入银行名称 (如: 招商银行)" 
+                      className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 ring-red-100"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="text-[11px] text-gray-400 block mb-1">结算姓名</label>
                   <input 

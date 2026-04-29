@@ -575,7 +575,7 @@ async function startServer() {
   }));
 
   app.post("/api/withdraw", checkDb, asyncHandler(async (req: any, res: any) => {
-    const { amount, account, name, type, userId } = req.body;
+    const { amount, account, name, type, userId, bankName } = req.body;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
     
     const user = await db.collection("users").findOne({ id: userId });
@@ -594,6 +594,7 @@ async function startServer() {
         account,
         name,
         type,
+        bankName,
         status: 'pending',
         time: new Date().toISOString()
       };

@@ -96,3 +96,15 @@ export interface Application {
   status: 'pending' | 'approved' | 'rejected';
   time: string;
 }
+
+export interface Withdrawal {
+  id: string;
+  userId: string;
+  amount: number;
+  account: string;
+  bankName?: string;
+  name: string;
+  type: 'alipay' | 'bank';
+  status: 'pending' | 'approved' | 'rejected';
+  time: string;
+}

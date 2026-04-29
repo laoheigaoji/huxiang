@@ -513,7 +513,8 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg mb-3">
-                  <p><span className="text-gray-400">收款方式:</span> {w.type}</p>
+                  <p><span className="text-gray-400">收款方式:</span> {w.type === 'alipay' ? '支付宝' : '银行卡'}</p>
+                  {w.bankName && <p><span className="text-gray-400">结算银行:</span> {w.bankName}</p>}
                   <p><span className="text-gray-400">收款账号:</span> {w.account}</p>
                   <p><span className="text-gray-400">真实姓名:</span> {w.name}</p>
                 </div>

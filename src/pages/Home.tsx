@@ -407,6 +407,10 @@ const Home = () => {
   };
 
   const sortedPredictions = [...filteredPredictions].sort((a, b) => {
+    // Keep isHot at the top regardless of the selected sort
+    if (a.isHot && !b.isHot) return -1;
+    if (!a.isHot && b.isHot) return 1;
+
     switch (selectedSort) {
       case 'hit_desc':
         return getHitRate(b.authorRecentRecord) - getHitRate(a.authorRecentRecord);
@@ -570,7 +574,7 @@ const Home = () => {
         <X className="w-3.5 h-3.5 text-orange-200 cursor-pointer" />
       </div>
 
-      <div className="flex-1 pb-24">
+      <div className="flex-1 pb-4">
         <div className="space-y-0">
           {sortedPredictions.map((prediction) => (
               <PredictionCard 
@@ -589,7 +593,7 @@ const Home = () => {
           )}
           
           {/* Legal Disclaimer Footer */}
-          <div className="mx-4 mt-6 p-4 rounded-xl border border-gray-100/50 bg-white/50 relative overflow-hidden backdrop-blur-sm">
+          <div className="mx-4 mt-4 p-4 rounded-xl border border-gray-100/50 bg-white/50 relative overflow-hidden backdrop-blur-sm">
              <div className="absolute top-0 right-0 p-2 cursor-pointer" onClick={(e) => e.currentTarget.parentElement?.remove()}>
                 <X className="w-3.5 h-3.5 text-gray-300 hover:text-gray-500" />
              </div>
