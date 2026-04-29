@@ -130,11 +130,16 @@ const AdminDashboard = () => {
           type: formData.type || 'system'
         });
       } else if (activeTab === 'settings') {
-        await api.updateSettings({
-          ...formData,
-          authorCommissionRate: parseFloat(formData.authorCommissionRate),
-          inviteCommissionRate: parseFloat(formData.inviteCommissionRate)
-        });
+        const payload = { ...formData };
+        if (payload.authorCommissionRate) payload.authorCommissionRate = parseFloat(payload.authorCommissionRate);
+        if (payload.inviteCommissionRate) payload.inviteCommissionRate = parseFloat(payload.inviteCommissionRate);
+        
+        // Remove empty keys to avoid overwriting with empty strings
+        if (payload.yipayKey === '') delete payload.yipayKey;
+        if (payload.wechatAppSecret === '') delete payload.wechatAppSecret;
+        if (payload.adminPassword === '') delete payload.adminPassword;
+
+        await api.updateSettings(payload);
       }
       setIsModalOpen(false);
       setEditingItem(null);
@@ -596,6 +601,44 @@ const AdminDashboard = () => {
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">联系客服链接 (URL或mailto:)</label>
                     <input name="contactLink" defaultValue={data.settings.contactLink} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" placeholder="https://..." />
+                  </div>
+
+                  <div className="pt-6 border-t border-gray-100">
+                    <h4 className="text-sm font-black text-gray-900 mb-4 flex items-center gap-2">
+                       <span className="w-1.5 h-1.5 bg-[#b71c1c] rounded-full"></span>
+                       易支付配置 (YiPay)
+                    </h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-[11px] text-gray-400 font-bold uppercase mb-1 ml-1">易支付 PID</label>
+                        <input name="yipayPid" defaultValue={data.settings.yipayPid} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" placeholder="1000" />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-gray-400 font-bold uppercase mb-1 ml-1">易支付 KEY</label>
+                        <input name="yipayKey" className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" placeholder="输入新密钥将覆盖现有密钥" />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-gray-400 font-bold uppercase mb-1 ml-1">易支付 API URL</label>
+                        <input name="yipayApiUrl" defaultValue={data.settings.yipayApiUrl} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" placeholder="http://yzf.dypm.top/" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-gray-100">
+                    <h4 className="text-sm font-black text-gray-900 mb-4 flex items-center gap-2">
+                       <span className="w-1.5 h-1.5 bg-[#b71c1c] rounded-full"></span>
+                       微信登录配置 (WeChat)
+                    </h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-[11px] text-gray-400 font-bold uppercase mb-1 ml-1">微信 AppID</label>
+                        <input name="wechatAppId" defaultValue={data.settings.wechatAppId} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" placeholder="wxf0..." />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-gray-400 font-bold uppercase mb-1 ml-1">微信 AppSecret</label>
+                        <input name="wechatAppSecret" className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" placeholder="输入新密钥将覆盖现有密钥" />
+                      </div>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">下载APP链接</label>

@@ -134,8 +134,9 @@ async function startServer() {
       let wechatAvatar = avatar;
 
       // Exchange code for real OpenID and UserInfo
-      const appId = "wxf0ea7bb3386e9d01";
-      const appSecret = "2f7272be6bac718a0e09c393dce8c5aa";
+      const settings: any = (await db.collection("settings").findOne({})) || {};
+      const appId = settings.wechatAppId || "wxf0ea7bb3386e9d01";
+      const appSecret = settings.wechatAppSecret || "2f7272be6bac718a0e09c393dce8c5aa";
 
       if (appSecret) {
         try {
@@ -320,12 +321,26 @@ async function startServer() {
         contactEmail: "admin@example.com",
         defaultUnlockDuration: "01:25:20",
         authorCommissionRate: 0.7, // 70% to author
-        inviteCommissionRate: 0.1  // 10% to referrer
+        inviteCommissionRate: 0.1,  // 10% to referrer
+        yipayPid: "1000",
+        yipayKey: "6fXAB353AFl8Pl9779xAO6598lO9b59P",
+        yipayApiUrl: "http://yzf.dypm.top/",
+        wechatAppId: "wxf0ea7bb3386e9d01",
+        wechatAppSecret: "2f7272be6bac718a0e09c393dce8c5aa"
       };
       await db.collection("settings").insertOne(settings);
     }
-    const { adminPassword, ...safeSettings } = settings;
+    const { adminPassword, yipayKey, wechatAppSecret, ...safeSettings } = settings;
     res.json(safeSettings);
+  }));
+
+  app.get("/api/config", checkDb, asyncHandler(async (req: any, res: any) => {
+    let settings: any = await db.collection("settings").findOne({});
+    if (!settings) return res.json({ wechatAppId: "wxf0ea7bb3386e9d01" });
+    res.json({ 
+      wechatAppId: settings.wechatAppId || "wxf0ea7bb3386e9d01",
+      siteName: settings.siteName || "智料汇享"
+    });
   }));
 
   app.post("/api/admin/login", checkDb, asyncHandler(async (req: any, res: any) => {
@@ -401,9 +416,10 @@ async function startServer() {
   app.post("/api/pay/create", checkDb, asyncHandler(async (req: any, res: any) => {
     const { amount, type, orderName, userId, predictionId, returnUrl: customReturnUrl } = req.body;
     
-    const pid = process.env.YIPAY_PID || "1000";
-    const key = process.env.YIPAY_KEY || "6fXAB353AFl8Pl9779xAO6598lO9b59P";
-    const apiUrl = (process.env.YIPAY_API_URL || "http://yzf.dypm.top/").replace(/\/$/, "");
+    const settings: any = (await db.collection("settings").findOne({})) || {};
+    const pid = settings.yipayPid || process.env.YIPAY_PID || "1000";
+    const key = settings.yipayKey || process.env.YIPAY_KEY || "6fXAB353AFl8Pl9779xAO6598lO9b59P";
+    const apiUrl = (settings.yipayApiUrl || process.env.YIPAY_API_URL || "http://yzf.dypm.top/").replace(/\/$/, "");
     
     const outTradeNo = Date.now().toString() + Math.floor(Math.random() * 1000);
     const notifyUrl = `https://${req.get('host')}/api/pay/notify`;
@@ -459,7 +475,9 @@ async function startServer() {
 
   app.get("/api/pay/notify", checkDb, asyncHandler(async (req: any, res: any) => {
     const { pid, trade_no, out_trade_no, type, name, money, trade_status, sign } = req.query;
-    const key = process.env.YIPAY_KEY || "6fXAB353AFl8Pl9779xAO6598lO9b59P";
+    
+    const settings: any = (await db.collection("settings").findOne({})) || {};
+    const key = settings.yipayKey || process.env.YIPAY_KEY || "6fXAB353AFl8Pl9779xAO6598lO9b59P";
 
     console.log("Pay notify received:", req.query);
 

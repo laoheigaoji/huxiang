@@ -44,6 +44,11 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getConfig() {
+    const res = await fetch(`${API_BASE}/config`);
+    return handleResponse(res);
+  },
+
   async updateSettings(data: any) {
     const res = await fetch(`${API_BASE}/settings`, {
       method: 'PUT',

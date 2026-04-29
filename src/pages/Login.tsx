@@ -12,13 +12,69 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isWechat, setIsWechat] = useState(false);
 
   useEffect(() => {
-    let referrer = searchParams.get('ref');
+    const ua = window.navigator.userAgent.toLowerCase();
+    const wechat = ua.indexOf('micromessenger') !== -1;
+    setIsWechat(wechat);
+
+    const code = searchParams.get('code');
+    const referrer = searchParams.get('ref') || localStorage.getItem('wechat_referrer');
+
+    if (code) {
+      handleWechatLogin(code, referrer);
+    } else if (wechat) {
+      // Auto-initiate WeChat login if in WeChat and no code present
+      const initiateAutoLogin = async () => {
+        try {
+          const config = await api.getConfig();
+          const appId = config.wechatAppId || 'wxf0ea7bb3386e9d01';
+          const redirectUri = encodeURIComponent(window.location.origin + '/login' + (searchParams.get('ref') ? `?ref=${searchParams.get('ref')}` : ''));
+          const url = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${appId}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect`;
+          window.location.href = url;
+        } catch (err) {
+          console.error('Auto login failed:', err);
+        }
+      };
+      initiateAutoLogin();
+    }
+
     if (referrer) {
       localStorage.setItem('wechat_referrer', referrer);
     }
   }, [searchParams]);
+
+  const handleWechatLogin = async (code: string, referrer?: string | null) => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await api.wechatLogin(code, undefined, undefined, referrer || undefined);
+      localStorage.setItem('user', JSON.stringify(data));
+      navigate('/profile');
+    } catch (err: any) {
+      setError(err.message || '微信登录失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startWechatLogin = async () => {
+    try {
+      const config = await api.getConfig();
+      const appId = config.wechatAppId || 'wxf0ea7bb3386e9d01';
+      const redirectUri = encodeURIComponent(window.location.origin + '/login' + (searchParams.get('ref') ? `?ref=${searchParams.get('ref')}` : ''));
+      const url = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${appId}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect`;
+      window.location.href = url;
+    } catch (err) {
+      console.error('Failed to get config:', err);
+      // Fallback
+      const appId = 'wxf0ea7bb3386e9d01';
+      const redirectUri = encodeURIComponent(window.location.origin + '/login' + (searchParams.get('ref') ? `?ref=${searchParams.get('ref')}` : ''));
+      const url = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${appId}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect`;
+      window.location.href = url;
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,6 +165,27 @@ const Login = () => {
           {loading ? '正在登录...' : '登录'}
         </button>
       </form>
+
+      {isWechat && (
+        <div className="mt-8">
+          <div className="relative flex items-center justify-center mb-6">
+            <div className="flex-grow border-t border-gray-100"></div>
+            <span className="flex-shrink mx-4 text-gray-400 text-sm">其他登录方式</span>
+            <div className="flex-grow border-t border-gray-100"></div>
+          </div>
+          
+          <button
+            onClick={startWechatLogin}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 bg-[#07c160] text-white py-4 rounded-xl font-bold shadow-lg shadow-[#07c160]/10 active:scale-[0.98] transition-all disabled:opacity-50"
+          >
+            <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+              <path d="M8.309 3c-4.57 0-8.309 3.256-8.309 7.273 0 2.273 1.258 4.309 3.221 5.674l-.821 2.395 2.872-1.439c.64.182 1.32.273 2.036.273.197 0 .394-.015.586-.039-.364-.788-.574-1.65-.574-2.564 0-3.321 3.012-6.014 6.726-6.014 1.157 0 2.235.265 3.167.728-.521-3.418-4.045-6.087-8.204-6.087zm3.111 2.455c.421 0 .764.343.764.764 0 .421-.343.764-.764.764s-.764-.343-.764-.764c0-.421.343-.764.764-.764zm-6.111 0c.421 0 .764.343.764.764 0 .421-.343.764-.764.764s-.764-.343-.764-.764c0-.421.343-.764.764-.764zM16.142 9.545c-3.14 0-5.711 2.213-5.711 4.942 0 1.543.812 2.923 2.083 3.864l-.532 1.637 1.86-.982c.453.153.943.238 1.455.238 3.14 0 5.711-2.213 5.711-4.942s-2.571-4.957-5.711-4.957zm-2.143 1.91c.287 0 .52.233.52.52s-.233.52-.52.52-.52-.233-.52-.52.233-.52.52-.52zm4.286 0c.287 0 .52.233.52.52s-.233.52-.52.52-.52-.233-.52-.52.233-.52.52-.52z" />
+            </svg>
+            微信一键登录
+          </button>
+        </div>
+      )}
 
       <div className="mt-8 text-center">
         <p className="text-gray-500">
