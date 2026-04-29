@@ -78,7 +78,7 @@ const Profile = () => {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen bg-white">
-      <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="w-8 h-8 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
 
@@ -87,7 +87,7 @@ const Profile = () => {
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }} 
-      className="bg-gray-50 min-h-screen pb-24"
+      className="bg-gray-50 min-h-screen pb-0"
     >
       {/* Header Profile Section */}
       <div className="relative pt-12 pb-12 bg-white overflow-hidden">
@@ -96,21 +96,21 @@ const Profile = () => {
         <div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-[#e3f2fd] to-white/0 opacity-60"></div>
         
         <div className="relative z-10 px-6 flex items-start justify-between">
-          <div className="flex items-center">
-            <div className="relative">
+          <div className="flex items-center flex-1 min-w-0">
+            <div className="relative shrink-0">
               <img 
                 src={user?.avatar} 
                 alt="Avatar" 
                 className="w-16 h-16 rounded-full border-2 border-white shadow-lg object-cover" 
               />
             </div>
-            <div className="ml-4">
-              <h2 className="text-xl font-bold text-gray-900">{user?.nickname || user?.username}</h2>
+            <div className="ml-4 flex-1 min-w-0">
+              <h2 className="text-xl font-bold text-gray-900 truncate">{user?.nickname || user?.username}</h2>
               <div className="text-xs text-gray-500 mt-1 font-medium">ID: {user?.id}</div>
-              <div className="text-xs text-gray-400 mt-0.5 font-medium">引荐达人: {user?.referrerNickname || '无'}</div>
+              <div className="text-xs text-gray-400 mt-0.5 font-medium truncate">引荐达人: {user?.referrerNickname || '无'}</div>
             </div>
           </div>
-          <Link to="/profile/edit" className="bg-[#6ec9f9] text-white text-[11px] px-4 py-1.5 rounded-full font-bold shadow-sm active:scale-95 transition-transform mt-2">
+          <Link to="/profile/edit" className="bg-[#6ec9f9] text-white text-[11px] px-4 py-1.5 rounded-full font-bold shadow-sm active:scale-95 transition-transform mt-2 ml-4 shrink-0">
             点击编辑资料
           </Link>
         </div>
@@ -120,7 +120,7 @@ const Profile = () => {
           <div className="bg-white/60 p-4 rounded-2xl text-center shadow-sm border border-white">
             <div className="text-[10px] text-gray-400 font-black uppercase mb-1">账户余额</div>
             <div className="text-xl font-black text-gray-900">¥{user?.balance?.toFixed(2) || '0.00'}</div>
-            <Link to="/topup" className="inline-block mt-3 bg-[#e53935] text-white text-[10px] px-4 py-1 rounded-full font-bold shadow-md active:scale-95 transition-transform">
+            <Link to="/topup" className="inline-block mt-3 bg-[#b71c1c] text-white text-[10px] px-4 py-1 rounded-full font-bold shadow-md active:scale-95 transition-transform">
               充值
             </Link>
           </div>
@@ -142,7 +142,7 @@ const Profile = () => {
       </div>
 
       {/* Main Content Actions */}
-      <div className="px-4 -mt-2 relative z-20 space-y-4">
+      <div className="px-4 -mt-2 relative z-20 space-y-3">
         {/* Bento Grid Quick Actions */}
         <div className="flex gap-4">
           <Link 
@@ -235,7 +235,7 @@ const Profile = () => {
         </div>
 
         {/* Bottom Promotion Banner */}
-        <div className="h-28 bg-gradient-to-r from-[#81d4fa] via-[#e1f5fe] to-[#f8bbd0] rounded-[24px] p-6 relative overflow-hidden flex items-center shadow-sm">
+        <div className="h-24 bg-gradient-to-r from-[#81d4fa] via-[#e1f5fe] to-[#f8bbd0] rounded-[24px] p-6 relative overflow-hidden flex items-center shadow-sm">
           <div className="relative z-10">
             <h4 className="text-2xl font-black text-white italic tracking-tight italic">
               发文章 享好料

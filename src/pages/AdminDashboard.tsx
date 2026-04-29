@@ -9,6 +9,14 @@ import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../services/api';
 import { Author, Prediction, HistoryItem, Application } from '../types';
 
+const formatPeriod = (period: string) => {
+  if (!period) return '';
+  let p = period.trim();
+  // Remove existing brackets, "第" and "期" to normalize
+  p = p.replace(/^【|】$/g, '').replace(/^第/, '').replace(/期$/, '');
+  return `【第${p}期】`;
+};
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('authors');
@@ -167,7 +175,7 @@ const AdminDashboard = () => {
           </button>
           <button 
              onClick={() => { setEditingItem(null); setIsModalOpen(true); }}
-             className="bg-red-500 text-white px-4 py-2 rounded-lg flex items-center text-sm font-bold shadow-sm active:scale-95 transition-transform"
+             className="bg-[#b71c1c] text-white px-4 py-2 rounded-lg flex items-center text-sm font-bold shadow-sm active:scale-95 transition-transform"
           >
             <Plus className="w-4 h-4 mr-1.5" />
             新增
@@ -214,11 +222,11 @@ const AdminDashboard = () => {
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center px-4 py-4 border-b-2 transition-all whitespace-nowrap ${
               activeTab === tab.id 
-                ? 'border-red-500 text-red-500 font-bold' 
+                ? 'border-[#b71c1c] text-[#b71c1c] font-bold' 
                 : 'border-transparent text-gray-500'
             }`}
           >
-            <tab.icon className={`w-4 h-4 mr-2 ${activeTab === tab.id ? 'text-red-500' : 'text-gray-400'}`} />
+            <tab.icon className={`w-4 h-4 mr-2 ${activeTab === tab.id ? 'text-[#b71c1c]' : 'text-gray-400'}`} />
             {tab.label}
           </button>
         ))}
@@ -239,13 +247,13 @@ const AdminDashboard = () => {
               }中搜索...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all shadow-sm" 
+              className="w-full bg-white border border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#b71c1c]/20 transition-all shadow-sm" 
             />
           </div>
         )}
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : (
           <div className="grid gap-4">
@@ -260,7 +268,7 @@ const AdminDashboard = () => {
                   <button onClick={() => { setEditingItem(author); setIsModalOpen(true); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg">
                     <Edit className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDelete(author.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                  <button onClick={() => handleDelete(author.id)} className="p-2 text-[#b71c1c] hover:bg-red-50 rounded-lg">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -275,7 +283,10 @@ const AdminDashboard = () => {
                   </div>
                 )}
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-bold text-gray-900 flex-1 pr-4 pl-8">{pred.contentTitle || pred.title}</h3>
+                  <h3 className="font-bold text-gray-900 flex-1 pr-4 pl-8">
+                    <span className="text-[#b71c1c] mr-1">{formatPeriod(pred.period)}</span>
+                    {pred.title || pred.contentTitle}
+                  </h3>
                   <div className="flex items-center space-x-2">
                     <button 
                       onClick={async () => {
@@ -294,7 +305,7 @@ const AdminDashboard = () => {
                     <button onClick={() => { setEditingItem(pred); setIsModalOpen(true); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg">
                       <Edit className="w-4 h-4" />
                     </button>
-                    <button onClick={() => handleDelete(pred.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                    <button onClick={() => handleDelete(pred.id)} className="p-2 text-[#b71c1c] hover:bg-red-50 rounded-lg">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -307,7 +318,7 @@ const AdminDashboard = () => {
                     {pred.isUnlocked ? '已公开' : '锁定中'}
                   </span>
                   {pred.result && (
-                    <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm ${pred.result === '红' ? 'bg-red-500 text-white' : 'bg-gray-900 text-white'}`}>
+                    <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm ${pred.result === '红' ? 'bg-[#b71c1c] text-white' : 'bg-gray-900 text-white'}`}>
                       {pred.result}
                     </span>
                   )}
@@ -326,7 +337,7 @@ const AdminDashboard = () => {
                   <button onClick={() => { setEditingItem(user); setIsModalOpen(true); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg">
                     <Edit className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDelete(user.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                  <button onClick={() => handleDelete(user.id)} className="p-2 text-[#b71c1c] hover:bg-red-50 rounded-lg">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -336,7 +347,7 @@ const AdminDashboard = () => {
               <div key={app.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm mb-4 overflow-hidden">
                 <div className="p-6 cursor-pointer flex items-center justify-between" onClick={() => toggleApplication(app.id)}>
                   <div className="flex items-center">
-                    <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 font-bold mr-4 text-xl">
+                    <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-[#b71c1c] font-bold mr-4 text-xl">
                       {app.realName[0]}
                     </div>
                     <div>
@@ -348,7 +359,7 @@ const AdminDashboard = () => {
                     <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
                       app.status === 'pending' ? 'bg-orange-50 text-orange-500' :
                       app.status === 'approved' ? 'bg-green-50 text-green-500' :
-                      'bg-red-50 text-red-500'
+                      'bg-red-50 text-[#b71c1c]'
                     }`}>
                       {app.status === 'pending' ? '待审核' : app.status === 'approved' ? '已通过' : '已拒绝'}
                     </div>
@@ -410,7 +421,7 @@ const AdminDashboard = () => {
                       <div className="flex space-x-3">
                         <button 
                           onClick={() => handleApproveApp(app.id, true)}
-                          className="flex-1 bg-red-500 text-white py-3.5 rounded-2xl font-black text-sm shadow-xl shadow-red-100 active:scale-95 transition-all"
+                          className="flex-1 bg-[#b71c1c] text-white py-3.5 rounded-2xl font-black text-sm shadow-xl shadow-red-100 active:scale-95 transition-all"
                         >
                           通过
                         </button>
@@ -432,7 +443,7 @@ const AdminDashboard = () => {
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
                     <h3 className="font-bold text-gray-900">{order.predictionTitle}</h3>
-                    <span className="text-xs font-bold text-red-500">¥{order.amount}</span>
+                    <span className="text-xs font-bold text-[#b71c1c]">¥{order.amount}</span>
                   </div>
                   <div className="flex items-center text-[10px] text-gray-400">
                     <span className="mr-3">用户: {order.username} (ID: {order.userId})</span>
@@ -440,7 +451,7 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 <div className="ml-4">
-                  <button onClick={() => handleDelete(order.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                  <button onClick={() => handleDelete(order.id)} className="p-2 text-[#b71c1c] hover:bg-red-50 rounded-lg">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -453,7 +464,7 @@ const AdminDashboard = () => {
                    <h3 className="font-bold text-gray-900">{item.period} - {item.type}</h3>
                    <p className="text-xs text-gray-500">结果: {item.mainPick} | 简报: {item.numbers.join(',')}</p>
                 </div>
-                <button onClick={() => handleDelete(item.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                <button onClick={() => handleDelete(item.id)} className="p-2 text-[#b71c1c] hover:bg-red-50 rounded-lg">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -465,7 +476,7 @@ const AdminDashboard = () => {
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-1">
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                        msg.type === 'system' ? 'bg-red-100 text-red-600' :
+                        msg.type === 'system' ? 'bg-red-100 text-[#b71c1c]' :
                         msg.type === 'activity' ? 'bg-blue-100 text-blue-600' :
                         'bg-gray-100 text-gray-600'
                       }`}>
@@ -479,7 +490,7 @@ const AdminDashboard = () => {
                        <span>时间: {msg.time.replace('T', ' ').substring(0, 16)}</span>
                     </div>
                   </div>
-                  <button onClick={() => handleDelete(msg.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg shrink-0">
+                  <button onClick={() => handleDelete(msg.id)} className="p-2 text-[#b71c1c] hover:bg-red-50 rounded-lg shrink-0">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -496,7 +507,7 @@ const AdminDashboard = () => {
                   <div className={`px-2 py-1 rounded text-xs font-bold ${
                     w.status === 'pending' ? 'bg-orange-100 text-orange-600' :
                     w.status === 'approved' ? 'bg-green-100 text-green-600' :
-                    'bg-red-100 text-red-600'
+                    'bg-red-100 text-[#b71c1c]'
                   }`}>
                     {w.status === 'pending' ? '待审核' : w.status === 'approved' ? '已打款' : '已拒绝'}
                   </div>
@@ -525,7 +536,7 @@ const AdminDashboard = () => {
                     <h3 className="font-bold text-gray-900 text-lg">问题反馈</h3>
                     <p className="text-xs text-gray-500">反馈场景: {fb.scenario || '通用'}</p>
                   </div>
-                  <button onClick={() => handleDelete(fb.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg shrink-0">
+                  <button onClick={() => handleDelete(fb.id)} className="p-2 text-[#b71c1c] hover:bg-red-50 rounded-lg shrink-0">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -555,45 +566,45 @@ const AdminDashboard = () => {
                 }} className="space-y-6">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">网站名称</label>
-                    <input name="siteName" defaultValue={data.settings.siteName} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" required />
+                    <input name="siteName" defaultValue={data.settings.siteName} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" required />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-bold text-gray-700 mb-2">文章作者收益比</label>
-                      <input name="authorCommissionRate" type="number" step="0.01" defaultValue={data.settings.authorCommissionRate || 0.7} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" required />
+                      <input name="authorCommissionRate" type="number" step="0.01" defaultValue={data.settings.authorCommissionRate || 0.7} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" required />
                       <p className="text-[10px] text-gray-400 mt-1">如 0.7 表示作者得 70%</p>
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-gray-700 mb-2">邀请消费分润比</label>
-                      <input name="inviteCommissionRate" type="number" step="0.01" defaultValue={data.settings.inviteCommissionRate || 0.1} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" required />
+                      <input name="inviteCommissionRate" type="number" step="0.01" defaultValue={data.settings.inviteCommissionRate || 0.1} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" required />
                       <p className="text-[10px] text-gray-400 mt-1">如 0.1 表示推荐人得 10%</p>
                     </div>
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">首页公告</label>
-                    <textarea name="announcement" rows={3} defaultValue={data.settings.announcement} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" required />
+                    <textarea name="announcement" rows={3} defaultValue={data.settings.announcement} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" required />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">默认解锁倒计时 (HH:MM:SS)</label>
-                    <input name="defaultUnlockDuration" defaultValue={data.settings.defaultUnlockDuration} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" placeholder="01:25:20" required />
+                    <input name="defaultUnlockDuration" defaultValue={data.settings.defaultUnlockDuration} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" placeholder="01:25:20" required />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">联系邮箱</label>
-                    <input name="contactEmail" defaultValue={data.settings.contactEmail} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" required />
+                    <input name="contactEmail" defaultValue={data.settings.contactEmail} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" required />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">联系客服链接 (URL或mailto:)</label>
-                    <input name="contactLink" defaultValue={data.settings.contactLink} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" placeholder="https://..." />
+                    <input name="contactLink" defaultValue={data.settings.contactLink} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" placeholder="https://..." />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">下载APP链接</label>
-                    <input name="downloadLink" defaultValue={data.settings.downloadLink} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" placeholder="https://..." />
+                    <input name="downloadLink" defaultValue={data.settings.downloadLink} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" placeholder="https://..." />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">后台登录密码 <span className="text-gray-400 text-xs font-normal">(不修改请留空)</span></label>
-                    <input name="adminPassword" type="password" className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-red-500 transition-all font-medium" placeholder="留空则不修改密码" />
+                    <input name="adminPassword" type="password" className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" placeholder="留空则不修改密码" />
                   </div>
-                  <button type="submit" className="w-full bg-red-500 text-white py-5 rounded-2xl font-black shadow-xl shadow-red-100 hover:scale-[1.02] active:scale-95 transition-all">
+                  <button type="submit" className="w-full bg-[#b71c1c] text-white py-5 rounded-2xl font-black shadow-xl shadow-red-100 hover:scale-[1.02] active:scale-95 transition-all">
                     保存设置
                   </button>
                 </form>
@@ -772,7 +783,7 @@ const AdminDashboard = () => {
                     </>
                   ) : null}
                   
-                  <button type="submit" className="w-full bg-red-500 text-white py-4 rounded-xl font-bold shadow-lg shadow-red-100 flex items-center justify-center">
+                  <button type="submit" className="w-full bg-[#b71c1c] text-white py-4 rounded-xl font-bold shadow-lg shadow-red-100 flex items-center justify-center">
                     <Save className="w-4 h-4 mr-2" />
                     保存修改
                   </button>

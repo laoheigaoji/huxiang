@@ -9,11 +9,54 @@ const TopUp = () => {
   const [selectedMethod, setSelectedMethod] = useState('alipay');
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
+  const [balanceAtStart, setBalanceAtStart] = useState<number | null>(null);
   const [user, setUser] = useState<any>(null);
 
   React.useEffect(() => {
-    api.getProfile().then(setUser).catch(console.error);
+    api.getProfile().then(data => {
+      setUser(data);
+      if (data && data.balance !== undefined) {
+        setBalanceAtStart(data.balance);
+      }
+    }).catch(console.error);
   }, []);
+
+  const pollBalance = async () => {
+    try {
+      const data = await api.getProfile();
+      if (data && data.balance !== undefined) {
+        if (balanceAtStart !== null && data.balance > balanceAtStart) {
+          setUser(data);
+          setLoading(false);
+          alert('充值成功！');
+          return true;
+        }
+      }
+    } catch (err) {
+      console.error("Polling error", err);
+    }
+    return false;
+  };
+
+  React.useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (loading) {
+      interval = setInterval(pollBalance, 3000);
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && loading) {
+        pollBalance();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      if (interval) clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loading, balanceAtStart]);
 
   const handlePay = async () => {
     if (!amount || parseFloat(amount) <= 0) {
@@ -28,7 +71,7 @@ const TopUp = () => {
         const url = res.payurl || res.qrcode || res.urlscheme;
         if (url.startsWith('http')) {
           window.location.href = url;
-          setTimeout(() => setLoading(false), 2000);
+          // Keep loading true, it will be cleared by pollBalance or manual close
         } else {
           // For qrcode or urlscheme that aren't direct http links
           alert(`请使用支付应用扫码或打开: ${url}`);
@@ -162,9 +205,18 @@ const TopUp = () => {
 
       {/* Fullscreen Loading Overlay */}
       {loading && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/20 backdrop-blur-sm">
-            <div className="bg-white p-4 rounded-2xl flex items-center justify-center shadow-2xl">
-                <div className="w-8 h-8 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin"></div>
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="bg-white p-6 rounded-3xl flex flex-col items-center justify-center shadow-2xl max-w-[280px] w-full mx-4">
+                <div className="w-12 h-12 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-gray-900 font-bold text-lg">正在确认充值...</p>
+                <p className="text-gray-400 text-xs mt-2 text-center leading-relaxed">支付完成后请返回此页面，系统将自动更新余额</p>
+                
+                <button 
+                  onClick={() => setLoading(false)}
+                  className="mt-6 text-[#b71c1c] text-sm font-bold bg-red-50 px-4 py-2 rounded-full"
+                >
+                  关闭等待
+                </button>
             </div>
         </div>
       )}

@@ -112,7 +112,7 @@ const AuthorSearch = () => {
                     <div className="flex items-center text-[11px] text-gray-400 font-bold space-x-2">
                       <span>粉丝 {author.fans}</span>
                       <span className="w-1 h-1 bg-gray-200 rounded-full"></span>
-                      <span className="text-red-500">{author.recentRecord}</span>
+                      <span className="text-[#b71c1c]">{author.recentRecord}</span>
                     </div>
                   </div>
                 </Link>
@@ -124,7 +124,7 @@ const AuthorSearch = () => {
                 className={`relative z-10 px-4 py-1.5 rounded-full text-xs font-black transition-all active:scale-95 flex items-center flex-shrink-0 ${
                   user?.following?.includes(author.id)
                     ? 'bg-gray-100 text-gray-400'
-                    : 'bg-[#e53935] text-white shadow-lg shadow-red-100'
+                    : 'bg-[#b71c1c] text-white shadow-lg shadow-red-100'
                 }`}
               >
                 {user?.following?.includes(author.id) ? (

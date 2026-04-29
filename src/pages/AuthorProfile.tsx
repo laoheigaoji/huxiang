@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { api } from '../services/api';
 import { Author, Prediction } from '../types';
 import { Link } from 'react-router-dom';
+import JumpingNumber from '../components/JumpingNumber';
 
 const CountdownTimer = ({ unlockAt }: { unlockAt: string }) => {
   const [timeLeft, setTimeLeft] = useState({ h: '00', m: '00', s: '00' });
@@ -51,6 +52,14 @@ const CountdownTimer = ({ unlockAt }: { unlockAt: string }) => {
       </div>
     </div>
   );
+};
+
+const formatPeriod = (period: string) => {
+  if (!period) return '';
+  let p = period.trim();
+  // Remove existing brackets, "第" and "期" to normalize
+  p = p.replace(/^【|】$/g, '').replace(/^第/, '').replace(/期$/, '');
+  return `【第${p}期】`;
 };
 
 const AuthorProfile = () => {
@@ -224,8 +233,8 @@ const AuthorProfile = () => {
 
                 <div className="mt-4">
                   <h5 className="text-[16px] font-bold leading-relaxed">
-                    <span className="text-[#b71c1c]">【{prediction.period}】</span>
-                    <span className="text-gray-800">{prediction.contentTitle}</span>
+                    <span className="text-[#b71c1c]">{formatPeriod(prediction.period)}</span>
+                    <span className="text-gray-800">{prediction.title || prediction.contentTitle}</span>
                   </h5>
                 </div>
 
@@ -266,7 +275,9 @@ const AuthorProfile = () => {
                          />
                        ))}
                     </div>
-                    <span className="text-[11px] text-gray-400 font-bold tracking-tight">{prediction.viewCount || 888}次</span>
+                    <span className="text-[11px] text-gray-400 font-bold tracking-tight">
+                      <JumpingNumber id={`view_${prediction.id}`} base={prediction.viewCount || 888} range={3} interval={2000} />次
+                    </span>
                   </div>
                 </div>
               </Link>

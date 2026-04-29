@@ -22,7 +22,8 @@ const PublishPrediction = () => {
     mainPicks: [36, 24, 12] as number[],
     unlockDuration: '',
     isUnlocked: false,
-    result: undefined as '红' | '黑' | undefined
+    result: undefined as '红' | '黑' | undefined,
+    time: ''
   });
 
   useEffect(() => {
@@ -39,7 +40,7 @@ const PublishPrediction = () => {
           return;
         }
         setUser(profileData);
-        if (settingsData?.defaultUnlockDuration) {
+        if (!editId && settingsData?.defaultUnlockDuration) {
           setFormData(prev => ({...prev, unlockDuration: settingsData.defaultUnlockDuration}));
         }
 
@@ -56,9 +57,10 @@ const PublishPrediction = () => {
               isFree: pred.isFree,
               content: pred.content || '',
               mainPicks: pred.mainPicks || [36, 24, 12],
-              unlockDuration: pred.unlockDuration || settingsData?.defaultUnlockDuration || '',
+              unlockDuration: pred.unlockDuration || '',
               isUnlocked: pred.isUnlocked || false,
-              result: pred.result
+              result: pred.result,
+              time: pred.time
             });
           } catch (err) {
             console.error('Failed to fetch prediction for edit', err);
@@ -85,7 +87,6 @@ const PublishPrediction = () => {
           authorId: user.authorId,
           authorName: user.nickname || user.username,
           authorAvatar: user.avatar,
-          time: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-'),
           updatedAt: new Date().toISOString().replace('T', ' ').slice(0, 16)
         });
         alert('修改成功！');
@@ -137,14 +138,14 @@ const PublishPrediction = () => {
 
       {fetching ? (
         <div className="flex items-center justify-center p-20">
-          <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
         {/* Basic Info */}
         <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex items-center space-x-2 mb-2">
-            <div className="w-1 h-4 bg-red-500 rounded-full"></div>
+            <div className="w-1 h-4 bg-[#b71c1c] rounded-full"></div>
             <h3 className="font-bold text-gray-900">基本信息</h3>
           </div>
           
@@ -154,7 +155,7 @@ const PublishPrediction = () => {
               value={formData.title}
               onChange={e => setFormData({...formData, title: e.target.value})}
               placeholder="例如：独家分析 精准推荐"
-              className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-red-500 outline-none" 
+              className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-[#b71c1c] outline-none" 
             />
           </div>
 
@@ -165,14 +166,14 @@ const PublishPrediction = () => {
                 value={formData.period}
                 onChange={e => setFormData({...formData, period: e.target.value})}
                 placeholder="第116期"
-                className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-red-500 outline-none" 
+                className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-[#b71c1c] outline-none" 
               />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase">标签设置</label>
               <div className="flex flex-wrap gap-2">
                 {formData.tags.map(t => (
-                  <span key={t} className="bg-red-50 text-red-500 text-[10px] px-2 py-1 rounded-md flex items-center">
+                  <span key={t} className="bg-red-50 text-[#b71c1c] text-[10px] px-2 py-1 rounded-md flex items-center">
                     {t}
                     <X className="w-2.5 h-2.5 ml-1 cursor-pointer" onClick={() => removeTag(t)} />
                   </span>
@@ -188,7 +189,7 @@ const PublishPrediction = () => {
         {/* Pricing */}
         <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex items-center space-x-2 mb-2">
-            <div className="w-1 h-4 bg-red-500 rounded-full"></div>
+            <div className="w-1 h-4 bg-[#b71c1c] rounded-full"></div>
             <h3 className="font-bold text-gray-900">定价设置</h3>
           </div>
 
@@ -197,7 +198,7 @@ const PublishPrediction = () => {
             <button 
               type="button"
               onClick={() => setFormData({...formData, isFree: !formData.isFree, price: formData.isFree ? 286 : 0})}
-              className={`w-12 h-6 rounded-full relative transition-colors ${formData.isFree ? 'bg-red-500' : 'bg-gray-200'}`}
+              className={`w-12 h-6 rounded-full relative transition-colors ${formData.isFree ? 'bg-[#b71c1c]' : 'bg-gray-200'}`}
             >
               <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${formData.isFree ? 'right-1' : 'left-1'}`}></div>
             </button>
@@ -211,7 +212,7 @@ const PublishPrediction = () => {
                   type="number"
                   value={formData.price}
                   onChange={e => setFormData({...formData, price: parseInt(e.target.value) || 0})}
-                  className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-red-500 outline-none" 
+                  className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-[#b71c1c] outline-none" 
                 />
                 <span className="absolute right-4 top-3.5 text-sm text-gray-400">币</span>
               </div>
@@ -226,7 +227,7 @@ const PublishPrediction = () => {
                   value={formData.unlockDuration}
                   onChange={e => setFormData({...formData, unlockDuration: e.target.value})}
                   placeholder="例如：01:25:20"
-                  className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-red-500 outline-none" 
+                  className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-[#b71c1c] outline-none" 
                 />
                 <span className="absolute right-4 top-3.5 text-xs text-gray-400 font-bold">必填</span>
               </div>
@@ -237,7 +238,7 @@ const PublishPrediction = () => {
 
           <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
             <div className="flex items-center space-x-2 mb-2">
-              <div className="w-1 h-4 bg-red-500 rounded-full"></div>
+              <div className="w-1 h-4 bg-[#b71c1c] rounded-full"></div>
               <h3 className="font-bold text-gray-900">方案结果与公开</h3>
             </div>
 
@@ -252,7 +253,7 @@ const PublishPrediction = () => {
                            onClick={() => setFormData({...formData, result: r as any})}
                            className={`flex-1 py-3 rounded-xl font-bold transition-all border ${
                               formData.result === r 
-                                 ? (r === '红' ? 'bg-red-500 text-white border-red-500 shadow-md' : 'bg-gray-900 text-white border-gray-900 shadow-md') 
+                                 ? (r === '红' ? 'bg-[#b71c1c] text-white border-[#b71c1c] shadow-md' : 'bg-gray-900 text-white border-gray-900 shadow-md') 
                                  : 'bg-white text-gray-400 border-gray-200'
                            }`}
                         >
@@ -290,7 +291,7 @@ const PublishPrediction = () => {
         {/* Content */}
         <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex items-center space-x-2 mb-2">
-            <div className="w-1 h-4 bg-red-500 rounded-full"></div>
+            <div className="w-1 h-4 bg-[#b71c1c] rounded-full"></div>
             <h3 className="font-bold text-gray-900">详细分析</h3>
           </div>
 
@@ -300,7 +301,7 @@ const PublishPrediction = () => {
               value={formData.contentTitle}
               onChange={e => setFormData({...formData, contentTitle: e.target.value})}
               placeholder="如：精准平特一肖 重点推荐"
-              className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-red-500 outline-none" 
+              className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-[#b71c1c] outline-none" 
             />
           </div>
 
@@ -310,7 +311,7 @@ const PublishPrediction = () => {
               value={formData.mainPicks.join(',')}
               onChange={e => setFormData({...formData, mainPicks: e.target.value.split(',').map(n => parseInt(n.trim()) || 0)})}
               placeholder="36,24,12"
-              className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-red-500 outline-none" 
+              className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-[#b71c1c] outline-none" 
             />
           </div>
 
@@ -321,7 +322,7 @@ const PublishPrediction = () => {
               value={formData.content}
               onChange={e => setFormData({...formData, content: e.target.value})}
               placeholder="请输入您的分析逻辑、支持数据等观点..."
-              className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-red-500 outline-none resize-none" 
+              className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-[#b71c1c] outline-none resize-none" 
             ></textarea>
           </div>
         </div>
@@ -339,7 +340,7 @@ const PublishPrediction = () => {
         <button 
           onClick={handleSubmit}
           disabled={loading || fetching}
-          className="w-full bg-red-500 text-white font-bold h-14 rounded-xl shadow-lg shadow-red-100 flex items-center justify-center active:scale-[0.98] transition-all disabled:opacity-50"
+          className="w-full bg-[#b71c1c] text-white font-bold h-14 rounded-xl shadow-lg shadow-red-100 flex items-center justify-center active:scale-[0.98] transition-all disabled:opacity-50"
         >
           {loading ? (editId ? '正在修改...' : '正在发布...') : (editId ? '保存修改' : '立即发布文章')}
           <ArrowRight className="w-5 h-5 ml-2" />

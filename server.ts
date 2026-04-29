@@ -16,55 +16,85 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  const mongoClient = new MongoClient(MONGODB_URI);
-  await mongoClient.connect();
-  const db = mongoClient.db();
-  console.log("Connected to MongoDB");
+  const mongoClient = new MongoClient(MONGODB_URI, {
+    serverSelectionTimeoutMS: 5000,
+    connectTimeoutMS: 5000,
+  });
+  let db: any;
+  try {
+    await mongoClient.connect();
+    db = mongoClient.db();
+    console.log("Connected to MongoDB");
+  } catch (err) {
+    console.error("Failed to connect to MongoDB, falling back to mock DB behavior", err);
+    // Create a mock db object that warns or uses memory?
+    // For now, let's just ensure the server starts.
+  }
+
+  // Middleware to ensure DB is available or send error
+  const checkDb = (req: any, res: any, next: any) => {
+    if (!db) {
+      return res.status(503).json({ error: "Database not connected. Please check MONGODB_URI or server logs." });
+    }
+    next();
+  };
 
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-  // Migration logic (run once if users is empty)
-  try {
-    const usersCount = await db.collection("users").countDocuments();
-    if (usersCount === 0) {
-      console.log("Migrating local data to MongoDB...");
-      const files = ["users", "authors", "predictions", "history", "messages", "orders", "settings", "transactions", "withdrawals", "applications"];
-      for (const file of files) {
-        try {
-          const filePath = path.join(__dirname, "data", `${file}.json`);
-          const content = await fs.readFile(filePath, "utf8");
-          const data = JSON.parse(content);
-          if (Array.isArray(data) && data.length > 0) {
-            await db.collection(file).insertMany(data);
-          } else if (!Array.isArray(data) && typeof data === 'object' && Object.keys(data).length > 0) {
-            await db.collection(file).insertOne(data);
-          }
-        } catch (err) {
-          // Skip if file doesn't exist
-        }
-      }
-    }
-  } catch (err) {
-    console.error("Migration error:", err);
-  }
-
-  // API Routes
-  app.get("/api/authors", async (req, res) => {
-    const authors = await db.collection("authors").find().toArray();
-    res.json(authors);
+  // Health check
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", dbConnected: !!db });
   });
 
-  app.get("/api/authors/:id", async (req, res) => {
+  // Migration logic (run once if users is empty)
+  if (db) {
+    try {
+      const usersCount = await db.collection("users").countDocuments();
+      if (usersCount === 0) {
+        console.log("Migrating local data to MongoDB...");
+        const files = ["users", "authors", "predictions", "history", "messages", "orders", "settings", "transactions", "withdrawals", "applications"];
+        for (const file of files) {
+          try {
+            const filePath = path.join(__dirname, "data", `${file}.json`);
+            const content = await fs.readFile(filePath, "utf8");
+            const data = JSON.parse(content);
+            if (Array.isArray(data) && data.length > 0) {
+              await db.collection(file).insertMany(data);
+            } else if (!Array.isArray(data) && typeof data === 'object' && Object.keys(data).length > 0) {
+              await db.collection(file).insertOne(data);
+            }
+          } catch (err) {
+            // Skip if file doesn't exist
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Migration error:", err);
+    }
+  }
+
+  // Helper for async errors
+  const asyncHandler = (fn: any) => (req: any, res: any, next: any) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+
+  // API Routes
+  app.get("/api/authors", checkDb, asyncHandler(async (req: any, res: any) => {
+    const authors = await db.collection("authors").find().toArray();
+    res.json(authors);
+  }));
+
+  app.get("/api/authors/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     const author = await db.collection("authors").findOne({ id: req.params.id });
     if (author) {
       res.json(author);
     } else {
       res.status(404).json({ error: "Author not found" });
     }
-  });
+  }));
 
-  app.post("/api/register", async (req, res) => {
+  app.post("/api/register", checkDb, asyncHandler(async (req: any, res: any) => {
     const { username, password, nickname, referrerId } = req.body;
     const existingUser = await db.collection("users").findOne({ username });
     if (existingUser) {
@@ -82,9 +112,9 @@ async function startServer() {
     };
     await db.collection("users").insertOne(newUser);
     res.json(newUser);
-  });
+  }));
 
-  app.post("/api/login", async (req, res) => {
+  app.post("/api/login", checkDb, asyncHandler(async (req: any, res: any) => {
     const { username, password } = req.body;
     const user = await db.collection("users").findOne({ username, password });
     if (!user) {
@@ -92,9 +122,9 @@ async function startServer() {
     }
     const { password: _, ...userWithoutPassword } = user;
     res.json(userWithoutPassword);
-  });
+  }));
 
-  app.post("/api/wechat-login", async (req, res) => {
+  app.post("/api/wechat-login", checkDb, asyncHandler(async (req: any, res: any) => {
     const { code, nickname, avatar, referrerId, referrer } = req.body;
     if (!code) return res.status(400).json({ error: "Code is required" });
 
@@ -166,37 +196,37 @@ async function startServer() {
       console.error("Wechat login error:", error);
       res.status(500).json({ error: "服务器内部错误" });
     }
-  });
+  }));
 
-  app.post("/api/logout", (req, res) => {
+  app.post("/api/logout", (req: any, res: any) => {
     res.json({ message: "已退出登录" });
   });
 
-  app.get("/api/predictions", async (req, res) => {
+  app.get("/api/predictions", checkDb, asyncHandler(async (req: any, res: any) => {
     const predictions = await db.collection("predictions").find().toArray();
     res.json(predictions);
-  });
+  }));
 
-  app.get("/api/history", async (req, res) => {
+  app.get("/api/history", checkDb, asyncHandler(async (req: any, res: any) => {
     const history = await db.collection("history").find().toArray();
     res.json(history);
-  });
+  }));
 
-  app.get("/api/predictions/:id", async (req, res) => {
+  app.get("/api/predictions/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     const prediction = await db.collection("predictions").findOne({ id: req.params.id });
     if (prediction) {
       res.json(prediction);
     } else {
       res.status(404).json({ error: "Prediction not found" });
     }
-  });
+  }));
 
-  app.post("/api/predictions/:id/public", async (req, res) => {
+  app.post("/api/predictions/:id/public", checkDb, asyncHandler(async (req: any, res: any) => {
     await db.collection("predictions").updateOne({ id: req.params.id }, { $set: { isUnlocked: true, status: 'public' } });
     res.json({ message: "marked as public" });
-  });
+  }));
 
-  app.get("/api/purchased-predictions", async (req, res) => {
+  app.get("/api/purchased-predictions", checkDb, asyncHandler(async (req: any, res: any) => {
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
     const user = await db.collection("users").findOne({ id: userId });
@@ -205,9 +235,9 @@ async function startServer() {
     const purchasedIds = user.purchased || [];
     const predictions = await db.collection("predictions").find({ id: { $in: purchasedIds } }).toArray();
     res.json(predictions);
-  });
+  }));
 
-  app.get("/api/profile", async (req, res) => {
+  app.get("/api/profile", checkDb, asyncHandler(async (req: any, res: any) => {
     const { userId } = req.query;
     if (!userId) {
       return res.status(400).json({ error: "User ID is required" });
@@ -227,9 +257,9 @@ async function startServer() {
     } else {
       res.status(404).json({ error: "User not found" });
     }
-  });
+  }));
 
-  app.get("/api/messages", async (req, res) => {
+  app.get("/api/messages", checkDb, asyncHandler(async (req: any, res: any) => {
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
     
@@ -262,9 +292,9 @@ async function startServer() {
     }
 
     res.json(messages.sort((a: any, b: any) => new Date(b.time).getTime() - new Date(a.time).getTime()));
-  });
+  }));
 
-  app.post("/api/admin/messages", async (req, res) => {
+  app.post("/api/admin/messages", checkDb, asyncHandler(async (req: any, res: any) => {
     const newMessage = {
       id: "m" + Date.now(),
       time: new Date().toISOString(),
@@ -272,16 +302,16 @@ async function startServer() {
     };
     await db.collection("messages").insertOne(newMessage);
     res.json(newMessage);
-  });
+  }));
 
-  app.delete("/api/admin/messages/:id", async (req, res) => {
+  app.delete("/api/admin/messages/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     let queryArgs: any[] = [{ id: req.params.id }];
     if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
     await db.collection("messages").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
-  });
+  }));
 
-  app.get("/api/settings", async (req, res) => {
+  app.get("/api/settings", checkDb, asyncHandler(async (req: any, res: any) => {
     let settings: any = await db.collection("settings").findOne({});
     if (!settings) {
       settings = {
@@ -296,9 +326,9 @@ async function startServer() {
     }
     const { adminPassword, ...safeSettings } = settings;
     res.json(safeSettings);
-  });
+  }));
 
-  app.post("/api/admin/login", async (req, res) => {
+  app.post("/api/admin/login", checkDb, asyncHandler(async (req: any, res: any) => {
     const { username, password } = req.body;
     let settings: any = await db.collection("settings").findOne({});
     const validPass = settings?.adminPassword || 'admin888';
@@ -308,9 +338,9 @@ async function startServer() {
     } else {
        res.status(401).json({ error: '账号或密码错误' });
     }
-  });
+  }));
 
-  app.put("/api/settings", async (req, res) => {
+  app.put("/api/settings", checkDb, asyncHandler(async (req: any, res: any) => {
     const settings = req.body;
     delete settings._id; // Remove _id to avoid immutable error
     if (settings.adminPassword === "") {
@@ -318,9 +348,9 @@ async function startServer() {
     }
     await db.collection("settings").updateOne({}, { $set: settings }, { upsert: true });
     res.json({ message: "Settings updated" });
-  });
+  }));
 
-  app.post("/api/authors/follow/:id", async (req, res) => {
+  app.post("/api/authors/follow/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     const { id } = req.params;
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
@@ -366,9 +396,9 @@ async function startServer() {
     } else {
       res.status(404).json({ error: "User not found" });
     }
-  });
+  }));
 
-  app.post("/api/pay/create", async (req, res) => {
+  app.post("/api/pay/create", checkDb, asyncHandler(async (req: any, res: any) => {
     const { amount, type, orderName, userId, predictionId, returnUrl: customReturnUrl } = req.body;
     
     const pid = process.env.YIPAY_PID || "1000";
@@ -425,9 +455,9 @@ async function startServer() {
       console.error("Yipay request error:", error.message);
       res.status(500).json({ error: "支付请求失败", details: error.message });
     }
-  });
+  }));
 
-  app.get("/api/pay/notify", async (req, res) => {
+  app.get("/api/pay/notify", checkDb, asyncHandler(async (req: any, res: any) => {
     const { pid, trade_no, out_trade_no, type, name, money, trade_status, sign } = req.query;
     const key = process.env.YIPAY_KEY || "6fXAB353AFl8Pl9779xAO6598lO9b59P";
 
@@ -534,17 +564,17 @@ async function startServer() {
     }
 
     res.send("success");
-  });
+  }));
 
-  app.get("/api/transactions", async (req, res) => {
+  app.get("/api/transactions", checkDb, asyncHandler(async (req: any, res: any) => {
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
     
     const transactions = await db.collection("transactions").find({ userId }).toArray();
     res.json(transactions.sort((a: any, b: any) => new Date(b.time).getTime() - new Date(a.time).getTime()));
-  });
+  }));
 
-  app.post("/api/withdraw", async (req, res) => {
+  app.post("/api/withdraw", checkDb, asyncHandler(async (req: any, res: any) => {
     const { amount, account, name, type, userId } = req.body;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
     
@@ -593,9 +623,9 @@ async function startServer() {
     } else {
       res.status(404).json({ error: "User not found" });
     }
-  });
+  }));
 
-  app.post("/api/purchase", async (req, res) => {
+  app.post("/api/purchase", checkDb, asyncHandler(async (req: any, res: any) => {
     const { predictionId, userId } = req.body;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
     
@@ -701,16 +731,16 @@ async function startServer() {
     });
 
     res.json({ message: "购买成功" });
-  });
+  }));
 
-  app.get("/api/invited-friends", async (req, res) => {
+  app.get("/api/invited-friends", checkDb, asyncHandler(async (req: any, res: any) => {
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
     const friends = await db.collection("users").find({ referrerId: userId }).toArray();
     res.json(friends.map(({ password, ...u }: any) => u));
-  });
+  }));
 
-  app.put("/api/profile", async (req, res) => {
+  app.put("/api/profile", checkDb, asyncHandler(async (req: any, res: any) => {
     const { userId } = req.query;
     const updateData = req.body;
     delete updateData._id;
@@ -724,16 +754,16 @@ async function startServer() {
     } else {
       res.status(404).json({ error: "User not found" });
     }
-  });
+  }));
 
   // CRUD for Authors
-  app.post("/api/admin/authors", async (req, res) => {
+  app.post("/api/admin/authors", checkDb, asyncHandler(async (req: any, res: any) => {
     const newAuthor = { ...req.body, id: Date.now().toString() };
     await db.collection("authors").insertOne(newAuthor);
     res.json(newAuthor);
-  });
+  }));
 
-  app.put("/api/admin/authors/:id", async (req, res) => {
+  app.put("/api/admin/authors/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     const updateData = req.body;
     delete updateData._id;
     await db.collection("authors").updateOne({ id: req.params.id }, { $set: updateData });
@@ -743,43 +773,64 @@ async function startServer() {
     } else {
       res.status(404).json({ error: "Author not found" });
     }
-  });
+  }));
 
-  app.delete("/api/admin/authors/:id", async (req, res) => {
+  app.delete("/api/admin/authors/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     let queryArgs: any[] = [{ id: req.params.id }];
     if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
     await db.collection("authors").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
-  });
+  }));
 
-  // Predictions actions
-  app.get("/api/author/predictions/:authorId", async (req, res) => {
+  app.get("/api/author/predictions/:authorId", checkDb, asyncHandler(async (req: any, res: any) => {
     const authorPredictions = await db.collection("predictions").find({ authorId: req.params.authorId }).toArray();
     res.json(authorPredictions);
-  });
+  }));
 
   // Predictions management for authors
-  app.put("/api/author/predictions/:id", async (req, res) => {
+  app.put("/api/author/predictions/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     const updateData = req.body;
+    const { id } = req.params;
     delete updateData._id;
-    await db.collection("predictions").updateOne({ id: req.params.id }, { $set: updateData });
-    const prediction = await db.collection("predictions").findOne({ id: req.params.id });
-    if (prediction) {
-      res.json(prediction);
-    } else {
-      res.status(404).json({ error: "Prediction not found" });
-    }
-  });
 
-  app.delete("/api/author/predictions/:id", async (req, res) => {
+    const existingPred = await db.collection("predictions").findOne({ id });
+    if (!existingPred) return res.status(404).json({ error: "Prediction not found" });
+
+    // Handle unlockDuration change
+    if (updateData.unlockDuration && updateData.unlockDuration !== existingPred.unlockDuration) {
+      const parts = updateData.unlockDuration.split(':').map(Number);
+      const now = new Date();
+      if (parts.length === 3) {
+        now.setHours(now.getHours() + parts[0]);
+        now.setMinutes(now.getMinutes() + parts[1]);
+        now.setSeconds(now.getSeconds() + parts[2]);
+      } else if (parts.length === 2) {
+        now.setMinutes(now.getMinutes() + parts[0]);
+        now.setSeconds(now.getSeconds() + parts[1]);
+      }
+      updateData.unlockAt = now.toISOString();
+    } else {
+      // Preserve existing unlockAt if duration didn't change
+      updateData.unlockAt = existingPred.unlockAt;
+    }
+
+    // Always preserve original publication time during edit
+    updateData.time = existingPred.time;
+
+    await db.collection("predictions").updateOne({ id }, { $set: updateData });
+    const prediction = await db.collection("predictions").findOne({ id });
+    res.json(prediction);
+  }));
+
+  app.delete("/api/author/predictions/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     let queryArgs: any[] = [{ id: req.params.id }];
     if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
     await db.collection("predictions").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
-  });
+  }));
 
   // CRUD for Predictions (Admin/Dev)
-  app.post("/api/admin/predictions", async (req, res) => {
+  app.post("/api/admin/predictions", checkDb, asyncHandler(async (req: any, res: any) => {
     const { unlockDuration, ...rest } = req.body;
     let unlockAt = null;
 
@@ -808,18 +859,19 @@ async function startServer() {
     };
     await db.collection("predictions").insertOne(newPrediction);
     res.json(newPrediction);
-  });
+  }));
 
-  app.put("/api/admin/predictions/:id", async (req, res) => {
+  app.put("/api/admin/predictions/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     const { unlockDuration, ...rest } = req.body;
+    const { id } = req.params;
     delete rest._id;
     
-    const existingPred = await db.collection("predictions").findOne({ id: req.params.id });
+    const existingPred = await db.collection("predictions").findOne({ id });
     if (!existingPred) return res.status(404).json({ error: "Prediction not found" });
 
     let unlockAt = existingPred.unlockAt;
 
-    if (unlockDuration) {
+    if (unlockDuration && unlockDuration !== existingPred.unlockDuration) {
       const parts = unlockDuration.split(':').map(Number);
       const now = new Date();
       if (parts.length === 3) {
@@ -833,31 +885,34 @@ async function startServer() {
       unlockAt = now.toISOString();
     }
 
-    await db.collection("predictions").updateOne({ id: req.params.id }, { $set: { ...rest, unlockAt } });
-    const updatedPred = await db.collection("predictions").findOne({ id: req.params.id });
-    res.json(updatedPred);
-  });
+    // Preserve original publication time
+    const time = existingPred.time;
 
-  app.delete("/api/admin/predictions/:id", async (req, res) => {
+    await db.collection("predictions").updateOne({ id }, { $set: { ...rest, unlockAt, time } });
+    const updatedPred = await db.collection("predictions").findOne({ id });
+    res.json(updatedPred);
+  }));
+
+  app.delete("/api/admin/predictions/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     let queryArgs: any[] = [{ id: req.params.id }];
     if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
     await db.collection("predictions").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
-  });
+  }));
 
-  app.post("/api/admin/predictions/unlock-all", async (req, res) => {
+  app.post("/api/admin/predictions/unlock-all", checkDb, asyncHandler(async (req: any, res: any) => {
     await db.collection("predictions").updateMany({}, { $set: { isUnlocked: true } });
     res.json({ message: "Unlocked all" });
-  });
+  }));
 
   // CRUD for Users
-  app.get("/api/admin/users", async (req, res) => {
+  app.get("/api/admin/users", checkDb, asyncHandler(async (req: any, res: any) => {
     const users = await db.collection("users").find().toArray();
     res.json(users.map(({ password, ...u }: any) => u));
-  });
+  }));
 
   // Applications
-  app.post("/api/applications", async (req, res) => {
+  app.post("/api/applications", checkDb, asyncHandler(async (req: any, res: any) => {
     const newApp = { 
       ...req.body, 
       id: "app" + Date.now(), 
@@ -866,21 +921,21 @@ async function startServer() {
     };
     await db.collection("applications").insertOne(newApp);
     res.json(newApp);
-  });
+  }));
 
-  app.get("/api/admin/applications", async (req, res) => {
+  app.get("/api/admin/applications", checkDb, asyncHandler(async (req: any, res: any) => {
     const applications = await db.collection("applications").find().toArray();
     res.json(applications);
-  });
+  }));
 
-  app.delete("/api/admin/applications/:id", async (req, res) => {
+  app.delete("/api/admin/applications/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     let queryArgs: any[] = [{ id: req.params.id }];
     if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
     await db.collection("applications").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
-  });
+  }));
 
-  app.put("/api/admin/applications/:id", async (req, res) => {
+  app.put("/api/admin/applications/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     const { status } = req.body;
     const application = await db.collection("applications").findOne({ id: req.params.id });
     
@@ -910,15 +965,15 @@ async function startServer() {
     } else {
       res.status(404).json({ error: "Application not found" });
     }
-  });
+  }));
 
   // Admin Withdrawals
-  app.get("/api/admin/withdrawals", async (req, res) => {
+  app.get("/api/admin/withdrawals", checkDb, asyncHandler(async (req: any, res: any) => {
     const withdrawals = await db.collection("withdrawals").find().sort({ time: -1 }).toArray();
     res.json(withdrawals.map(w => ({ ...w, id: w.id || w._id.toString() })));
-  });
+  }));
 
-  app.put("/api/admin/withdrawals/:id", async (req, res) => {
+  app.put("/api/admin/withdrawals/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     const { status } = req.body;
     let queryArgs: any[] = [{ id: req.params.id }];
     if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
@@ -961,10 +1016,10 @@ async function startServer() {
     } else {
       res.status(400).json({ error: "Invalid withdrawal or status" });
     }
-  });
+  }));
 
   // Feedback
-  app.post("/api/feedback", async (req, res) => {
+  app.post("/api/feedback", checkDb, asyncHandler(async (req: any, res: any) => {
     const newFeedback = {
       ...req.body,
       id: "fb" + Date.now(),
@@ -972,21 +1027,21 @@ async function startServer() {
     };
     await db.collection("feedbacks").insertOne(newFeedback);
     res.json(newFeedback);
-  });
+  }));
 
-  app.get("/api/admin/feedbacks", async (req, res) => {
+  app.get("/api/admin/feedbacks", checkDb, asyncHandler(async (req: any, res: any) => {
     const feedbacks = await db.collection("feedbacks").find().sort({ time: -1 }).toArray();
     res.json(feedbacks.map(fb => ({ ...fb, id: fb.id || fb._id.toString() })));
-  });
+  }));
 
-  app.delete("/api/admin/feedbacks/:id", async (req, res) => {
+  app.delete("/api/admin/feedbacks/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     let queryArgs: any[] = [{ id: req.params.id }];
     if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
     await db.collection("feedbacks").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
-  });
+  }));
 
-  app.put("/api/admin/users/:id", async (req, res) => {
+  app.put("/api/admin/users/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     const updateData = req.body;
     delete updateData._id;
     await db.collection("users").updateOne({ id: req.params.id }, { $set: updateData });
@@ -996,35 +1051,35 @@ async function startServer() {
     } else {
       res.status(404).json({ error: "User not found" });
     }
-  });
+  }));
 
-  app.delete("/api/admin/users/:id", async (req, res) => {
+  app.delete("/api/admin/users/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     let queryArgs: any[] = [{ id: req.params.id }];
     if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
     await db.collection("users").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
-  });
+  }));
 
-  app.get("/api/admin/history", async (req, res) => {
+  app.get("/api/admin/history", checkDb, asyncHandler(async (req: any, res: any) => {
     const history = await db.collection("history").find().toArray();
     res.json(history);
-  });
+  }));
 
-  app.post("/api/admin/history", async (req, res) => {
+  app.post("/api/admin/history", checkDb, asyncHandler(async (req: any, res: any) => {
     const newItem = { ...req.body, id: "h" + Date.now() };
     await db.collection("history").insertOne(newItem);
     res.json(newItem);
-  });
+  }));
 
-  app.delete("/api/admin/history/:id", async (req, res) => {
+  app.delete("/api/admin/history/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     let queryArgs: any[] = [{ id: req.params.id }];
     if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
     await db.collection("history").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
-  });
+  }));
 
   // CRUD for Orders
-  app.get("/api/admin/orders", async (req, res) => {
+  app.get("/api/admin/orders", checkDb, asyncHandler(async (req: any, res: any) => {
     const orders = await db.collection("orders").find().sort({ createdAt: -1 }).toArray();
     const populatedOrders = await Promise.all(orders.map(async (o: any) => {
       const user = await db.collection("users").findOne({ id: o.userId });
@@ -1044,14 +1099,14 @@ async function startServer() {
       };
     }));
     res.json(populatedOrders);
-  });
+  }));
 
-  app.delete("/api/admin/orders/:id", async (req, res) => {
+  app.delete("/api/admin/orders/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     let queryArgs: any[] = [{ id: req.params.id }];
     if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
     await db.collection("orders").deleteOne({ $or: queryArgs });
     res.json({ message: "Deleted" });
-  });
+  }));
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
@@ -1067,6 +1122,12 @@ async function startServer() {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
+
+  // Error handling middleware
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error("Unhandled error:", err);
+    res.status(500).json({ error: err.message || "Internal Server Error" });
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);

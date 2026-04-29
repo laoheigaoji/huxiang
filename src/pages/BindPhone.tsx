@@ -52,7 +52,7 @@ const BindPhone = () => {
             required
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="block w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-red-500 focus:border-red-500 bg-gray-50 text-[15px] font-bold text-gray-800 placeholder:text-gray-400"
+            className="block w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-[#b71c1c] focus:border-[#b71c1c] bg-gray-50 text-[15px] font-bold text-gray-800 placeholder:text-gray-400"
             placeholder="请输入手机号"
           />
         </div>
@@ -64,13 +64,13 @@ const BindPhone = () => {
               required
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="block w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-red-500 focus:border-red-500 bg-gray-50 text-[15px] font-bold text-gray-800 placeholder:text-gray-400"
+              className="block w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-[#b71c1c] focus:border-[#b71c1c] bg-gray-50 text-[15px] font-bold text-gray-800 placeholder:text-gray-400"
               placeholder="请输入短信验证码"
             />
           </div>
           <button 
             type="button" 
-            className="w-24 bg-[#e53935] text-white font-bold rounded-xl text-[15px] active:scale-95 transition-transform"
+            className="w-24 bg-[#b71c1c] text-white font-bold rounded-xl text-[15px] active:scale-95 transition-transform"
           >
             获取验证码
           </button>
@@ -82,18 +82,18 @@ const BindPhone = () => {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="block w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-red-500 focus:border-red-500 bg-gray-50 text-[15px] font-bold text-gray-800 placeholder:text-gray-400"
+            className="block w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-[#b71c1c] focus:border-[#b71c1c] bg-gray-50 text-[15px] font-bold text-gray-800 placeholder:text-gray-400"
             placeholder="请输入登录密码"
           />
         </div>
 
-        {error && <p className="text-red-500 text-sm text-center font-bold">{error}</p>}
+        {error && <p className="text-[#b71c1c] text-sm text-center font-bold">{error}</p>}
 
         <div className="pt-10">
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#e53935] text-white font-bold py-[14px] rounded-xl text-[17px] shadow-lg shadow-red-100 active:scale-95 transition-transform disabled:opacity-70"
+            className="w-full bg-[#b71c1c] text-white font-bold py-[14px] rounded-xl text-[17px] shadow-lg shadow-[#b71c1c]/10 active:scale-95 transition-transform disabled:opacity-70"
           >
             {loading ? '保存中...' : '确定'}
           </button>

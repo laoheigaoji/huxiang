@@ -5,19 +5,14 @@ import { motion, AnimatePresence } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { api } from '../services/api';
 import { Prediction, HistoryItem } from '../types';
+import JumpingNumber from '../components/JumpingNumber';
 
-const JumpingNumber = ({ base, range = 5, interval = 3000 }: { base: number, range?: number, interval?: number }) => {
-  const [num, setNum] = useState(base);
-  
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const change = Math.floor(Math.random() * range) + 1;
-      setNum(prev => prev + change);
-    }, interval);
-    return () => clearInterval(timer);
-  }, [range, interval]);
-
-  return <>{num}</>;
+const formatPeriod = (period: string) => {
+  if (!period) return '';
+  let p = period.trim();
+  // Remove existing brackets, "第" and "期" to normalize
+  p = p.replace(/^【|】$/g, '').replace(/^第/, '').replace(/期$/, '');
+  return `【第${p}期】`;
 };
 
 const PredictionDetail = () => {
@@ -40,6 +35,7 @@ const PredictionDetail = () => {
   const [timeLeft, setTimeLeft] = useState({ h: '00', m: '00', s: '00' });
   const [showPayment, setShowPayment] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentPollCount, setPaymentPollCount] = useState(0);
   const posterRef = React.useRef<HTMLDivElement>(null);
 
   const handleDownloadPoster = async () => {
@@ -106,31 +102,55 @@ const PredictionDetail = () => {
     };
     fetchData();
     
+    const pollStatus = async () => {
+      if (id && !isUnlockedRef.current && !isPurchasedRef.current) {
+        try {
+          const [predData, profileData] = await Promise.all([
+            api.getPredictionById(id).catch(() => null),
+            api.getProfile().catch(() => null)
+          ]);
+          
+          if (predData && (predData.isUnlocked || (profileData && profileData.purchased?.includes(id)))) {
+            setPrediction(predData);
+            if (profileData) setUser(profileData);
+            setIsUnlocked(true);
+            setIsPurchased(true);
+            setIsProcessingPayment(false);
+            return true;
+          }
+        } catch (err) {
+          console.error("Polling error", err);
+        }
+      }
+      return false;
+    };
+
     // Polling to check unlocking status after payment
     const pollInterval = setInterval(async () => {
-        if (id && !isUnlockedRef.current && !isPurchasedRef.current) {
-             const predData = await api.getPredictionById(id).catch(() => null);
-             const profileData = await api.getProfile().catch(() => null);
-             
-             if (predData && (predData.isUnlocked || (profileData && profileData.purchased?.includes(id)))) {
-                 setPrediction(predData);
-                 if (profileData) setUser(profileData);
-                 setIsUnlocked(true);
-                 setIsPurchased(true);
-                 setIsProcessingPayment(false);
-                 clearInterval(pollInterval);
-             }
+        if (isProcessingPayment) {
+            await pollStatus();
         }
-    }, 5000);
+    }, 3000);
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isProcessingPayment) {
+        pollStatus();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
     const lastShown = localStorage.getItem('disclaimer_last_shown');
     const today = new Date().toDateString();
     if (lastShown !== today) {
       setShowDisclaimer(true);
     }
     
-    return () => clearInterval(pollInterval);
-  }, [id]);
+    return () => {
+      clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [id, isProcessingPayment]);
 
   useEffect(() => {
     if (!prediction?.unlockAt) return;
@@ -232,7 +252,7 @@ const PredictionDetail = () => {
         if (paymentUrl) {
             setShowPayment(false);
             window.location.href = paymentUrl;
-            setTimeout(() => { setIsProcessingPayment(false); }, 2000);
+            // Keep isProcessingPayment true, it will be cleared by pollStatus or manual close
         } else {
             console.error('Payment failed', payRes);
             alert('支付请求发送失败，请稍后再试');
@@ -389,13 +409,13 @@ const PredictionDetail = () => {
             ))}
             <div className="flex-grow"></div>
             <span className="text-[10px] text-gray-400">近七日人气 <span className="text-[#b71c1c] font-bold">
-              <JumpingNumber base={prediction.viewCount + 15000} range={20} interval={1200} />
+              <JumpingNumber id={`view_total_${prediction.id}`} base={prediction.viewCount + 15000} range={20} interval={1200} />
             </span></span>
           </div>
 
           <div className="mt-6">
             <h1 className="text-lg font-bold text-gray-900 leading-relaxed">
-              <span className="text-[#b71c1c]">【{prediction.authorName}】</span> {prediction.period} {prediction.title}
+              <span className="text-[#b71c1c]">{formatPeriod(prediction.period)}</span> {prediction.title || prediction.contentTitle}
             </h1>
             <div className="mt-4 flex items-center justify-between text-xs text-gray-400">
               <span>{prediction.time}</span>
@@ -405,7 +425,7 @@ const PredictionDetail = () => {
                     <img key={i} className="h-4 w-4 rounded-full ring-1 ring-white" src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i + 100}`} alt="" />
                   ))}
                 </div>
-                <span><JumpingNumber base={3616} range={5} interval={2500} />人查看</span>
+                <span><JumpingNumber id={`view_count_${prediction.id}`} base={3616} range={5} interval={2500} />人查看</span>
               </div>
             </div>
           </div>
@@ -554,7 +574,7 @@ const PredictionDetail = () => {
                 <div className="mt-4 flex justify-between items-center text-xs text-gray-400 border-t border-gray-50 pt-3">
                   <span>{item.time}</span>
                   <div className="flex items-center">
-                    <span className="mr-2"><JumpingNumber base={item.viewCount || 500} range={5} interval={2000} />人查看</span>
+                    <span className="mr-2"><JumpingNumber id={`view_hist_${item.id}`} base={item.viewCount || 500} range={5} interval={2000} />人查看</span>
                   </div>
                 </div>
              </div>
@@ -562,6 +582,24 @@ const PredictionDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Fullscreen Loading Overlay for Payment */}
+      {isProcessingPayment && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="bg-white p-6 rounded-3xl flex flex-col items-center justify-center shadow-2xl max-w-[280px] w-full mx-4">
+                <div className="w-12 h-12 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-gray-900 font-bold text-lg">正在确认支付...</p>
+                <p className="text-gray-400 text-xs mt-2 text-center leading-relaxed">支付完成后请返回此页面，系统将自动同步解锁状态</p>
+                
+                <button 
+                  onClick={() => setIsProcessingPayment(false)}
+                  className="mt-6 text-[#b71c1c] text-sm font-bold bg-red-50 px-4 py-2 rounded-full"
+                >
+                  关闭等待
+                </button>
+            </div>
+        </div>
+      )}
 
       {/* Floating Action Bar */}
       {!isPurchased && !prediction.isFree && !isUnlocked && (
@@ -834,9 +872,18 @@ const PredictionDetail = () => {
         </button>
       </div>
       {isProcessingPayment && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/20 backdrop-blur-sm">
-            <div className="bg-white p-4 rounded-2xl flex items-center justify-center shadow-2xl">
-                <div className="w-8 h-8 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin"></div>
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="bg-white p-6 rounded-3xl flex flex-col items-center justify-center shadow-2xl max-w-[280px] w-full mx-4">
+                <div className="w-12 h-12 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-gray-900 font-bold text-lg">正在确认支付...</p>
+                <p className="text-gray-400 text-xs mt-2 text-center leading-relaxed">支付完成后请返回此页面，系统将自动为您解锁内容</p>
+                
+                <button 
+                  onClick={() => setIsProcessingPayment(false)}
+                  className="mt-6 text-[#b71c1c] text-sm font-bold bg-red-50 px-4 py-2 rounded-full"
+                >
+                  关闭等待
+                </button>
             </div>
         </div>
       )}

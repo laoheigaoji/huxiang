@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../services/api';
 import { Author, Prediction } from '../types';
+import JumpingNumber from '../components/JumpingNumber';
 
 const SortIcon = ({ type, direction }: { type: string, direction?: 'up' | 'down' }) => {
   if (type === 'default') {
@@ -155,33 +156,17 @@ const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
   );
 };
 
-const JumpingNumber = ({ base, range = 5, interval = 3000 }: { base: number, range?: number, interval?: number }) => {
-  const [num, setNum] = useState(base);
-  
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const change = Math.floor(Math.random() * range) + 1;
-      setNum(prev => prev + change);
-    }, interval);
-    return () => clearInterval(timer);
-  }, [range, interval]);
-
-  return <>{num}</>;
-};
-
-const parseTitle = (title: string) => {
-  const match = title.match(/^(【第.*?期】)(.*)/);
-  if (match) {
-    return {
-      period: match[1],
-      rest: match[2].trim()
-    };
-  }
-  return { period: '', rest: title };
+const formatPeriod = (period: string) => {
+  if (!period) return '';
+  let p = period.trim();
+  // Remove existing brackets, "第" and "期" to normalize
+  p = p.replace(/^【|】$/g, '').replace(/^第/, '').replace(/期$/, '');
+  return `【第${p}期】`;
 };
 
 const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Prediction, isFollowed?: boolean, onFollow?: (e: React.MouseEvent) => void, key?: React.Key }) => {
-  const { period, rest } = parseTitle(prediction.contentTitle);
+  const periodDisplay = formatPeriod(prediction.period);
+  const titleDisplay = prediction.title || prediction.contentTitle;
   
   return (
   <Link to={`/prediction/${prediction.id}`} className="block bg-white rounded-xl mb-4 overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] relative border border-gray-100/30 mx-3">
@@ -238,9 +223,9 @@ const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Pred
       </div>
 
       {/* Content Title */}
-      <h4 className="text-[16px] leading-tight mb-3 flex items-start">
-        {period && <span className="font-black text-gray-900 shrink-0">{period}</span>}
-        <span className="font-normal text-gray-600">{rest}</span>
+      <h4 className="text-[16px] leading-[1.4] mb-3 flex items-start">
+        {periodDisplay && <span className="font-bold text-gray-900 shrink-0 mr-1">{periodDisplay}</span>}
+        <span className="font-medium text-gray-800">{prediction.title || prediction.contentTitle}</span>
       </h4>
 
       {/* Badges/Tags & Price */}
@@ -290,7 +275,7 @@ const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Pred
             </div>
           </div>
           <span className="text-[11px] text-gray-400 font-bold tracking-tight">
-            <JumpingNumber base={prediction.viewCount || 888} range={3} interval={2000} />次
+            <JumpingNumber id={`view_${prediction.id}`} base={prediction.viewCount || 888} range={3} interval={2000} />次
           </span>
         </div>
       </div>
@@ -406,9 +391,42 @@ const Home = () => {
   };
 
   const filteredPredictions = Array.isArray(predictions) ? predictions.filter(p => 
-    p.contentTitle.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    p.authorName.toLowerCase().includes(searchQuery.toLowerCase())
+    (p.title || p.contentTitle || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (p.authorName || '').toLowerCase().includes(searchQuery.toLowerCase())
   ) : [];
+
+  const getHitRate = (record: string) => {
+    if (!record) return 0;
+    const match = record.match(/近(\d+)红(\d+)/);
+    if (match) {
+      const total = parseInt(match[1]);
+      const hit = parseInt(match[2]);
+      return total === 0 ? 0 : hit / total;
+    }
+    return 0;
+  };
+
+  const sortedPredictions = [...filteredPredictions].sort((a, b) => {
+    switch (selectedSort) {
+      case 'hit_desc':
+        return getHitRate(b.authorRecentRecord) - getHitRate(a.authorRecentRecord);
+      case 'streak_asc':
+        return (a.authorStreak || 0) - (b.authorStreak || 0);
+      case 'streak_desc':
+        return (b.authorStreak || 0) - (a.authorStreak || 0);
+      case 'fans_asc':
+        return (a.authorFans || 0) - (b.authorFans || 0);
+      case 'fans_desc':
+        return (b.authorFans || 0) - (a.authorFans || 0);
+      case 'views_asc':
+        return (a.viewCount || 0) - (b.viewCount || 0);
+      case 'views_desc':
+        return (b.viewCount || 0) - (a.viewCount || 0);
+      default:
+        // By time descending
+        return new Date(b.time).getTime() - new Date(a.time).getTime();
+    }
+  });
 
   return (
     <div 
@@ -523,7 +541,7 @@ const Home = () => {
              <div className="flex items-center justify-end text-[10.5px] font-bold space-x-1 leading-none text-gray-900">
                <span>平台当前在线人数:</span>
                <span className="text-[#b71c1c] font-medium italic tracking-tighter text-[11.5px]">
-                  <JumpingNumber base={4089} range={10} interval={1500} />
+                  <JumpingNumber id="online_count" base={4089} range={10} interval={1500} />
                </span>
                <span>人</span>
              </div>
@@ -554,7 +572,7 @@ const Home = () => {
 
       <div className="flex-1 pb-24">
         <div className="space-y-0">
-          {filteredPredictions.map((prediction) => (
+          {sortedPredictions.map((prediction) => (
               <PredictionCard 
                 key={prediction.id}
                 prediction={prediction} 
@@ -563,7 +581,7 @@ const Home = () => {
               />
             ))}
           
-          {filteredPredictions.length === 0 && (
+          {sortedPredictions.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                <Search className="w-12 h-12 mb-3 opacity-20" />
                <p className="text-sm font-bold">没有搜索到相关文章</p>

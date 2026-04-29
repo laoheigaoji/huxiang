@@ -9,6 +9,14 @@ import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../services/api';
 import { Prediction } from '../types';
 
+const formatPeriod = (period: string) => {
+  if (!period) return '';
+  let p = period.trim();
+  // Remove existing brackets, "第" and "期" to normalize
+  p = p.replace(/^【|】$/g, '').replace(/^第/, '').replace(/期$/, '');
+  return `【第${p}期】`;
+};
+
 const AuthorDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
@@ -28,9 +36,18 @@ const AuthorDashboard = () => {
         setUser(userData);
         const preds = await api.getAuthorPredictions(userData.authorId);
         setPredictions(preds);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to fetch author dashboard data', err);
-        navigate('/login');
+        if (err.message === '未登录') {
+          navigate('/login');
+        } else {
+          // Stay on page but potentially show error
+          // For now, let's just log and maybe show a toast if we had one
+          // We'll keep the navigate('/login') for now but added a check
+          if (!localStorage.getItem('user')) {
+             navigate('/login');
+          }
+        }
       } finally {
         setLoading(false);
       }
@@ -56,7 +73,7 @@ const AuthorDashboard = () => {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="w-8 h-8 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
 
@@ -73,7 +90,7 @@ const AuthorDashboard = () => {
         </button>
         <h1 className="flex-1 text-center text-lg font-bold text-gray-900">文章管理</h1>
         <Link to="/publish" className="p-2">
-          <Plus className="w-6 h-6 text-red-500" />
+          <Plus className="w-6 h-6 text-[#b71c1c]" />
         </Link>
       </div>
 
@@ -118,7 +135,7 @@ const AuthorDashboard = () => {
               key={tab.id}
               onClick={() => setFilter(tab.id)}
               className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
-                filter === tab.id ? 'bg-red-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'
+                filter === tab.id ? 'bg-[#b71c1c] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'
               }`}
             >
               {tab.label}
@@ -133,7 +150,7 @@ const AuthorDashboard = () => {
           <div className="bg-white rounded-2xl p-10 text-center border border-dashed border-gray-200">
             <AlertCircle className="w-12 h-12 text-gray-200 mx-auto mb-4" />
             <p className="text-gray-400 font-medium">暂无文章方案</p>
-            <Link to="/publish" className="mt-4 inline-block text-red-500 font-bold text-sm">去发布第一篇</Link>
+            <Link to="/publish" className="mt-4 inline-block text-[#b71c1c] font-bold text-sm">去发布第一篇</Link>
           </div>
         ) : (
           filteredPredictions.map((pred) => (
@@ -145,7 +162,7 @@ const AuthorDashboard = () => {
               <div className="flex-1 min-w-0 pr-4">
                 <div className="flex items-center space-x-2 mb-1">
                   <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${
-                    pred.isFree ? 'bg-green-50 text-green-500' : 'bg-red-50 text-red-500'
+                    pred.isFree ? 'bg-green-50 text-green-500' : 'bg-red-50 text-[#b71c1c]'
                   }`}>
                     {pred.isFree ? '免费' : `¥ ${pred.price}`}
                   </span>
@@ -156,7 +173,10 @@ const AuthorDashboard = () => {
                   </span>
                   <span className="text-[10px] text-gray-400 font-medium">{pred.time}</span>
                 </div>
-                <h3 className="font-bold text-gray-800 truncate leading-snug">{pred.title}</h3>
+                <h3 className="font-bold text-gray-800 truncate leading-snug">
+                  {formatPeriod(pred.period) && <span className="text-[#b71c1c] mr-1">{formatPeriod(pred.period)}</span>}
+                  <span className="text-gray-700">{pred.title}</span>
+                </h3>
                 <div className="flex items-center space-x-3 mt-2">
                   <div className="flex items-center text-[10px] text-gray-400">
                     <Eye className="w-3 h-3 mr-1" />
@@ -180,7 +200,7 @@ const AuthorDashboard = () => {
                     e.stopPropagation();
                     setShowDeleteConfirm(pred.id);
                   }}
-                  className="p-2 text-gray-400 active:text-red-500 transition-colors"
+                  className="p-2 text-gray-400 active:text-[#b71c1c] transition-colors"
                 >
                   <Trash2 className="w-5 h-5" />
                 </button>
@@ -208,7 +228,7 @@ const AuthorDashboard = () => {
               className="relative bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl text-center"
             >
               <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Trash2 className="w-8 h-8 text-red-500" />
+                <Trash2 className="w-8 h-8 text-[#b71c1c]" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">确认删除？</h3>
               <p className="text-gray-500 text-sm mb-8">文章删除后将无法恢复，相关数据也将被清除。</p>
@@ -221,7 +241,7 @@ const AuthorDashboard = () => {
                 </button>
                 <button 
                   onClick={() => handleDelete(showDeleteConfirm)}
-                  className="flex-1 py-3.5 rounded-xl bg-red-500 text-white font-bold active:scale-[0.98] transition-all"
+                  className="flex-1 py-3.5 rounded-xl bg-[#b71c1c] text-white font-bold active:scale-[0.98] transition-all"
                 >
                   确认删除
                 </button>

@@ -94,7 +94,7 @@ const AppContent = () => {
   }, [location.pathname, navigate]);
 
   return (
-    <div className="min-h-screen pb-20 max-w-full overflow-x-hidden">
+    <div className="min-h-screen pb-[64px] max-w-full overflow-x-hidden">
       <AnimatePresence mode="wait">
         <Routes>
           <Route path="/" element={<Home />} />
