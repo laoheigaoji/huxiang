@@ -207,6 +207,8 @@ const TransferCodeGenerator = () => {
         if (!userId) return;
 
         const urlParams = new URLSearchParams(window.location.search);
+        console.log("URL Params on mount:", urlParams.toString());
+
         const isPaymentReturn = urlParams.get('payment_return') === '1';
 
         if (isPaymentReturn && !isProcessingPayment) {
@@ -218,6 +220,7 @@ const TransferCodeGenerator = () => {
            if (isPolling) return;
            
            const currentUrlParams = new URLSearchParams(window.location.search);
+           console.log("Current URL Params for polling:", currentUrlParams.toString());
            const outTradeNo = currentUrlParams.get('out_trade_no');
            if (currentUrlParams.get('payment_return') !== '1' || !outTradeNo) {
                return; // Only poll if payment_return and out_trade_no are in the URL
@@ -225,12 +228,12 @@ const TransferCodeGenerator = () => {
 
            isPolling = true;
            try {
-               // Check order status
-               const res = await fetch(`/api/order/status?out_trade_no=${outTradeNo}`);
-               const data = await res.json();
-               
-               if (data.status === 'completed') {
-                    console.log("Balance increased, attempting automatic generation");
+            // Check order status
+            const res = await fetch(`/api/order/status?out_trade_no=${outTradeNo}`);
+            const data = await res.json();
+            
+            if (data.status === 'completed') {
+                 console.log("Order completed, attempting automatic generation");
                      try {
                         const formStr = sessionStorage.getItem('tcForm');
                         const formPayload = formStr ? JSON.parse(formStr) : formData;
@@ -383,6 +386,7 @@ const TransferCodeGenerator = () => {
                              <div>
                                 <p className="text-sm font-bold text-slate-900">{item.name}</p>
                                 <p className="text-xs text-slate-500 font-mono mt-1">{item.cardNo}</p>
+                                <p className="text-[10px] text-slate-400 mt-1">{new Date(item.createdAt).toLocaleString()}</p>
                              </div>
                              <button onClick={() => { setShortUrl(item.shortUrl); setSelectedItem({name: item.name, cardNo: item.cardNo}); setShowQr(true); }} className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200">
                                 <QrCode size={18} className="text-slate-600" />

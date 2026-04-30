@@ -79,6 +79,23 @@ async function startServer() {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 
+  // Log to DB
+  const logToDb = async (type: string, message: string, data: any = {}) => {
+    if (db) {
+      try {
+        await db.collection("logs").insertOne({
+          type,
+          message,
+          data,
+          createdAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error("Failed to log to DB:", err);
+      }
+    }
+    console.log(`[${type}] ${message}`, data);
+  };
+
   // API Routes
   app.get("/api/authors", checkDb, asyncHandler(async (req: any, res: any) => {
     const authors = await db.collection("authors").find().toArray();
@@ -520,6 +537,7 @@ async function startServer() {
     }
 
     if (trade_status === "TRADE_SUCCESS") {
+      logToDb("payment", "Processing success notify", { out_trade_no, trade_no });
       const order = await db.collection("orders").findOne({ out_trade_no, status: "pending" });
       
       if (order) {
@@ -1256,8 +1274,10 @@ async function startServer() {
   // CRUD for Orders
   app.get("/api/order/status", checkDb, asyncHandler(async (req: any, res: any) => {
     const { out_trade_no } = req.query;
+    console.log("Checking status for out_trade_no:", out_trade_no);
     if (!out_trade_no) return res.status(400).json({ error: "Trade number is required" });
     const order = await db.collection("orders").findOne({ out_trade_no });
+    console.log("Order found for status check:", order);
     if (!order) return res.status(404).json({ error: "Order not found" });
     res.json({ status: order.status });
   }));
@@ -1289,7 +1309,6 @@ async function startServer() {
     const { orderId } = req.body;
     const order = await db.collection("orders").findOne({ id: orderId });
     if (!order) return res.status(404).json({ error: "订单不存在" });
-    if (order.status !== 'completed') return res.status(400).json({ error: "订单状态不支持退款" });
     if (order.status === 'refunded') return res.status(400).json({ error: "订单已退款" });
 
     // Update order status

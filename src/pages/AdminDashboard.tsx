@@ -163,7 +163,11 @@ const AdminDashboard = () => {
   const filteredUsers = data.users.filter((u: any) => (u.nickname || '').toLowerCase().includes(searchQuery.toLowerCase()) || (u.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredApplications = data.applications.filter((a: any) => (a.realName || '').toLowerCase().includes(searchQuery.toLowerCase()) || (a.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredOrders = data.orders.filter((o: any) => {
-    const matchesSearch = (o.predictionTitle || '').toLowerCase().includes(searchQuery.toLowerCase()) || (o.username || '').toLowerCase().includes(searchQuery.toLowerCase());
+    // console.log("Filtering order:", o);
+    const matchesSearch = (o.predictionTitle || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (o.username || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (o.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (o.out_trade_no || '').toLowerCase().includes(searchQuery.toLowerCase());
     const isConsumption = !!o.predictionId;
     if (orderCategoryTab === 'recharge') return matchesSearch && !isConsumption;
     if (orderCategoryTab === 'consumption') return matchesSearch && isConsumption;
@@ -530,7 +534,7 @@ const AdminDashboard = () => {
               <div key={order.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center">
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-bold text-gray-900">{order.predictionTitle || order.description} (订单号: {order.id})</h3>
+                    <h3 className="font-bold text-gray-900">{order.predictionTitle || order.description} (订单号: {order.id}) 状态: {order.status}</h3>
                     <span className="text-xs font-bold text-[#d32f2f]">¥{order.amount}</span>
                   </div>
                   <div className="flex items-center text-[10px] text-gray-400">
@@ -539,14 +543,14 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 <div className="ml-4 flex items-center">
-                  {order.predictionId && order.status === 'completed' && (
+                  {order.predictionId && order.status !== 'refunded' && (
                     <button onClick={async () => {
                         if(confirm('确定退款?')) {
                             try {
                                 await api.refundOrder(order.id);
                                 fetchData();
-                            } catch(e) {
-                                alert('退款失败');
+                            } catch(e: any) {
+                                alert('退款失败: ' + e.message);
                             }
                         }
                     }} className="p-2 text-green-600 hover:bg-green-50 rounded-lg mr-2" title="退款">
