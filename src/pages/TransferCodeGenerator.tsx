@@ -231,7 +231,7 @@ const TransferCodeGenerator = () => {
 
                if (userData.balance > initialBalance) {
                     console.log("Balance increased, attempting automatic generation");
-                    try {
+                     try {
                         const formStr = sessionStorage.getItem('tcForm');
                         const formPayload = formStr ? JSON.parse(formStr) : formData;
                         
@@ -241,6 +241,13 @@ const TransferCodeGenerator = () => {
                              body: JSON.stringify({ userId, ...formPayload })
                         });
                         const genData = await genRes.json();
+                        
+                        // Clear URL params BEFORE setting state to avoid effect re-triggering
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete('payment_return');
+                        url.searchParams.delete('init_bal');
+                        window.history.replaceState({}, '', url.toString());
+
                         if (genRes.ok) {
                             setShortUrl(genData.shortUrl);
                             
@@ -251,19 +258,23 @@ const TransferCodeGenerator = () => {
                                .catch(() => {});
 
                             setSelectedItem({name: formPayload.name, cardNo: formPayload.cardNo});
-                            setShowQr(true);
-                            setIsProcessingPayment(false);
                             
-                            const url = new URL(window.location.href);
-                            url.searchParams.delete('payment_return');
-                            url.searchParams.delete('init_bal');
-                            window.history.replaceState({}, '', url.toString());
+                            // Trigger modals
+                            setIsProcessingPayment(false);
+                            setTimeout(() => setShowQr(true), 150);
 
                             sessionStorage.removeItem('tcForm');
                             isPolling = false;
                             return; // Exit polling
+                        } else {
+                            alert(genData.error || '生成失败');
+                            setIsProcessingPayment(false);
+                            isPolling = false;
+                            return;
                         }
-                    } catch (e) { console.error("Auto generation err:", e); }
+                    } catch (e) {
+                        console.error("Auto generation err:", e);
+                    }
                 }
 
                 // Fallback to checking history if already generated, but only if balance actually increased
@@ -274,17 +285,18 @@ const TransferCodeGenerator = () => {
                      if (data.length > 0) {
                          const latest = data[0]; 
                          const createdAt = new Date(latest.createdAt).getTime();
-                         if (Date.now() - createdAt < 15000) { 
+                         if (Date.now() - createdAt < 30000) { 
                              setShortUrl(latest.shortUrl);
                              setHistory(data);
                              setSelectedItem({name: latest.name, cardNo: latest.cardNo});
-                             setShowQr(true);
-                             setIsProcessingPayment(false);
                              
                              const url = new URL(window.location.href);
                              url.searchParams.delete('payment_return');
                              url.searchParams.delete('init_bal');
                              window.history.replaceState({}, '', url.toString());
+                             
+                             setIsProcessingPayment(false);
+                             setTimeout(() => setShowQr(true), 150);
                          }
                      }
                 }
@@ -294,7 +306,9 @@ const TransferCodeGenerator = () => {
         }, 3000);
         
         return () => clearInterval(pollInterval);
-    }, [userId, isProcessingPayment]);
+    // Remove isProcessingPayment from dependency to prevent infinite loops of setting it back to true if replaceState lags
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -13,6 +13,14 @@ const TopUp = () => {
   const [user, setUser] = useState<any>(null);
 
   React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('status') === 'success' && !loading) {
+        setLoading(true);
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.delete('status');
+        window.history.replaceState({}, '', currentUrl.toString());
+    }
+
     api.getProfile().then(data => {
       setUser(data);
       if (data && data.balance !== undefined) {

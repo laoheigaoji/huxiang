@@ -477,15 +477,17 @@ async function startServer() {
     }
   }));
 
-  app.get("/api/pay/notify", checkDb, asyncHandler(async (req: any, res: any) => {
-    const { pid, trade_no, out_trade_no, type, name, money, trade_status, sign } = req.query;
+  app.all("/api/pay/notify", checkDb, asyncHandler(async (req: any, res: any) => {
+    const isPost = req.method === "POST";
+    const paramsSource = isPost ? req.body : req.query;
+    const { pid, trade_no, out_trade_no, type, name, money, trade_status, sign } = paramsSource;
     
     const settings: any = (await db.collection("settings").findOne({})) || {};
     const key = settings.yipayKey || process.env.YIPAY_KEY || "6fXAB353AFl8Pl9779xAO6598lO9b59P";
 
-    console.log("Pay notify received:", req.query);
+    console.log("Pay notify received:", paramsSource);
 
-    const params: any = { ...req.query };
+    const params: any = { ...paramsSource };
     delete params.sign;
     delete params.sign_type;
 

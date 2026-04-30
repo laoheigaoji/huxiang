@@ -63,6 +63,14 @@ const PredictionDetail = () => {
   }, [isPurchased, isUnlocked]);
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('payment_return') === '1' && !isProcessingPayment) {
+        setIsProcessingPayment(true);
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.delete('payment_return');
+        window.history.replaceState({}, '', currentUrl.toString());
+    }
+
     const fetchData = async () => {
       try {
         if (id) {
@@ -246,7 +254,9 @@ const PredictionDetail = () => {
         alert('购买成功！');
       } else {
         // Alipay flow
-        const returnUrl = window.location.href;
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('payment_return', '1');
+        const returnUrl = currentUrl.toString();
         const payRes = await api.createPayment(prediction!.price, 'alipay', prediction!.title, user.id, id, returnUrl);
         const paymentUrl = payRes.url || payRes.payurl || payRes.payment_url || payRes.qrcode;
         if (paymentUrl) {
