@@ -840,8 +840,8 @@ const AdminDashboard = () => {
                         <input name="mainPicks" placeholder="36,24,12" defaultValue={editingItem?.mainPicks?.join(',')} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">付费详细内容</label>
-                        <textarea name="content" defaultValue={editingItem?.content} rows={4} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" />
+                        <label className="block text-xs font-bold text-gray-500 mb-1">正文号码 (逗号分隔)</label>
+                        <input name="content" defaultValue={editingItem?.content} placeholder="如：5,15,25,35" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1">作者名称</label>

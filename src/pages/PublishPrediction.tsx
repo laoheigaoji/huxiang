@@ -328,14 +328,13 @@ const PublishPrediction = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase">预测分析详情</label>
-            <textarea 
-              rows={8}
+            <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase">正文号码 (逗号分隔)</label>
+            <input 
               value={formData.content}
               onChange={e => setFormData({...formData, content: e.target.value})}
-              placeholder="请输入您的分析逻辑、支持数据等观点..."
-              className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-[#d32f2f] outline-none resize-none" 
-            ></textarea>
+              placeholder="如：5,15,25,35"
+              className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-[#d32f2f] outline-none" 
+            />
           </div>
         </div>
 

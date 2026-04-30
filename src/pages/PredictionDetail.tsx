@@ -530,9 +530,13 @@ const PredictionDetail = () => {
             <div className="bg-[#fff9c4] rounded-2xl p-5 border border-dashed border-[#ffb74d]/50 relative">
               <div className="space-y-6">
                 <div className="flex items-start">
-                  <span className="text-[13px] text-gray-400 mr-4 mt-1 whitespace-nowrap">正文</span>
-                  <div className="text-gray-800 text-sm font-bold pt-0.5 leading-relaxed">
-                    {prediction.content || '测试'}
+                  <span className="text-[13px] text-gray-400 mr-4 mt-2 whitespace-nowrap">正文</span>
+                  <div className="flex flex-wrap gap-2.5">
+                    {(prediction.content || '测试').split(/[\s,，、]+/).filter(Boolean).map((p, i) => (
+                      <div key={i} className="w-6 h-6 rounded-full bg-[#ef4444] flex items-center justify-center text-white text-[11px] font-bold shadow-sm">
+                        {p}
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -541,11 +545,11 @@ const PredictionDetail = () => {
                   <div className="flex flex-wrap gap-x-2.5 gap-y-4">
                     {(prediction.mainPicks || [1, 2, 5, 8, 12, 19, 24]).map((n, i) => (
                       <div key={i} className="flex flex-col items-center">
-                        <div className="w-7 h-7 rounded-full bg-[#ef4444] flex items-center justify-center text-white text-[12px] font-bold shadow-sm">
+                        <div className="w-6 h-6 rounded-full bg-[#ef4444] flex items-center justify-center text-white text-[11px] font-bold shadow-sm">
                           {n.toString().padStart(2, '0')}
                         </div>
                         {prediction.mainZodiacs && prediction.mainZodiacs[i] && (
-                          <span className="text-[10px] text-gray-500 mt-0.5 font-bold">{prediction.mainZodiacs[i]}</span>
+                          <span className="text-[9px] text-gray-500 mt-0.5 font-bold">{prediction.mainZodiacs[i]}</span>
                         )}
                       </div>
                     ))}
@@ -615,9 +619,13 @@ const PredictionDetail = () => {
                 </div>
                 
                 <div className="mt-4 flex items-start">
-                  <span className="text-[13px] text-gray-400 mr-4 mt-1 whitespace-nowrap">正文</span>
-                  <div className="text-gray-800 text-sm font-bold pt-0.5 whitespace-pre-wrap">
-                    {item.content || '测试'}
+                  <span className="text-[13px] text-gray-400 mr-4 mt-2 whitespace-nowrap">正文</span>
+                  <div className="flex flex-wrap gap-2.5">
+                    {(item.content || '测试').split(/[\s,，、]+/).filter(Boolean).map((p, i) => (
+                      <div key={i} className="w-6 h-6 rounded-full bg-[#ef4444] flex items-center justify-center text-white text-[11px] font-bold shadow-sm">
+                        {p}
+                      </div>
+                    ))}
                   </div>
                 </div>
                 
@@ -626,11 +634,11 @@ const PredictionDetail = () => {
                   <div className="flex flex-wrap gap-x-2 gap-y-3">
                     {(item.mainPicks || [14, 5, 48, 23, 31, 44, 36]).map((p: any, i: number) => (
                       <div key={i} className="flex flex-col items-center">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[13px] font-bold bg-[#ef4444] shadow-sm">
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold bg-[#ef4444] shadow-sm">
                           {p.toString().padStart(2, '0')}
                         </div>
                         {item.mainZodiacs && item.mainZodiacs[i] && (
-                          <span className="text-[10px] text-gray-500 mt-0.5 font-bold">{item.mainZodiacs[i]}</span>
+                          <span className="text-[9px] text-gray-500 mt-0.5 font-bold">{item.mainZodiacs[i]}</span>
                         )}
                       </div>
                     ))}

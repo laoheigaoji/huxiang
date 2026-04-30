@@ -286,6 +286,26 @@ async function startServer() {
     }
   }));
 
+  app.get("/api/followers", checkDb, asyncHandler(async (req: any, res: any) => {
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ error: "User ID is required" });
+    
+    const user = await db.collection("users").findOne({ id: userId });
+    if (!user) return res.status(404).json({ error: "User not found" });
+    
+    if (!user.authorId) {
+      return res.json([]);
+    }
+    
+    const followers = await db.collection("users").find({ following: user.authorId }).toArray();
+    res.json(followers.map(f => ({
+      id: f.id,
+      username: f.username,
+      nickname: f.nickname || f.username,
+      avatar: f.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${f.id}`
+    })));
+  }));
+
   app.get("/api/messages", checkDb, asyncHandler(async (req: any, res: any) => {
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: "User ID is required" });

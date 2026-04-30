@@ -85,16 +85,20 @@ const PredictionCard = ({ prediction }: { prediction: Prediction, key?: React.Ke
 const Follow = () => {
   const [followedPredictions, setFollowedPredictions] = useState<Prediction[]>([]);
   const [followedAuthors, setFollowedAuthors] = useState<Author[]>([]);
-  const [activeTab, setActiveTab] = useState<'feed' | 'authors'>('feed');
+  const [followers, setFollowers] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'feed' | 'authors' | 'followers'>('feed');
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [allPredictions, allAuthors, profile] = await Promise.all([
+        const [allPredictions, allAuthors, profile, followersData] = await Promise.all([
           api.getPredictions(),
           api.getAuthors(),
-          api.getProfile().catch(() => null)
+          api.getProfile().catch(() => null),
+          api.getFollowers().catch(() => [])
         ]);
         
         if (profile && profile.following) {
@@ -102,6 +106,8 @@ const Follow = () => {
           setFollowedPredictions(allPredictions.filter(p => followedIds.includes(p.authorId)));
           setFollowedAuthors(allAuthors.filter((a: Author) => followedIds.includes(a.id)));
         }
+        
+        setFollowers(followersData);
       } catch (err) {
         console.error('Fetch following failed', err);
       } finally {
@@ -125,15 +131,34 @@ const Follow = () => {
       className="bg-gray-50 min-h-screen"
     >
       {/* Header */}
-      <div className="bg-white px-4 py-3 sticky top-0 z-30 flex items-center justify-between border-b border-gray-100">
-        <div className="flex items-center gap-2">
-          <Star className="w-5 h-5 text-[#d32f2f] fill-[#d32f2f]" />
-          <h1 className="text-lg font-bold">我的关注</h1>
-        </div>
-        <div className="flex gap-4">
-          <Search className="w-6 h-6 text-gray-400" />
-          <SlidersHorizontal className="w-6 h-6 text-gray-400" />
-        </div>
+      <div className="bg-white px-4 py-3 sticky top-0 z-30 flex items-center justify-between border-b border-gray-100 h-14">
+        {showSearch ? (
+          <div className="flex-1 flex items-center bg-gray-100 rounded-full px-3 py-1.5 ml-2">
+            <Search className="w-4 h-4 text-gray-400 mr-2" />
+            <input 
+              autoFocus
+              type="text" 
+              placeholder={activeTab === 'feed' ? "搜索动态标题..." : activeTab === 'authors' ? "搜索专家名称..." : "搜索粉丝名称..."}
+              className="bg-transparent border-0 outline-none text-sm w-full"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <button onClick={() => { setShowSearch(false); setSearchQuery(''); }} className="text-xs text-gray-500 font-bold ml-2">取消</button>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <Star className="w-5 h-5 text-[#d32f2f] fill-[#d32f2f]" />
+              <h1 className="text-lg font-bold">我的关注</h1>
+            </div>
+            <div className="flex gap-4">
+              <button onClick={() => setShowSearch(true)}>
+                <Search className="w-6 h-6 text-gray-400" />
+              </button>
+              <SlidersHorizontal className="w-6 h-6 text-gray-400" />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Tabs */}
@@ -150,45 +175,83 @@ const Follow = () => {
         >
           关注专家
         </button>
+        <button 
+          onClick={() => setActiveTab('followers')}
+          className={`py-3 px-4 font-medium text-sm transition-colors ${activeTab === 'followers' ? 'text-[#d32f2f] border-b-2 border-[#d32f2f]' : 'text-gray-500'}`}
+        >
+          我的粉丝
+        </button>
       </div>
 
       <div className="p-4">
         {activeTab === 'feed' ? (
-          followedPredictions.length > 0 ? (
-            followedPredictions.map(p => (
-              <PredictionCard key={p.id} prediction={p} />
-            ))
-          ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-              <Star className="w-16 h-16 mb-4 opacity-20" />
-              <p>暂无关注动态，快去关注大神吧</p>
-              <Link to="/" className="mt-4 px-6 py-2 bg-[#d32f2f] text-white rounded-full text-sm font-medium">
-                去大厅看看
-              </Link>
-            </div>
-          )
+          (() => {
+            const list = followedPredictions.filter(p => !searchQuery || p.contentTitle?.toLowerCase().includes(searchQuery.toLowerCase()));
+            return list.length > 0 ? (
+              list.map(p => (
+                <PredictionCard key={p.id} prediction={p} />
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                <Star className="w-16 h-16 mb-4 opacity-20" />
+                <p>{searchQuery ? '未找到相关结果' : '暂无关注动态，快去关注大神吧'}</p>
+                {!searchQuery && (
+                  <Link to="/" className="mt-4 px-6 py-2 bg-[#d32f2f] text-white rounded-full text-sm font-medium">
+                    去大厅看看
+                  </Link>
+                )}
+              </div>
+            );
+          })()
+        ) : activeTab === 'authors' ? (
+          (() => {
+            const list = followedAuthors.filter(a => !searchQuery || a.name?.toLowerCase().includes(searchQuery.toLowerCase()));
+            return list.length > 0 ? (
+              <div className="space-y-3">
+                {list.map(author => (
+                  <Link key={author.id} to={`/author/${author.id}`} className="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex items-center">
+                      <img src={author.avatar} alt={author.name} className="w-12 h-12 rounded-full object-cover" />
+                      <div className="ml-3">
+                        <div className="font-bold text-gray-900">{author.name}</div>
+                        <div className="text-xs text-gray-500 mt-1">粉丝：{author.fans} · 近{author.recentRecord}</div>
+                      </div>
+                    </div>
+                    <ChevronLeft className="w-5 h-5 text-gray-300 rotate-180" />
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                <Star className="w-16 h-16 mb-4 opacity-20" />
+                <p>{searchQuery ? '未找到相关专家' : '你还没有关注任何专家'}</p>
+              </div>
+            );
+          })()
         ) : (
-          followedAuthors.length > 0 ? (
-            <div className="space-y-3">
-              {followedAuthors.map(author => (
-                <Link key={author.id} to={`/author/${author.id}`} className="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-50">
-                  <div className="flex items-center">
-                    <img src={author.avatar} alt={author.name} className="w-12 h-12 rounded-full object-cover" />
-                    <div className="ml-3">
-                      <div className="font-bold text-gray-900">{author.name}</div>
-                      <div className="text-xs text-gray-500 mt-1">粉丝：{author.fans} · 近{author.recentRecord}</div>
+          (() => {
+            const list = followers.filter(f => !searchQuery || f.nickname?.toLowerCase().includes(searchQuery.toLowerCase()) || f.id?.toString().includes(searchQuery));
+            return list.length > 0 ? (
+              <div className="space-y-3">
+                {list.map(follower => (
+                  <div key={follower.id} className="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-50">
+                    <div className="flex items-center">
+                      <img src={follower.avatar} alt={follower.nickname} className="w-12 h-12 rounded-full object-cover" />
+                      <div className="ml-3">
+                        <div className="font-bold text-gray-900">{follower.nickname}</div>
+                        <div className="text-xs text-gray-500 mt-1">ID: {follower.id}</div>
+                      </div>
                     </div>
                   </div>
-                  <ChevronLeft className="w-5 h-5 text-gray-300 rotate-180" />
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-              <Star className="w-16 h-16 mb-4 opacity-20" />
-              <p>你还没有关注任何专家</p>
-            </div>
-          )
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                <Star className="w-16 h-16 mb-4 opacity-20" />
+                <p>{searchQuery ? '未找到相关粉丝' : '你还没有粉丝，加油产出优质内容吧'}</p>
+              </div>
+            );
+          })()
         )}
       </div>
 

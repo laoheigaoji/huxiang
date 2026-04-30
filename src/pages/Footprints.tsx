@@ -30,7 +30,7 @@ const FootprintCard: React.FC<{ item: any }> = ({ item }) => {
           <div className="flex flex-wrap gap-1.5">
              {item.predictions.map((p: any, i: number) => (
                <div key={i} className="flex flex-col items-center">
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold ${p.color === 'red' ? 'bg-[#ef4444]' : p.color === 'blue' ? 'bg-[#3b82f6]' : 'bg-[#1f2937]'}`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold ${p.color === 'red' ? 'bg-[#ef4444]' : p.color === 'blue' ? 'bg-[#3b82f6]' : 'bg-[#1f2937]'}`}>
                      {p.number}
                   </div>
                   {p.name && <span className="text-[10px] text-gray-500 mt-0.5 font-bold">{p.name}</span>}

@@ -23,6 +23,7 @@ const AuthorDashboard = () => {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, free, paid
+  const [searchQuery, setSearchQuery] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,8 +67,16 @@ const AuthorDashboard = () => {
   };
 
   const filteredPredictions = predictions.filter(p => {
-    if (filter === 'free') return p.isFree;
-    if (filter === 'paid') return !p.isFree;
+    // Type filter
+    if (filter === 'free' && !p.isFree) return false;
+    if (filter === 'paid' && p.isFree) return false;
+    
+    // Search filter
+    if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return p.title?.toLowerCase().includes(query) || p.contentTitle?.toLowerCase().includes(query) || p.period?.includes(searchQuery);
+    }
+    
     return true;
   });
 
@@ -102,7 +111,10 @@ const AuthorDashboard = () => {
               <p className="text-gray-400 text-xs font-medium uppercase tracking-wider">总收益 (金币)</p>
               <h2 className="text-3xl font-black mt-1">¥ {(user?.totalEarnings || 0).toFixed(2)}</h2>
             </div>
-            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md">
+            <div 
+              onClick={() => navigate('/balance-details')}
+              className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md cursor-pointer hover:bg-white/20 active:scale-95 transition-all"
+            >
               <Calendar className="w-6 h-6 text-white" />
             </div>
           </div>
@@ -123,24 +135,37 @@ const AuthorDashboard = () => {
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="px-4 mb-4">
-        <div className="bg-white p-1 rounded-xl flex">
-          {[
-            { id: 'all', label: '全部' },
-            { id: 'free', label: '免费' },
-            { id: 'paid', label: '付费' }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setFilter(tab.id)}
-              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
-                filter === tab.id ? 'bg-[#d32f2f] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+      {/* Filter Tabs & Search */}
+      <div className="px-4 mb-4 space-y-3">
+        <div className="flex items-center bg-white p-1 rounded-xl shadow-sm">
+          <div className="flex-1 flex items-center pl-3">
+            <Search className="w-4 h-4 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="搜索文章标题..." 
+              className="w-full bg-transparent border-0 py-2.5 px-2 text-sm outline-none font-medium"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="w-px h-6 bg-gray-100 mx-1"></div>
+          <div className="flex p-0.5">
+            {[
+              { id: 'all', label: '全部' },
+              { id: 'free', label: '免费' },
+              { id: 'paid', label: '付费' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setFilter(tab.id)}
+                className={`py-1.5 px-4 text-[12px] font-bold rounded-lg transition-all ${
+                  filter === tab.id ? 'bg-[#d32f2f] text-white shadow-sm' : 'text-gray-400 hover:bg-gray-50'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

@@ -169,7 +169,7 @@ const AuthorProfile = () => {
               {author.history.map((status, idx) => (
                 <div 
                   key={idx} 
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold text-white shadow-sm ${
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm ${
                     status === '红' ? 'bg-[#d32f2f]' : 'bg-[#212121]'
                   }`}
                 >

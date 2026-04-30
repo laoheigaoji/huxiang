@@ -191,6 +191,13 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getFollowers() {
+    const userStr = localStorage.getItem('user');
+    const userId = userStr ? JSON.parse(userStr).id : null;
+    const res = await fetch(`${API_BASE}/followers${userId ? `?userId=${userId}` : ''}`);
+    return handleResponse(res);
+  },
+
   async logout() {
     await fetch(`${API_BASE}/logout`, { method: 'POST' });
     localStorage.removeItem('user');
