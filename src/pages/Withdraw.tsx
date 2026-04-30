@@ -94,7 +94,7 @@ const Withdraw = () => {
           </div>
           <div className="flex items-center justify-between text-[11px]">
             <span className="text-gray-400">可用余额 : ¥{user?.balance?.toFixed(2) || '0.00'}</span>
-            <button className="text-[#b71c1c] font-bold" onClick={() => setAmount(user?.balance?.toFixed(2) || '0')}>全部提现</button>
+            <button className="text-[#d32f2f] font-bold" onClick={() => setAmount(user?.balance?.toFixed(2) || '0')}>全部提现</button>
           </div>
         </div>
 
@@ -106,13 +106,13 @@ const Withdraw = () => {
              <div className="flex items-center space-x-6 mb-6">
                 <button 
                   onClick={() => setType('alipay')}
-                  className={`flex items-center space-x-2 pb-2 border-b-2 transition-all ${type === 'alipay' ? 'border-[#b71c1c] text-[#b71c1c] font-bold' : 'border-transparent text-gray-400'}`}
+                  className={`flex items-center space-x-2 pb-2 border-b-2 transition-all ${type === 'alipay' ? 'border-[#d32f2f] text-[#d32f2f] font-bold' : 'border-transparent text-gray-400'}`}
                 >
                    <span>支付宝</span>
                 </button>
                 <button 
                   onClick={() => setType('bank')}
-                  className={`flex items-center space-x-2 pb-2 border-b-2 transition-all ${type === 'bank' ? 'border-[#b71c1c] text-[#b71c1c] font-bold' : 'border-transparent text-gray-400'}`}
+                  className={`flex items-center space-x-2 pb-2 border-b-2 transition-all ${type === 'bank' ? 'border-[#d32f2f] text-[#d32f2f] font-bold' : 'border-transparent text-gray-400'}`}
                 >
                    <span>银行卡</span>
                 </button>
@@ -157,8 +157,8 @@ const Withdraw = () => {
 
         {/* Notice */}
         <div className="p-4 bg-blue-50/50 rounded-2xl flex items-start space-x-3">
-          <Info className="w-5 h-5 text-[#b71c1c] shrink-0" />
-          <div className="text-[11px] text-[#b71c1c] leading-relaxed">
+          <Info className="w-5 h-5 text-[#d32f2f] shrink-0" />
+          <div className="text-[11px] text-[#d32f2f] leading-relaxed">
             提现须知：提现申请将在3个工作日内审核完毕。最低提现金额为100元，提现将收取0.1%的手续费。
           </div>
         </div>
@@ -168,7 +168,7 @@ const Withdraw = () => {
           <button 
             onClick={handleSubmit}
             disabled={loading}
-            className={`w-full bg-[#b71c1c] text-white font-bold py-4 rounded-3xl shadow-xl shadow-[#b71c1c]/10 active:scale-95 transition-transform flex items-center justify-center space-x-2 ${
+            className={`w-full bg-[#d32f2f] text-white font-bold py-4 rounded-3xl shadow-xl shadow-[#d32f2f]/10 active:scale-95 transition-transform flex items-center justify-center space-x-2 ${
               loading ? 'opacity-70' : ''
             }`}
           >

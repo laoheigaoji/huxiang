@@ -100,7 +100,7 @@ const AuthorSearch = () => {
               onClick={() => navigate('/transfer-code-generator')}
             >
               <div className="flex flex-1 items-center overflow-hidden mr-2">
-                 <div className="w-12 h-12 rounded-full mr-3 border-2 border-red-50 flex items-center justify-center bg-gray-100 text-[#b71c1c] font-bold">码</div>
+                 <div className="w-12 h-12 rounded-full mr-3 border-2 border-red-50 flex items-center justify-center bg-gray-100 text-[#d32f2f] font-bold">码</div>
                  <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-gray-900">转卡码生成器</h3>
                  </div>
@@ -132,7 +132,7 @@ const AuthorSearch = () => {
                     <div className="flex items-center text-[11px] text-gray-400 font-bold space-x-2">
                       <span>粉丝 {author.fans}</span>
                       <span className="w-1 h-1 bg-gray-200 rounded-full"></span>
-                      <span className="text-[#b71c1c]">{author.recentRecord}</span>
+                      <span className="text-[#d32f2f]">{author.recentRecord}</span>
                     </div>
                   </div>
                 </div>
@@ -144,7 +144,7 @@ const AuthorSearch = () => {
                 className={`relative z-10 px-4 py-1.5 rounded-full text-xs font-black transition-all active:scale-95 flex items-center flex-shrink-0 ${
                   user?.following?.includes(author.id)
                     ? 'bg-gray-100 text-gray-400'
-                    : 'bg-[#b71c1c] text-white shadow-lg shadow-red-100'
+                    : 'bg-[#d32f2f] text-white shadow-lg shadow-red-100'
                 }`}
               >
                 {user?.following?.includes(author.id) ? (

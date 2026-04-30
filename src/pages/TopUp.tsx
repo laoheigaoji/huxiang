@@ -96,20 +96,20 @@ const TopUp = () => {
       className="bg-white min-h-screen pb-12"
     >
       {/* App Header */}
-      <div className="bg-[#b71c1c] px-4 py-4 flex items-center justify-center relative shadow-sm">
+      <div className="bg-[#d32f2f] px-4 py-4 flex items-center justify-center relative shadow-sm">
         <ChevronLeft className="w-7 h-7 absolute left-4 text-white cursor-pointer" onClick={() => navigate(-1)} />
         <h2 className="text-[18px] font-bold text-white">充值</h2>
       </div>
 
       <div className="p-4">
         {/* Balance Card */}
-        <div className="bg-[#b71c1c] rounded-lg p-6 text-white relative">
+        <div className="bg-[#d32f2f] rounded-lg p-6 text-white relative">
           <p className="text-[14px] opacity-90 font-medium">账户余额 (元)</p>
           <p className="text-[36px] font-bold mt-4 flex items-baseline">
             <span className="text-[20px] mr-1">¥</span>{user?.balance?.toFixed(2) || '0.00'}
           </p>
           <button 
-            className="absolute top-4 right-4 bg-white text-[#b71c1c] px-4 py-1.5 rounded-full text-[13px] font-bold"
+            className="absolute top-4 right-4 bg-white text-[#d32f2f] px-4 py-1.5 rounded-full text-[13px] font-bold"
             onClick={() => navigate('/balance-details')}
           >
             充值记录
@@ -143,7 +143,7 @@ const TopUp = () => {
           <div className="space-y-3">
             {/* Alipay */}
             <div 
-              className={`rounded-xl p-4 flex items-center justify-between border transition-all active:bg-gray-50 ${selectedMethod === 'alipay' ? 'border-[#b71c1c] bg-[#fffcfc]' : 'border-gray-100 bg-gray-50/30'}`}
+              className={`rounded-xl p-4 flex items-center justify-between border transition-all active:bg-gray-50 ${selectedMethod === 'alipay' ? 'border-[#d32f2f] bg-[#fffcfc]' : 'border-gray-100 bg-gray-50/30'}`}
               onClick={() => setSelectedMethod('alipay')}
             >
               <div className="flex items-center">
@@ -154,7 +154,7 @@ const TopUp = () => {
               </div>
               <div>
                 {selectedMethod === 'alipay' ? (
-                  <CheckCircle2 className="w-6 h-6 text-[#b71c1c] fill-[#b71c1c]" />
+                  <CheckCircle2 className="w-6 h-6 text-[#d32f2f] fill-[#d32f2f]" />
                 ) : (
                   <div className="w-6 h-6 rounded-full border border-gray-300"></div>
                 )}
@@ -163,7 +163,7 @@ const TopUp = () => {
 
             {/* WeChat */}
             <div 
-              className={`rounded-xl p-4 flex items-center justify-between border transition-all active:bg-gray-50 ${selectedMethod === 'wxpay' ? 'border-[#b71c1c] bg-[#fffcfc]' : 'border-gray-100 bg-gray-50/30'}`}
+              className={`rounded-xl p-4 flex items-center justify-between border transition-all active:bg-gray-50 ${selectedMethod === 'wxpay' ? 'border-[#d32f2f] bg-[#fffcfc]' : 'border-gray-100 bg-gray-50/30'}`}
               onClick={() => setSelectedMethod('wxpay')}
             >
               <div className="flex items-center">
@@ -174,7 +174,7 @@ const TopUp = () => {
               </div>
               <div>
                 {selectedMethod === 'wxpay' ? (
-                  <CheckCircle2 className="w-6 h-6 text-[#b71c1c] fill-[#b71c1c]" />
+                  <CheckCircle2 className="w-6 h-6 text-[#d32f2f] fill-[#d32f2f]" />
                 ) : (
                   <div className="w-6 h-6 rounded-full border border-gray-300"></div>
                 )}
@@ -197,7 +197,7 @@ const TopUp = () => {
         <button 
           onClick={handlePay}
           disabled={loading}
-          className={`w-full bg-[#b71c1c] text-white font-bold py-4 rounded-full mt-6 shadow-xl shadow-[#b71c1c]/10 active:scale-95 transition-transform text-[17px] ${loading ? 'opacity-70 animate-pulse' : ''}`}
+          className={`w-full bg-[#d32f2f] text-white font-bold py-4 rounded-full mt-6 shadow-xl shadow-[#d32f2f]/10 active:scale-95 transition-transform text-[17px] ${loading ? 'opacity-70 animate-pulse' : ''}`}
         >
           {loading ? '创建订单中...' : '确认支付'}
         </button>
@@ -207,13 +207,13 @@ const TopUp = () => {
       {loading && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm">
             <div className="bg-white p-6 rounded-3xl flex flex-col items-center justify-center shadow-2xl max-w-[280px] w-full mx-4">
-                <div className="w-12 h-12 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin mb-4"></div>
+                <div className="w-12 h-12 border-4 border-[#d32f2f] border-t-transparent rounded-full animate-spin mb-4"></div>
                 <p className="text-gray-900 font-bold text-lg">正在确认充值...</p>
                 <p className="text-gray-400 text-xs mt-2 text-center leading-relaxed">支付完成后请返回此页面，系统将自动更新余额</p>
                 
                 <button 
                   onClick={() => setLoading(false)}
-                  className="mt-6 text-[#b71c1c] text-sm font-bold bg-red-50 px-4 py-2 rounded-full"
+                  className="mt-6 text-[#d32f2f] text-sm font-bold bg-red-50 px-4 py-2 rounded-full"
                 >
                   关闭等待
                 </button>

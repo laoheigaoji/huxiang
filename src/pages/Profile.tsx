@@ -78,7 +78,7 @@ const Profile = () => {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen bg-white">
-      <div className="w-8 h-8 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin"></div>
+      <div className="w-8 h-8 border-4 border-[#d32f2f] border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
 
@@ -120,7 +120,7 @@ const Profile = () => {
           <div className="bg-white/60 p-4 rounded-2xl text-center shadow-sm border border-white">
             <div className="text-[10px] text-gray-400 font-black uppercase mb-1">账户余额</div>
             <div className="text-xl font-black text-gray-900">¥{user?.balance?.toFixed(2) || '0.00'}</div>
-            <Link to="/topup" className="inline-block mt-3 bg-[#b71c1c] text-white text-[10px] px-4 py-1 rounded-full font-bold shadow-md active:scale-95 transition-transform">
+            <Link to="/topup" className="inline-block mt-3 bg-[#d32f2f] text-white text-[10px] px-4 py-1 rounded-full font-bold shadow-md active:scale-95 transition-transform">
               充值
             </Link>
           </div>

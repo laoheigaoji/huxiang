@@ -332,7 +332,7 @@ const TransferCodeGenerator = () => {
                       </div>
                       
                       <div className="text-center mb-8">
-                        <span className="text-[#b71c1c] text-3xl font-bold">¥ 2.00</span>
+                        <span className="text-[#d32f2f] text-3xl font-bold">¥ 2.00</span>
                       </div>
         
                       <div className="space-y-4">
@@ -367,7 +367,7 @@ const TransferCodeGenerator = () => {
                             <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center mr-3 text-white">¥</div>
                             <div>
                               <p className="font-medium">余额支付 (可用余额: ¥ {user?.balance || '0.00'})</p>
-                              {user?.balance < 2 && <p className="text-[10px] text-[#b71c1c]">余额不足，请充值</p>}
+                              {user?.balance < 2 && <p className="text-[10px] text-[#d32f2f]">余额不足，请充值</p>}
                             </div>
                           </div>
                           <div className={`w-5 h-5 rounded-full border-2 ${selectedPaymentMethod === 'balance' ? 'border-orange-500 p-0.5' : 'border-gray-300'}`}>
@@ -379,7 +379,7 @@ const TransferCodeGenerator = () => {
                       <button 
                         onClick={(e) => { e.stopPropagation(); handlePurchase(); }}
                         disabled={isProcessingPayment}
-                        className="w-full bg-[#b71c1c] text-white font-bold py-4 rounded-full mt-6 shadow-xl shadow-[#b71c1c]/20 active:scale-95 transition-transform disabled:opacity-50"
+                        className="w-full bg-[#d32f2f] text-white font-bold py-4 rounded-full mt-6 shadow-xl shadow-[#d32f2f]/20 active:scale-95 transition-transform disabled:opacity-50"
                       >
                         {isProcessingPayment ? '正在支付...' : '立即支付'}
                       </button>
@@ -390,7 +390,7 @@ const TransferCodeGenerator = () => {
             {isProcessingPayment && (
                 <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm">
                     <div className="bg-white p-6 rounded-3xl flex flex-col items-center justify-center shadow-2xl max-w-[280px] w-full mx-4">
-                        <div className="w-12 h-12 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <div className="w-12 h-12 border-4 border-[#d32f2f] border-t-transparent rounded-full animate-spin mb-4"></div>
                         <p className="text-gray-900 font-bold text-lg">正在确认支付...</p>
                         <p className="text-gray-400 text-xs mt-2 text-center leading-relaxed">支付完成后请返回此页面，系统将自动同步解锁状态</p>
                     </div>

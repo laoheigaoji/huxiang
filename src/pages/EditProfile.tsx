@@ -50,7 +50,7 @@ const EditProfile = () => {
       className="bg-white min-h-screen pb-12"
     >
       {/* App Header */}
-      <div className="bg-[#b71c1c] px-4 py-4 flex items-center justify-center relative shadow-sm">
+      <div className="bg-[#d32f2f] px-4 py-4 flex items-center justify-center relative shadow-sm">
         <ChevronLeft className="w-7 h-7 absolute left-4 text-white cursor-pointer" onClick={() => navigate(-1)} />
         <h2 className="text-[17px] font-bold text-white">个人中心</h2>
       </div>
@@ -112,7 +112,7 @@ const EditProfile = () => {
           </div>
           <button 
             onClick={() => navigate('/profile/bind-phone')}
-            className="w-24 bg-[#b71c1c] text-white font-bold rounded-[4px] active:scale-95 transition-transform text-[15px] flex-shrink-0"
+            className="w-24 bg-[#d32f2f] text-white font-bold rounded-[4px] active:scale-95 transition-transform text-[15px] flex-shrink-0"
           >
             设置
           </button>
@@ -128,7 +128,7 @@ const EditProfile = () => {
           </div>
           <button 
             onClick={() => navigate('/profile/real-name')}
-            className="w-24 bg-[#b71c1c] text-white font-bold rounded-[4px] active:scale-95 transition-transform text-[15px] flex-shrink-0"
+            className="w-24 bg-[#d32f2f] text-white font-bold rounded-[4px] active:scale-95 transition-transform text-[15px] flex-shrink-0"
           >
              {user?.isRealNameVerified ? '已认证' : '去认证'}
           </button>
@@ -140,7 +140,7 @@ const EditProfile = () => {
         <button 
           onClick={handleSave}
           disabled={saving}
-          className="w-full bg-[#b71c1c] text-white font-bold py-[14px] rounded-full text-[17px] shadow-lg shadow-[#b71c1c]/10 active:scale-95 transition-transform disabled:opacity-70"
+          className="w-full bg-[#d32f2f] text-white font-bold py-[14px] rounded-full text-[17px] shadow-lg shadow-[#d32f2f]/10 active:scale-95 transition-transform disabled:opacity-70"
         >
           {saving ? '正在保存...' : '保存修改'}
         </button>

@@ -94,7 +94,7 @@ const Register = () => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-[#b71c1c] focus:border-[#b71c1c] bg-gray-50"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-[#d32f2f] focus:border-[#d32f2f] bg-gray-50"
                 placeholder="限3-20位英文字母或数字"
                 required
               />
@@ -111,7 +111,7 @@ const Register = () => {
                 type="text"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-[#b71c1c] focus:border-[#b71c1c] bg-gray-50"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-[#d32f2f] focus:border-[#d32f2f] bg-gray-50"
                 placeholder="您的公开名称"
                 required
               />
@@ -128,7 +128,7 @@ const Register = () => {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-[#b71c1c] focus:border-[#b71c1c] bg-gray-50"
+                className="block w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-[#d32f2f] focus:border-[#d32f2f] bg-gray-50"
                 placeholder="请输入密码"
                 required
               />
@@ -143,13 +143,13 @@ const Register = () => {
           </div>
 
           {error && (
-            <p className="text-[#b71c1c] text-sm text-center font-medium bg-red-50 py-2 rounded-lg">{error}</p>
+            <p className="text-[#d32f2f] text-sm text-center font-medium bg-red-50 py-2 rounded-lg">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#b71c1c] text-white py-4 rounded-xl font-bold shadow-lg shadow-[#b71c1c]/10 active:scale-[0.98] transition-all disabled:opacity-50"
+            className="w-full bg-[#d32f2f] text-white py-4 rounded-xl font-bold shadow-lg shadow-[#d32f2f]/10 active:scale-[0.98] transition-all disabled:opacity-50"
           >
             {loading ? '正在注册...' : '立即注册'}
           </button>
@@ -157,7 +157,7 @@ const Register = () => {
       ) : (
         <div className="space-y-6">
           {error && (
-            <p className="text-[#b71c1c] text-sm text-center font-medium bg-red-50 py-2 rounded-lg">{error}</p>
+            <p className="text-[#d32f2f] text-sm text-center font-medium bg-red-50 py-2 rounded-lg">{error}</p>
           )}
           
           <button
@@ -181,7 +181,7 @@ const Register = () => {
         <div className="mt-8 text-center">
           <p className="text-gray-500">
             已有账户?{' '}
-            <Link to="/login" className="text-[#b71c1c] font-bold">
+            <Link to="/login" className="text-[#d32f2f] font-bold">
               立即登录
             </Link>
           </p>

@@ -267,7 +267,7 @@ const PredictionDetail = () => {
 
   if (loading) return (
     <div className="flex items-center justify-center min-vh-screen bg-gray-50 h-screen">
-      <div className="w-8 h-8 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin"></div>
+      <div className="w-8 h-8 border-4 border-[#d32f2f] border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
 
@@ -337,7 +337,7 @@ const PredictionDetail = () => {
 
                 <button 
                   onClick={handleCloseDisclaimer}
-                  className="w-full bg-[#b71c1c] text-white font-bold py-4 rounded-full text-lg shadow-xl shadow-[#b71c1c]/10 mb-4 active:scale-95 transition-transform"
+                  className="w-full bg-[#d32f2f] text-white font-bold py-4 rounded-full text-lg shadow-xl shadow-[#d32f2f]/10 mb-4 active:scale-95 transition-transform"
                 >
                   好的
                 </button>
@@ -346,7 +346,7 @@ const PredictionDetail = () => {
                   className="flex items-center justify-center space-x-2 cursor-pointer"
                   onClick={() => setDontShowAgain(!dontShowAgain)}
                 >
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${dontShowAgain ? 'bg-[#b71c1c] border-[#b71c1c]' : 'border-gray-300'}`}>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${dontShowAgain ? 'bg-[#d32f2f] border-[#d32f2f]' : 'border-gray-300'}`}>
                     {dontShowAgain && <div className="w-2 h-2 bg-white rounded-full"></div>}
                   </div>
                   <span className="text-gray-400 text-sm font-medium">今日不再弹出</span>
@@ -391,7 +391,7 @@ const PredictionDetail = () => {
               className={`px-4 py-1.5 rounded-full text-xs font-bold border flex items-center transition-all active:scale-95 ${
                 isFollowed 
                   ? 'bg-gray-100 text-gray-400 border-gray-200' 
-                  : 'bg-pink-50 text-[#b71c1c] border-red-100'
+                  : 'bg-pink-50 text-[#d32f2f] border-red-100'
               }`}
             >
               <UserPlus className={`w-3 h-3 mr-1 ${isFollowed ? 'hidden' : 'block'}`} /> {isFollowed ? '已关注' : '关注'}
@@ -399,23 +399,23 @@ const PredictionDetail = () => {
           </div>
 
           <div className="mt-2 flex items-center flex-wrap gap-2">
-            <span className="text-[10px] text-[#b71c1c] bg-red-50 px-1.5 py-0.5 border border-red-100 rounded-sm">
+            <span className="text-[10px] text-[#d32f2f] bg-red-50 px-1.5 py-0.5 border border-red-100 rounded-sm">
               {prediction.authorRecentRecord || '精选'}
             </span>
             {prediction.tags && prediction.tags.map((tag, idx) => (
-              <span key={idx} className="text-[10px] text-[#b71c1c] bg-red-50 px-1.5 py-0.5 border border-red-100 rounded-sm">
+              <span key={idx} className="text-[10px] text-[#d32f2f] bg-red-50 px-1.5 py-0.5 border border-red-100 rounded-sm">
                 {tag}
               </span>
             ))}
             <div className="flex-grow"></div>
-            <span className="text-[10px] text-gray-400">近七日人气 <span className="text-[#b71c1c] font-bold">
+            <span className="text-[10px] text-gray-400">近七日人气 <span className="text-[#d32f2f] font-bold">
               <JumpingNumber id={`view_total_${prediction.id}`} base={prediction.viewCount + 15000} range={20} interval={1200} />
             </span></span>
           </div>
 
           <div className="mt-6">
             <h1 className="text-lg font-bold text-gray-900 leading-relaxed">
-              <span className="text-[#b71c1c]">{formatPeriod(prediction.period)}</span> {prediction.title || prediction.contentTitle}
+              <span className="text-[#d32f2f]">{formatPeriod(prediction.period)}</span> {prediction.title || prediction.contentTitle}
             </h1>
             <div className="mt-4 flex items-center justify-between text-xs text-gray-400">
               <span>{prediction.time}</span>
@@ -444,11 +444,11 @@ const PredictionDetail = () => {
               {['h', 'm', 's'].map((key) => (
                 <React.Fragment key={key}>
                   <motion.div 
-                    className="bg-[#b71c1c] text-white text-xl font-bold w-12 h-12 flex items-center justify-center rounded-xl shadow-lg shadow-[#b71c1c]/20"
+                    className="bg-[#d32f2f] text-white text-xl font-bold w-12 h-12 flex items-center justify-center rounded-xl shadow-lg shadow-[#d32f2f]/20"
                   >
                     {timeLeft[key as keyof typeof timeLeft]}
                   </motion.div>
-                  {key !== 's' && <span className="text-[#b71c1c] text-xl font-black">:</span>}
+                  {key !== 's' && <span className="text-[#d32f2f] text-xl font-black">:</span>}
                 </React.Fragment>
               ))}
             </div>
@@ -506,7 +506,7 @@ const PredictionDetail = () => {
         {/* History / Info */}
         <div className="mt-8 text-center relative mb-4">
           <div className="absolute top-1/2 left-0 right-0 h-px bg-gray-200 -translate-y-1/2"></div>
-          <span className="relative z-10 bg-gray-50 px-4 text-xs font-medium text-[#b71c1c] flex items-center justify-center">
+          <span className="relative z-10 bg-gray-50 px-4 text-xs font-medium text-[#d32f2f] flex items-center justify-center">
             <span className="w-8 h-px bg-gray-300 mr-4"></span> 付费须知 <span className="w-8 h-px bg-gray-300 ml-4"></span>
           </span>
         </div>
@@ -587,13 +587,13 @@ const PredictionDetail = () => {
       {isProcessingPayment && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm">
             <div className="bg-white p-6 rounded-3xl flex flex-col items-center justify-center shadow-2xl max-w-[280px] w-full mx-4">
-                <div className="w-12 h-12 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin mb-4"></div>
+                <div className="w-12 h-12 border-4 border-[#d32f2f] border-t-transparent rounded-full animate-spin mb-4"></div>
                 <p className="text-gray-900 font-bold text-lg">正在确认支付...</p>
                 <p className="text-gray-400 text-xs mt-2 text-center leading-relaxed">支付完成后请返回此页面，系统将自动同步解锁状态</p>
                 
                 <button 
                   onClick={() => setIsProcessingPayment(false)}
-                  className="mt-6 text-[#b71c1c] text-sm font-bold bg-red-50 px-4 py-2 rounded-full"
+                  className="mt-6 text-[#d32f2f] text-sm font-bold bg-red-50 px-4 py-2 rounded-full"
                 >
                   关闭等待
                 </button>
@@ -606,11 +606,11 @@ const PredictionDetail = () => {
         <div className="fixed bottom-0 left-0 right-0 bg-white p-3 flex items-center justify-between z-50 border-t border-gray-100 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
           <div className="flex items-baseline space-x-1">
             <span className="text-sm font-medium text-gray-800">需支付:</span>
-            <span className="text-xl font-bold text-[#b71c1c]">¥ {prediction.price}</span>
+            <span className="text-xl font-bold text-[#d32f2f]">¥ {prediction.price}</span>
           </div>
           <button 
             onClick={() => setShowPayment(true)}
-            className="bg-[#b71c1c] text-white px-10 py-3 rounded-full font-bold shadow-lg shadow-[#b71c1c]/20 transition-transform active:scale-95"
+            className="bg-[#d32f2f] text-white px-10 py-3 rounded-full font-bold shadow-lg shadow-[#d32f2f]/20 transition-transform active:scale-95"
           >
             立即支付
           </button>
@@ -633,7 +633,7 @@ const PredictionDetail = () => {
               </div>
               
               <div className="text-center mb-8">
-                <span className="text-[#b71c1c] text-3xl font-bold">¥ {prediction.price}.00</span>
+                <span className="text-[#d32f2f] text-3xl font-bold">¥ {prediction.price}.00</span>
               </div>
 
               <div className="space-y-4">
@@ -668,7 +668,7 @@ const PredictionDetail = () => {
                     <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center mr-3 text-white">¥</div>
                     <div>
                       <p className="font-medium">余额支付 (可用余额: ¥ {user?.balance || '0.00'})</p>
-                      {user?.balance < prediction?.price && <p className="text-[10px] text-[#b71c1c]">余额不足，请充值</p>}
+                      {user?.balance < prediction?.price && <p className="text-[10px] text-[#d32f2f]">余额不足，请充值</p>}
                     </div>
                   </div>
                   <div className={`w-5 h-5 rounded-full border-2 ${selectedPaymentMethod === 'balance' ? 'border-orange-500 p-0.5' : 'border-gray-300'}`}>
@@ -684,7 +684,7 @@ const PredictionDetail = () => {
               <button 
                 onClick={(e) => { e.stopPropagation(); handlePurchase(); }}
                 disabled={isProcessingPayment}
-                className="w-full bg-[#b71c1c] text-white font-bold py-4 rounded-full mt-6 shadow-xl shadow-[#b71c1c]/20 active:scale-95 transition-transform disabled:opacity-50"
+                className="w-full bg-[#d32f2f] text-white font-bold py-4 rounded-full mt-6 shadow-xl shadow-[#d32f2f]/20 active:scale-95 transition-transform disabled:opacity-50"
               >
                 {isProcessingPayment ? '正在支付...' : '立即支付'}
               </button>
@@ -750,7 +750,7 @@ const PredictionDetail = () => {
                     {!prediction.isFree && !isPurchased && !isUnlocked ? (
                       /* Locked Version */
                       <div className="rounded-2xl p-5 border flex flex-col items-center mb-6 overflow-hidden relative" style={{ backgroundColor: '#fff5f5', borderColor: '#fee2e2' }}>
-                        <div className="absolute top-0 left-0 w-full h-1 overflow-hidden" style={{ backgroundColor: '#b71c1c' }}>
+                        <div className="absolute top-0 left-0 w-full h-1 overflow-hidden" style={{ backgroundColor: '#d32f2f' }}>
                           <motion.div 
                             animate={{ x: ["-100%", "100%"] }} 
                             transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
@@ -758,8 +758,8 @@ const PredictionDetail = () => {
                           />
                         </div>
                         
-                        <h4 className="font-black text-[15px] mb-4 tracking-widest flex items-center" style={{ color: '#b71c1c' }}>
-                          <Lock className="w-3.5 h-3.5 mr-1.5" style={{ fill: '#b71c1c' }} />
+                        <h4 className="font-black text-[15px] mb-4 tracking-widest flex items-center" style={{ color: '#d32f2f' }}>
+                          <Lock className="w-3.5 h-3.5 mr-1.5" style={{ fill: '#d32f2f' }} />
                           解锁公开倒计时
                         </h4>
                         
@@ -767,10 +767,10 @@ const PredictionDetail = () => {
                         <div className="flex justify-center items-center space-x-1.5 mb-5 transition-all">
                           {['h', 'm', 's'].map((key) => (
                             <React.Fragment key={key}>
-                              <div className="text-white text-base font-bold w-9 h-9 flex items-center justify-center rounded-lg shadow-sm" style={{ backgroundColor: '#b71c1c' }}>
+                              <div className="text-white text-base font-bold w-9 h-9 flex items-center justify-center rounded-lg shadow-sm" style={{ backgroundColor: '#d32f2f' }}>
                                 {timeLeft[key as keyof typeof timeLeft]}
                               </div>
-                              {key !== 's' && <span className="text-lg font-black" style={{ color: '#b71c1c' }}>:</span>}
+                              {key !== 's' && <span className="text-lg font-black" style={{ color: '#d32f2f' }}>:</span>}
                             </React.Fragment>
                           ))}
                         </div>
@@ -802,7 +802,7 @@ const PredictionDetail = () => {
                                 initial={{ scale: 0.8, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 className="w-10 h-10 rounded-full flex items-center justify-center text-white text-lg font-black shadow-md"
-                                style={{ background: 'linear-gradient(to bottom right, #b71c1c, #9a1a1a)' }}
+                                style={{ background: 'linear-gradient(to bottom right, #d32f2f, #9a1a1a)' }}
                               >
                                 {n}
                               </motion.div>
@@ -854,7 +854,7 @@ const PredictionDetail = () => {
 
                 {/* Action Button */}
                 <div className="px-5 pb-5">
-                  <button onClick={handleDownloadPoster} className="w-full bg-[#b71c1c] text-white font-bold py-3.5 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-[#b71c1c]/10 active:scale-[0.98] transition-transform">
+                  <button onClick={handleDownloadPoster} className="w-full bg-[#d32f2f] text-white font-bold py-3.5 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-[#d32f2f]/10 active:scale-[0.98] transition-transform">
                     <Download className="w-4 h-4" />
                     <span className="text-[15px] tracking-widest">下载高清海报</span>
                   </button>
@@ -874,13 +874,13 @@ const PredictionDetail = () => {
       {isProcessingPayment && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm">
             <div className="bg-white p-6 rounded-3xl flex flex-col items-center justify-center shadow-2xl max-w-[280px] w-full mx-4">
-                <div className="w-12 h-12 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin mb-4"></div>
+                <div className="w-12 h-12 border-4 border-[#d32f2f] border-t-transparent rounded-full animate-spin mb-4"></div>
                 <p className="text-gray-900 font-bold text-lg">正在确认支付...</p>
                 <p className="text-gray-400 text-xs mt-2 text-center leading-relaxed">支付完成后请返回此页面，系统将自动为您解锁内容</p>
                 
                 <button 
                   onClick={() => setIsProcessingPayment(false)}
-                  className="mt-6 text-[#b71c1c] text-sm font-bold bg-red-50 px-4 py-2 rounded-full"
+                  className="mt-6 text-[#d32f2f] text-sm font-bold bg-red-50 px-4 py-2 rounded-full"
                 >
                   关闭等待
                 </button>

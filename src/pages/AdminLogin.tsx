@@ -29,7 +29,7 @@ const AdminLogin = () => {
         className="sm:mx-auto sm:w-full sm:max-w-md"
       >
         <div className="flex justify-center">
-          <div className="w-16 h-16 bg-[#b71c1c] rounded-2xl flex items-center justify-center shadow-lg">
+          <div className="w-16 h-16 bg-[#d32f2f] rounded-2xl flex items-center justify-center shadow-lg">
             <ShieldCheck className="w-10 h-10 text-white" />
           </div>
         </div>
@@ -60,7 +60,7 @@ const AdminLogin = () => {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="block w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#b71c1c] focus:border-[#b71c1c] bg-gray-50 text-gray-900 placeholder-gray-400 transition-all font-medium"
+                  className="block w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#d32f2f] focus:border-[#d32f2f] bg-gray-50 text-gray-900 placeholder-gray-400 transition-all font-medium"
                   placeholder="请输入账号"
                 />
               </div>
@@ -77,7 +77,7 @@ const AdminLogin = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#b71c1c] focus:border-[#b71c1c] bg-gray-50 text-gray-900 placeholder-gray-400 transition-all font-medium"
+                  className="block w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#d32f2f] focus:border-[#d32f2f] bg-gray-50 text-gray-900 placeholder-gray-400 transition-all font-medium"
                   placeholder="请输入密码"
                 />
               </div>
@@ -87,7 +87,7 @@ const AdminLogin = () => {
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-red-50 text-[#b71c1c] text-sm font-bold p-4 rounded-xl text-center"
+                className="bg-red-50 text-[#d32f2f] text-sm font-bold p-4 rounded-xl text-center"
               >
                 {error}
               </motion.div>
@@ -96,7 +96,7 @@ const AdminLogin = () => {
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-lg text-lg font-black text-white bg-[#b71c1c] hover:bg-[#a31919] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#b71c1c] active:scale-[0.98] transition-all"
+                className="w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-lg text-lg font-black text-white bg-[#d32f2f] hover:bg-[#c62828] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#d32f2f] active:scale-[0.98] transition-all"
               >
                 授权登录
               </button>

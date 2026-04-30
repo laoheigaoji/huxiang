@@ -13,13 +13,13 @@ const AboutUs = () => {
       exit={{ opacity: 0, x: -20 }} 
       className="bg-[#f8f8f8] min-h-screen"
     >
-      <div className="bg-[#b71c1c] px-4 py-4 flex items-center justify-center relative shadow-sm header-safe-area">
+      <div className="bg-[#d32f2f] px-4 py-4 flex items-center justify-center relative shadow-sm header-safe-area">
         <ChevronLeft className="w-7 h-7 absolute left-4 text-white cursor-pointer" onClick={() => navigate(-1)} />
         <h2 className="text-[18px] font-bold text-white">关于我们</h2>
       </div>
 
       <div className="flex flex-col items-center mt-12 bg-white py-12 shadow-sm">
-        <div className="w-20 h-20 bg-[#b71c1c] rounded-2xl flex items-center justify-center shadow-lg mb-4">
+        <div className="w-20 h-20 bg-[#d32f2f] rounded-2xl flex items-center justify-center shadow-lg mb-4">
            {/* Placeholder for App Logo */}
           <span className="text-white font-bold text-2xl tracking-widest">智料</span>
         </div>

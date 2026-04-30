@@ -55,7 +55,7 @@ const BalanceDetails = () => {
 
       <div className="p-4 space-y-4">
         {/* Balance Card */}
-        <div className="bg-gradient-to-br from-[#b71c1c] to-[#d32f2f] rounded-3xl p-6 text-white shadow-xl shadow-red-100">
+        <div className="bg-gradient-to-br from-[#d32f2f] to-[#d32f2f] rounded-3xl p-6 text-white shadow-xl shadow-red-100">
           <div className="flex items-center space-x-2 opacity-80 mb-2">
             <Wallet className="w-4 h-4" />
             <span className="text-sm font-medium">账户余额 (元)</span>
@@ -108,7 +108,7 @@ const BalanceDetails = () => {
 
           {loading ? (
             <div className="flex justify-center py-10">
-              <div className="w-6 h-6 border-2 border-[#b71c1c] border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-6 h-6 border-2 border-[#d32f2f] border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : transactions.length > 0 ? (
             <div className="space-y-6">
