@@ -409,7 +409,7 @@ const PredictionDetail = () => {
             ))}
             <div className="flex-grow"></div>
             <span className="text-[10px] text-gray-400">近七日人气 <span className="text-[#d32f2f] font-bold">
-              <JumpingNumber id={`view_total_${prediction.id}`} base={prediction.viewCount + 15000} range={20} interval={1200} />
+              <JumpingNumber id={`view_total_${prediction.id}`} base={prediction.viewCount + 15000} range={20} interval={86400000} />
             </span></span>
           </div>
 

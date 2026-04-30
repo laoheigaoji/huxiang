@@ -499,7 +499,7 @@ const Home = () => {
       />
 
       {/* Main Top Content Container */}
-      <div className="bg-white px-3 py-2.5 rounded-b-[12px] shadow-sm mb-1 border-b border-gray-100 mt-4">
+      <div className="bg-white px-3 py-2.5 shadow-sm mb-1 border-b border-gray-100">
         {/* User & Search Area */}
         <div className="flex items-center justify-between mb-3">
            <div className="flex items-center shrink-0">
@@ -567,7 +567,7 @@ const Home = () => {
              <div className="flex items-center justify-end text-[10.5px] font-bold space-x-1 leading-none text-gray-900">
                <span>平台当前在线人数:</span>
                <span className="text-[#d32f2f] font-medium italic tracking-tighter text-[11.5px] min-w-[32px] text-center inline-block">
-                  <JumpingNumber id="online_count" base={onlineCount} range={10} interval={1500} />
+                  <JumpingNumber id="online_count" base={onlineCount} range={8} interval={4000} allowDecrease={true} />
                </span>
                <span>人</span>
              </div>
