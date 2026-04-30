@@ -137,6 +137,7 @@ const TransferCodeGenerator = () => {
             } else {
                 const returnUrl = window.location.href;
                 localStorage.setItem('payment_initiated', 'true');
+                localStorage.setItem('initial_balance', user?.balance || '0');
                 setShowPayment(false); // Close modal immediately
                 setIsProcessingPayment(true); // Keep loading overlay
                 
@@ -169,42 +170,51 @@ const TransferCodeGenerator = () => {
         const pollInterval = setInterval(async () => {
            if (localStorage.getItem('payment_initiated') !== 'true' && !isProcessingPayment) return;
            
-           // Attempt generation directly
-           try {
-               const genRes = await fetch('/api/transfer-code/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId, ...formData })
-               });
-               const genData = await genRes.json();
-               if (genRes.ok) {
-                   setShortUrl(genData.shortUrl);
-                   setHistory([genData, ...history]);
-                   setSelectedItem({name: formData.name, cardNo: formData.cardNo});
-                   setShowQr(true);
-                   setIsProcessingPayment(false);
-                   localStorage.removeItem('payment_initiated');
-                   return; // Exit polling
-               } else {
-                   console.log("Auto generation not yet possible:", genData.error);
-               }
-           } catch (e) { console.error("Auto generation err:", e); }
-
-           // Fallback to checking history if already generated
-           const res = await fetch(`/api/transfer-code/history?userId=${userId}`);
-           const data = await res.json();
+           // Fetch user to check balance increase
+           const userRes = await fetch(`/api/profile?userId=${userId}`);
+           const userData = await userRes.json();
+           const initialBalance = parseFloat(localStorage.getItem('initial_balance') || '0');
            
-           if (data.length > 0) {
-               const latest = data[0]; 
-               const createdAt = new Date(latest.createdAt).getTime();
-               if (Date.now() - createdAt < 15000) { 
-                   setShortUrl(latest.shortUrl);
-                   setHistory(data);
-                   setSelectedItem({name: latest.name, cardNo: latest.cardNo});
-                   setShowQr(true);
-                   setIsProcessingPayment(false);
-                   localStorage.removeItem('payment_initiated');
-               }
+           if (userData.balance > initialBalance) {
+               console.log("Balance increased, attempting automatic generation");
+               try {
+                   const genRes = await fetch('/api/transfer-code/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId, ...formData })
+                   });
+                   const genData = await genRes.json();
+                   if (genRes.ok) {
+                       setShortUrl(genData.shortUrl);
+                       setHistory([genData, ...history]);
+                       setSelectedItem({name: formData.name, cardNo: formData.cardNo});
+                       setShowQr(true);
+                       setIsProcessingPayment(false);
+                       localStorage.removeItem('payment_initiated');
+                       localStorage.removeItem('initial_balance');
+                       return; // Exit polling
+                   }
+               } catch (e) { console.error("Auto generation err:", e); }
+           }
+
+           // Fallback to checking history if already generated, but only if balance actually increased
+           if (userData.balance > initialBalance) {
+                const res = await fetch(`/api/transfer-code/history?userId=${userId}`);
+                const data = await res.json();
+                
+                if (data.length > 0) {
+                    const latest = data[0]; 
+                    const createdAt = new Date(latest.createdAt).getTime();
+                    if (Date.now() - createdAt < 15000) { 
+                        setShortUrl(latest.shortUrl);
+                        setHistory(data);
+                        setSelectedItem({name: latest.name, cardNo: latest.cardNo});
+                        setShowQr(true);
+                        setIsProcessingPayment(false);
+                        localStorage.removeItem('payment_initiated');
+                        localStorage.removeItem('initial_balance');
+                    }
+                }
            }
         }, 3000);
         
