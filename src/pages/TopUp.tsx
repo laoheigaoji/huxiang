@@ -46,14 +46,23 @@ const TopUp = () => {
     return false;
   };
 
+  const loadingRef = React.useRef(loading);
   React.useEffect(() => {
-    let interval: NodeJS.Timeout;
+    loadingRef.current = loading;
+  }, [loading]);
+
+  React.useEffect(() => {
+    let interval: any;
     if (loading) {
-      interval = setInterval(pollBalance, 3000);
+      interval = setInterval(() => {
+        if (loadingRef.current) {
+          pollBalance();
+        }
+      }, 3000);
     }
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && loading) {
+      if (document.visibilityState === 'visible' && loadingRef.current) {
         pollBalance();
       }
     };
@@ -75,12 +84,14 @@ const TopUp = () => {
     setLoading(true);
     try {
       const isPC = !/Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
+      console.log('Initiating payment, isPC:', isPC);
       const res = await api.createPayment(parseFloat(amount), selectedMethod, '金币充值', user?.id, undefined, undefined, isPC);
+      console.log('Payment response:', res);
       
       if (res.code === 1) {
         if (isPC && res.url && res.params) {
             // Form submit jump for PC
+            // Keep loading status while redirecting
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = res.url;

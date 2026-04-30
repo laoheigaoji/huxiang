@@ -37,6 +37,7 @@ export interface Prediction {
   isUnlocked?: boolean;
   result?: '红' | '黑';
   mainPicks?: number[];
+  mainZodiacs?: string[];
   orderId?: string;
 }
 

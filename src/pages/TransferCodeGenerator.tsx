@@ -165,6 +165,7 @@ const TransferCodeGenerator = () => {
                     alert(data.error || '生成失败');
                 }
             } else {
+                setShowPayment(false);
                 sessionStorage.setItem('tcForm', JSON.stringify(formData));
                 const currentUrl = new URL(window.location.href);
                 currentUrl.searchParams.set('payment_return', '1');
@@ -174,6 +175,7 @@ const TransferCodeGenerator = () => {
                 const isPC = !/Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 
                 const payAmount = parseFloat(settings.transferCodePrice || '2');
+                setIsProcessingPayment(true);
                 const payRes = await api.createPayment(payAmount, 'alipay', '转卡码生成', userId, undefined, returnUrl, isPC);
                 
                 if (payRes.code === 1) {
@@ -229,6 +231,11 @@ const TransferCodeGenerator = () => {
     };
 
     // Polling to check if generation succeeded already
+    const isProcessingPaymentRef = React.useRef(isProcessingPayment);
+    useEffect(() => {
+        isProcessingPaymentRef.current = isProcessingPayment;
+    }, [isProcessingPayment]);
+
     useEffect(() => {
         if (!userId) return;
 
@@ -243,6 +250,7 @@ const TransferCodeGenerator = () => {
 
         let isPolling = false;
         const pollInterval = setInterval(async () => {
+           if (!isProcessingPaymentRef.current) return;
            if (isPolling) return;
            
            const currentUrlParams = new URLSearchParams(window.location.search);

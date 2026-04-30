@@ -73,6 +73,15 @@ const AppContent = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  React.useLayoutEffect(() => {
+    // Force scroll to top with a slight delay to ensure layout is ready
+    window.scrollTo(0, 0);
+    const timer = setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 10);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
   React.useEffect(() => {
     const user = localStorage.getItem('user');
     const publicPaths = ['/login', '/register', '/admin'];

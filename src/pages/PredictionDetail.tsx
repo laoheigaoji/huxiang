@@ -24,7 +24,7 @@ const PredictionDetail = () => {
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [author, setAuthor] = useState<any>(null);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [history, setHistory] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFollowed, setIsFollowed] = useState(false);
   const isPurchasedRef = React.useRef(false);
@@ -56,6 +56,11 @@ const PredictionDetail = () => {
           alert('保存海报失败，请尝试截图保存');
       }
   };
+
+  const isProcessingPaymentRef = React.useRef(isProcessingPayment);
+  useEffect(() => {
+    isProcessingPaymentRef.current = isProcessingPayment;
+  }, [isProcessingPayment]);
 
   useEffect(() => {
     isPurchasedRef.current = isPurchased;
@@ -135,13 +140,13 @@ const PredictionDetail = () => {
 
     // Polling to check unlocking status after payment
     const pollInterval = setInterval(async () => {
-        if (isProcessingPayment) {
+        if (isProcessingPaymentRef.current) {
             await pollStatus();
         }
     }, 3000);
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && isProcessingPayment) {
+      if (document.visibilityState === 'visible' && isProcessingPaymentRef.current) {
         pollStatus();
       }
     };
@@ -254,16 +259,20 @@ const PredictionDetail = () => {
         alert('购买成功！');
       } else {
         // Alipay flow
+        setShowPayment(false);
         const currentUrl = new URL(window.location.href);
         currentUrl.searchParams.set('payment_return', '1');
         const returnUrl = currentUrl.toString();
         
         const isPC = !/Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        console.log('Initiating payment, isPC:', isPC);
         const payRes = await api.createPayment(prediction!.price, 'alipay', prediction!.title, user.id, id, returnUrl, isPC);
+        console.log('Payment response:', payRes);
         
         if (payRes.code === 1) {
             if (isPC && payRes.url && payRes.params) {
                 // Form submit jump for PC
+                // Keep processing status while redirecting
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = payRes.url;

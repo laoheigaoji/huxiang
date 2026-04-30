@@ -494,7 +494,7 @@ async function startServer() {
     });
 
     if (jump) {
-        return res.json({ url: apiUrl + '/submit.php', params });
+        return res.json({ code: 1, url: apiUrl + '/submit.php', params, out_trade_no: outTradeNo });
     }
 
     try {
