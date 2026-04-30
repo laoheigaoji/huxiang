@@ -235,7 +235,16 @@ async function startServer() {
 
     const purchasedIds = user.purchased || [];
     const predictions = await db.collection("predictions").find({ id: { $in: purchasedIds } }).toArray();
-    res.json(predictions);
+    
+    const populated = await Promise.all(predictions.map(async (p: any) => {
+        const order = await db.collection("orders").findOne({ userId: userId, predictionId: p.id });
+        return {
+            ...p,
+            orderId: order ? order.id : undefined
+        };
+    }));
+    
+    res.json(populated);
   }));
 
   app.get("/api/profile", checkDb, asyncHandler(async (req: any, res: any) => {
@@ -425,7 +434,12 @@ async function startServer() {
     
     const outTradeNo = Date.now().toString() + Math.floor(Math.random() * 1000);
     const notifyUrl = `https://${req.get('host')}/api/pay/notify`;
-    const returnUrl = customReturnUrl || `https://${req.get('host')}/top-up?status=success`;
+    
+    // Ensure returnUrl contains out_trade_no
+    let finalReturnUrl = new URL(customReturnUrl || `https://${req.get('host')}/top-up?status=success`);
+    finalReturnUrl.searchParams.set('payment_return', '1');
+    finalReturnUrl.searchParams.set('out_trade_no', outTradeNo);
+    const returnUrl = finalReturnUrl.toString();
     
     const clientip = (req.headers['x-forwarded-for'] as string || req.ip || '127.0.0.1').split(',')[0].replace('::ffff:', '');
     
@@ -461,6 +475,7 @@ async function startServer() {
 
       if (response.data.code === 1) {
         await db.collection("orders").insertOne({
+          id: "o" + Date.now(), // Unique order ID
           out_trade_no: outTradeNo,
           userId: userId || "u1",
           amount: parseFloat(amount),
@@ -470,7 +485,7 @@ async function startServer() {
         });
       }
 
-      res.json(response.data);
+      res.json({ ...response.data, out_trade_no: outTradeNo });
     } catch (error: any) {
       console.error("Yipay request error:", error.message);
       res.status(500).json({ error: "支付请求失败", details: error.message });
@@ -674,6 +689,18 @@ async function startServer() {
        return res.json({ message: "Already purchased" });
     }
 
+    // Create order entry for access validation
+    await db.collection("orders").insertOne({
+      id: userId + "_" + predictionId,
+      userId: userId,
+      predictionId: predictionId,
+      predictionTitle: prediction.contentTitle || prediction.title,
+      amount: prediction.price,
+      status: 'completed',
+      type: 'consumption',
+      time: new Date().toISOString()
+    });
+    
     // Atomic-ish update for buyer
     await db.collection("users").updateOne(
       { id: userId }, 
@@ -879,6 +906,17 @@ async function startServer() {
         userId,
         type: 'withdraw',
         amount: -price,
+        description: '转卡码生成',
+        time: new Date().toISOString()
+    });
+
+    // Log the order
+    await db.collection("orders").insertOne({
+        id: "o" + Date.now(),
+        userId: userId,
+        amount: price,
+        status: 'completed',
+        type: 'transfer-code',
         description: '转卡码生成',
         time: new Date().toISOString()
     });
@@ -1216,6 +1254,14 @@ async function startServer() {
   }));
 
   // CRUD for Orders
+  app.get("/api/order/status", checkDb, asyncHandler(async (req: any, res: any) => {
+    const { out_trade_no } = req.query;
+    if (!out_trade_no) return res.status(400).json({ error: "Trade number is required" });
+    const order = await db.collection("orders").findOne({ out_trade_no });
+    if (!order) return res.status(404).json({ error: "Order not found" });
+    res.json({ status: order.status });
+  }));
+
   app.get("/api/admin/orders", checkDb, asyncHandler(async (req: any, res: any) => {
     const orders = await db.collection("orders").find().sort({ createdAt: -1 }).toArray();
     const populatedOrders = await Promise.all(orders.map(async (o: any) => {
@@ -1225,14 +1271,15 @@ async function startServer() {
         prediction = await db.collection("predictions").findOne({ id: o.predictionId });
       }
       return {
-        id: o.id || o._id.toString(),
+        id: o.id,
         userId: o.userId,
         username: user ? (user.nickname || user.username) : "未知用户",
         amount: o.amount,
-        predictionTitle: prediction ? prediction.title : "账户余额充值",
+        predictionTitle: prediction ? prediction.title : (o.description || "账户余额充值"),
         time: o.createdAt || o.time,
         status: o.status,
-        outTradeNo: o.out_trade_no
+        outTradeNo: o.out_trade_no,
+        predictionId: o.predictionId
       };
     }));
     res.json(populatedOrders);

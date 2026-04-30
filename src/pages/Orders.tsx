@@ -33,6 +33,7 @@ const PredictionCard = ({ prediction }: { prediction: Prediction, key?: React.Ke
       </div>
       <div className="text-right">
         <div className="text-[10px] text-gray-400 font-medium bg-gray-50 px-2 py-1 rounded-md">{prediction.time}</div>
+        {prediction.orderId && <div className="text-[10px] text-gray-400 mt-1">订单号: {prediction.orderId}</div>}
       </div>
     </div>
     

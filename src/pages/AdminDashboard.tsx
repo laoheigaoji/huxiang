@@ -530,7 +530,7 @@ const AdminDashboard = () => {
               <div key={order.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center">
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-bold text-gray-900">{order.predictionTitle}</h3>
+                    <h3 className="font-bold text-gray-900">{order.predictionTitle || order.description} (订单号: {order.id})</h3>
                     <span className="text-xs font-bold text-[#d32f2f]">¥{order.amount}</span>
                   </div>
                   <div className="flex items-center text-[10px] text-gray-400">
