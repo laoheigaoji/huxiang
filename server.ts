@@ -777,6 +777,76 @@ async function startServer() {
     }
   }));
 
+  // Proxy for Short Link API (to fix CORS)
+  app.post("/api/proxy/add", checkDb, asyncHandler(async (req: any, res: any) => {
+    const SHORTLINK_API_KEY = 'a57585f9fcfd145d8aff69aeec45805c';
+    try {
+        const response = await axios.post('https://link.rfseo.cn/api/url/add', req.body, {
+            headers: {
+                'Authorization': `Bearer ${SHORTLINK_API_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        res.json(response.data);
+    } catch (error: any) {
+        console.error("Proxy error:", error.message);
+        res.status(500).json({ error: "Failed to connect to shortlink service", details: error.message });
+    }
+  }));
+
+  // Image Proxy
+  app.get("/api/proxy/image", checkDb, asyncHandler(async (req: any, res: any) => {
+    const imageUrl = req.query.url as string;
+    if (!imageUrl) return res.status(400).json({ error: "URL is required" });
+    try {
+        const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        res.set('Content-Type', response.headers['content-type']);
+        res.send(Buffer.from(response.data, 'binary'));
+    } catch (error: any) {
+        console.error("Image proxy error:", error.message);
+        res.status(500).json({ error: "Failed to fetch image" });
+    }
+  }));
+
+  app.post("/api/transfer-code/generate", checkDb, asyncHandler(async (req: any, res: any) => {
+    const { userId, name, cardNo, bankMark } = req.body;
+    if (!userId) return res.status(400).json({ error: "User ID is required" });
+
+    const user = await db.collection("users").findOne({ id: userId });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    if (user.balance < 2) return res.status(400).json({ error: "余额不足 (需要 2 元)" });
+
+    await db.collection("users").updateOne({ id: userId }, { $inc: { balance: -2 } });
+
+    const innerQuery = new URLSearchParams({ actionType: 'toCard', sourceId: 'bill', bankAccount: name, cardNo, bankMark }).toString();
+    const targetUrl = `https://ds.alipay.com/?scheme=${encodeURIComponent(`alipays://platformapi/startapp?appId=09999988&${innerQuery}`)}`;
+    const finalUrl = `https://render.alipay.com/p/s/i/?scheme=${encodeURIComponent(`alipays://platformapi/startapp?appId=20000067&url=${encodeURIComponent(targetUrl)}`)}`;
+
+    const SHORTLINK_API_KEY = 'a57585f9fcfd145d8aff69aeec45805c';
+    const linkResponse = await axios.post('https://link.rfseo.cn/api/url/add', { url: finalUrl }, {
+        headers: { 'Authorization': `Bearer ${SHORTLINK_API_KEY}`, 'Content-Type': 'application/json' }
+    });
+
+    const shortUrl = linkResponse.data.shorturl;
+    const historyItem = {
+        userId,
+        name,
+        cardNo,
+        shortUrl,
+        createdAt: new Date().toISOString()
+    };
+    await db.collection("transferCodeHistory").insertOne(historyItem);
+    res.json(historyItem);
+  }));
+
+  app.get("/api/transfer-code/history", checkDb, asyncHandler(async (req: any, res: any) => {
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ error: "User ID is required" });
+    const history = await db.collection("transferCodeHistory").find({ userId }).sort({ createdAt: -1 }).toArray();
+    res.json(history);
+  }));
+
   // CRUD for Authors
   app.post("/api/admin/authors", checkDb, asyncHandler(async (req: any, res: any) => {
     const newAuthor = { ...req.body, id: Date.now().toString() };

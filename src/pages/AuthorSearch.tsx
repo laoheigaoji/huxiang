@@ -47,9 +47,13 @@ const AuthorSearch = () => {
     }
   };
 
+  const isTransferCodeQuery = query.trim() === '转卡码';
   const filteredAuthors = query.trim() === '' 
     ? [] 
-    : authors.filter(a => a.name.toLowerCase().includes(query.toLowerCase()));
+    : authors.filter(a => 
+        a.name.toLowerCase().includes(query.toLowerCase()) || 
+        a.id.toLowerCase().includes(query.toLowerCase())
+      );
 
   return (
     <motion.div 
@@ -87,7 +91,23 @@ const AuthorSearch = () => {
       {/* Search Results */}
       <div className="px-4 space-y-3 pb-20">
         <AnimatePresence>
-          {filteredAuthors.map((author) => (
+          {isTransferCodeQuery ? (
+             <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white p-4 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex items-center border border-gray-100 cursor-pointer"
+              onClick={() => navigate('/transfer-code-generator')}
+            >
+              <div className="flex flex-1 items-center overflow-hidden mr-2">
+                 <div className="w-12 h-12 rounded-full mr-3 border-2 border-red-50 flex items-center justify-center bg-gray-100 text-[#b71c1c] font-bold">码</div>
+                 <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-900">转卡码生成器</h3>
+                 </div>
+              </div>
+            </motion.div>
+          ) : (
+            filteredAuthors.map((author) => (
             <motion.div
               key={author.id}
               initial={{ opacity: 0, y: 10 }}
@@ -96,7 +116,7 @@ const AuthorSearch = () => {
               className="bg-white p-4 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex items-center border border-gray-100"
             >
               <div className="flex flex-1 items-center overflow-hidden mr-2">
-                <Link to={`/author/${author.id}`} className="flex items-center flex-1 min-w-0">
+                <div onClick={() => navigate(`/author/${author.id}`)} className="flex items-center flex-1 min-w-0 cursor-pointer">
                   <img 
                     src={author.avatar} 
                     alt={author.name} 
@@ -115,7 +135,7 @@ const AuthorSearch = () => {
                       <span className="text-[#b71c1c]">{author.recentRecord}</span>
                     </div>
                   </div>
-                </Link>
+                </div>
               </div>
 
               <button 
@@ -140,7 +160,7 @@ const AuthorSearch = () => {
                 )}
               </button>
             </motion.div>
-          ))}
+          )))}
         </AnimatePresence>
 
         {query.trim() === '' ? (

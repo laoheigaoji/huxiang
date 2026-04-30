@@ -14,6 +14,7 @@ import Settings from './pages/Settings';
 import Feedback from './pages/Feedback';
 import Footprints from './pages/Footprints';
 import AuthorSearch from './pages/AuthorSearch';
+import TransferCodeGenerator from './pages/TransferCodeGenerator';
 import PartnerJoin from './pages/PartnerJoin';
 import AuthorProfile from './pages/AuthorProfile';
 import Invite from './pages/Invite';
@@ -117,6 +118,7 @@ const AppContent = () => {
             <Route path="/feedback" element={<Feedback />} />
             <Route path="/footprints" element={<Footprints />} />
             <Route path="/author-search" element={<AuthorSearch />} />
+            <Route path="/transfer-code-generator" element={<TransferCodeGenerator />} />
             <Route path="/partner-join" element={<PartnerJoin />} />
             <Route path="/author/:id" element={<AuthorProfile />} />
             <Route path="/invite" element={<Invite />} />

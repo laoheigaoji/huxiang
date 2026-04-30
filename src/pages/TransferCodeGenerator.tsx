@@ -1,0 +1,300 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, QrCode, X, History } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import * as api from '../services/api';
+
+interface HistoryItem {
+    id: string;
+    name: string;
+    cardNo: string;
+    shortUrl: string;
+    createdAt: string;
+}
+
+interface StyledQrModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    shortUrl: string;
+    name: string;
+    cardNo: string;
+}
+
+const StyledQrModal: React.FC<StyledQrModalProps> = ({ isOpen, onClose, shortUrl, name, cardNo }) => {
+    const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        if (isOpen && canvasRef.current && shortUrl) {
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            const bg = new Image();
+            const qr = new Image();
+
+            bg.onload = () => {
+                canvas.width = bg.width;
+                canvas.height = bg.height;
+                ctx.drawImage(bg, 0, 0);
+
+                qr.onload = () => {
+                    const scale = 0.55;
+                    const newQrWidth = bg.width * scale;
+                    const newQrHeight = bg.width * scale;
+                    const dstX = (bg.width - newQrWidth) / 2;
+                    const dstY = bg.height * 0.40;
+
+                    ctx.drawImage(qr, dstX, dstY, newQrWidth, newQrHeight);
+
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 48px Arial';
+                    ctx.textAlign = 'center';
+                    const textY = dstY + newQrHeight + 80;
+                    ctx.fillText(`${name}    ${cardNo.slice(-4)}`, bg.width / 2, textY);
+                };
+                qr.src = `/api/proxy/image?url=${encodeURIComponent(`https://api.2dcode.biz/v1/create-qr-code?data=${encodeURIComponent(shortUrl)}`)}`;
+            };
+            bg.src = '/api/proxy/image?url=https://wxqun988.vxjuejin.com/bg11.jpg';
+        }
+    }, [isOpen, shortUrl, name, cardNo]);
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose}>
+            <div className="p-4 flex flex-col items-center">
+                <canvas ref={canvasRef} className="w-full h-auto rounded-xl" />
+                <p className="text-center text-sm text-slate-500 mt-4">截图或长按保存图片</p>
+            </div>
+        </Modal>
+    );
+};
+
+const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) => (
+    <AnimatePresence>
+        {isOpen && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onClose}>
+                <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-white rounded-3xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+                    <button onClick={onClose} className="p-4 absolute top-2 right-2 text-gray-400"><X /></button>
+                    {children}
+                </motion.div>
+            </motion.div>
+        )}
+    </AnimatePresence>
+);
+
+const TransferCodeGenerator = () => {
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState({ name: '', cardNo: '', bankMark: 'ICBC' });
+    const [shortUrl, setShortUrl] = useState('');
+    const [showQr, setShowQr] = useState(false);
+    const [selectedItem, setSelectedItem] = useState<{name: string, cardNo: string} | null>(null);
+    const [history, setHistory] = useState<HistoryItem[]>([]);
+    
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId = user.id;
+    const [showPayment, setShowPayment] = useState(false);
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'balance' | 'alipay'>('balance');
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+    
+    useEffect(() => {
+        if (userId) {
+            fetch(`/api/transfer-code/history?userId=${userId}`)
+                .then(res => res.json())
+                .then(data => setHistory(data))
+                .catch(console.error);
+        }
+    }, [userId]);
+
+    const handlePurchase = async () => {
+        if (!userId) {
+            alert("请先登录");
+            return;
+        }
+        setIsProcessingPayment(true);
+        try {
+            if (selectedPaymentMethod === 'balance') {
+                const response = await fetch('/api/transfer-code/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, ...formData })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    setShortUrl(data.shortUrl);
+                    setHistory([data, ...history]);
+                    setShowPayment(false);
+                } else {
+                    alert(data.error || '生成失败');
+                }
+            } else {
+                const returnUrl = window.location.href;
+                const payRes = await api.createPayment(2, 'alipay', '转卡码生成', userId, undefined, returnUrl);
+                const paymentUrl = payRes.url || payRes.payurl || payRes.payment_url || payRes.qrcode;
+                if (paymentUrl) {
+                    setShowPayment(false);
+                    window.location.href = paymentUrl;
+                } else {
+                    alert('支付请求发送失败');
+                }
+            }
+        } catch (error) {
+            console.error(error);
+            alert('网络错误');
+        } finally {
+            setIsProcessingPayment(false);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setShowPayment(true);
+    };
+
+    return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-slate-50 p-4 text-slate-900 pb-20">
+            <header className="flex items-center justify-between mb-8 bg-white/50 backdrop-blur-md p-4 rounded-3xl shadow-sm border border-slate-100">
+                <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 rounded-full transition">
+                    <ChevronLeft className="w-6 h-6 text-slate-600" />
+                </button>
+                <h2 className="text-lg font-bold text-slate-900">转卡码生成器</h2>
+                <div className="w-10"></div>
+            </header>
+
+            <form onSubmit={handleSubmit} className="bg-white p-7 rounded-3xl shadow-lg shadow-slate-200/50 space-y-5 border border-slate-100">
+                <div className="space-y-4">
+                    <input type="text" className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition" placeholder="收款人姓名" required onChange={e => setFormData({...formData, name: e.target.value})}/>
+                    <input type="text" className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition" placeholder="银行卡号" required onChange={e => setFormData({...formData, cardNo: e.target.value})}/>
+                    <select className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition" onChange={e => setFormData({...formData, bankMark: e.target.value})}>
+                        <option value="ICBC">工商银行 (ICBC)</option>
+                        <option value="ABC">农业银行 (ABC)</option>
+                        <option value="CCB">建设银行 (CCB)</option>
+                        <option value="BOC">中国银行 (BOC)</option>
+                        <option value="CMB">招商银行 (CMB)</option>
+                        <option value="PSBC">邮储银行 (PSBC)</option>
+                        <option value="COMM">交通银行 (COMM)</option>
+                        <option value="SPDB">浦发银行 (SPDB)</option>
+                        <option value="CMBC">民生银行 (CMBC)</option>
+                        <option value="CIB">兴业银行 (CIB)</option>
+                        <option value="CITIC">中信银行 (CITIC)</option>
+                        <option value="CEB">光大银行 (CEB)</option>
+                        <option value="GDB">广发银行 (GDB)</option>
+                        <option value="HXB">华夏银行 (HXB)</option>
+                        <option value="PAB">平安银行 (PAB)</option>
+                    </select>
+                </div>
+                <button type="submit" className="w-full py-4 bg-slate-900 text-white rounded-2xl font-semibold text-lg hover:bg-slate-800 transition shadow-lg shadow-slate-900/10">
+                    生成转卡码
+                </button>
+            </form>
+
+            <AnimatePresence>
+            {shortUrl && (
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-8 bg-gradient-to-br from-blue-600 to-indigo-700 p-7 rounded-3xl shadow-xl shadow-blue-500/20 text-white">
+                    <p className="font-semibold text-blue-100 text-sm mb-3">生成成功！</p>
+                    <div className="grid grid-cols-1 gap-3">
+                        <button onClick={() => { setSelectedItem({name: formData.name, cardNo: formData.cardNo}); setShowQr(true); }} className="py-4 bg-white text-blue-700 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-50 transition">
+                            <QrCode size={18} /> 查看二维码
+                        </button>
+                    </div>
+                </motion.div>
+            )}
+            </AnimatePresence>
+
+            <div className="mt-10">
+                <h3 className="text-base font-bold flex items-center gap-2 mb-4 text-slate-800 px-1"><History className="text-slate-400" size={18} /> 最近生成</h3>
+                <div className="space-y-3">
+                    {history.map(item => (
+                        <div key={item.id} className="bg-white p-4 rounded-2xl flex justify-between items-center border border-slate-100 shadow-sm">
+                             <div>
+                                <p className="text-sm font-bold text-slate-900">{item.name}</p>
+                                <p className="text-xs text-slate-500 font-mono mt-1">{item.cardNo}</p>
+                             </div>
+                             <button onClick={() => { setShortUrl(item.shortUrl); setSelectedItem({name: item.name, cardNo: item.cardNo}); setShowQr(true); }} className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200">
+                                <QrCode size={18} className="text-slate-600" />
+                             </button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <StyledQrModal 
+                isOpen={showQr} 
+                onClose={() => {setShowQr(false); setSelectedItem(null);}} 
+                shortUrl={shortUrl} 
+                name={selectedItem ? selectedItem.name : formData.name} 
+                cardNo={selectedItem ? selectedItem.cardNo : formData.cardNo} 
+            />
+            
+            {showPayment && (
+                <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowPayment(false)}>
+                   <motion.div 
+                    initial={{ y: "100%" }} 
+                    animate={{ y: 0 }} 
+                    className="bg-white w-full max-w-lg rounded-t-3xl p-6"
+                    onClick={e => e.stopPropagation()}
+                   >
+                      <div className="flex justify-between items-center mb-6">
+                        <ChevronLeft className="w-6 h-6 invisible" />
+                        <h3 className="text-lg font-bold">支付</h3>
+                        <X className="w-6 h-6 text-gray-400 cursor-pointer" onClick={() => setShowPayment(false)} />
+                      </div>
+                      
+                      <div className="text-center mb-8">
+                        <span className="text-[#b71c1c] text-3xl font-bold">¥ 2.00</span>
+                      </div>
+        
+                      <div className="space-y-4">
+                        <div 
+                          className={`flex items-center justify-between p-4 rounded-xl border border-gray-100 cursor-pointer ${selectedPaymentMethod === 'alipay' ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'}`} 
+                          onClick={() => setSelectedPaymentMethod('alipay')}
+                        >
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
+                               <span className="text-white font-bold text-lg">支</span>
+                            </div>
+                            <div>
+                              <p className="font-medium">支付宝 (通过性更强)</p>
+                            </div>
+                          </div>
+                          <div className={`w-5 h-5 rounded-full border-2 ${selectedPaymentMethod === 'alipay' ? 'border-blue-500 p-0.5' : 'border-gray-300'}`}>
+                            {selectedPaymentMethod === 'alipay' && <div className="w-full h-full bg-blue-500 rounded-full"></div>}
+                          </div>
+                        </div>
+        
+                        <div 
+                          className={`flex items-center justify-between p-4 rounded-xl border border-gray-100 cursor-pointer ${user?.balance < 2 ? 'bg-gray-50 opacity-60' : (selectedPaymentMethod === 'balance' ? 'bg-orange-50 border-orange-200' : 'bg-white')}`}
+                          onClick={() => {
+                            if (user?.balance < 2) {
+                               navigate('/topup');
+                            } else {
+                               setSelectedPaymentMethod('balance');
+                            }
+                          }}
+                        >
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center mr-3 text-white">¥</div>
+                            <div>
+                              <p className="font-medium">余额支付 (可用余额: ¥ {user?.balance || '0.00'})</p>
+                              {user?.balance < 2 && <p className="text-[10px] text-[#b71c1c]">余额不足，请充值</p>}
+                            </div>
+                          </div>
+                          <div className={`w-5 h-5 rounded-full border-2 ${selectedPaymentMethod === 'balance' ? 'border-orange-500 p-0.5' : 'border-gray-300'}`}>
+                            {selectedPaymentMethod === 'balance' && <div className="w-full h-full bg-orange-500 rounded-full"></div>}
+                          </div>
+                        </div>
+                      </div>
+        
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handlePurchase(); }}
+                        disabled={isProcessingPayment}
+                        className="w-full bg-[#b71c1c] text-white font-bold py-4 rounded-full mt-6 shadow-xl shadow-[#b71c1c]/20 active:scale-95 transition-transform disabled:opacity-50"
+                      >
+                        {isProcessingPayment ? '正在支付...' : '立即支付'}
+                      </button>
+                   </motion.div>
+                </div>
+            )}
+        </motion.div>
+    );
+};
+
+export default TransferCodeGenerator;
