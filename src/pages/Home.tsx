@@ -6,17 +6,8 @@ import { api } from '../services/api';
 import { Author, Prediction } from '../types';
 import JumpingNumber from '../components/JumpingNumber';
 
-const AnimatedNumber = ({ value }: { value: number }) => {
-  const count = useMotionValue(0);
-  const rounded = useTransform(count, Math.round);
-
-  useEffect(() => {
-    const animation = animate(count, value, { duration: 1, type: "spring" });
-    return animation.stop;
-  }, [value, count]);
-
-  return <motion.span>{rounded}</motion.span>;
-};
+import AnimatedNumber from '../components/AnimatedNumber';
+import AnimatedRefreshNumber from '../components/AnimatedRefreshNumber';
 
 const SortIcon = ({ type, direction }: { type: string, direction?: 'up' | 'down' }) => {
   if (type === 'default') {
@@ -176,7 +167,7 @@ const formatPeriod = (period: string) => {
   return `【第${p}期】`;
 };
 
-const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Prediction, isFollowed?: boolean, onFollow?: (e: React.MouseEvent) => void, key?: React.Key }) => {
+const PredictionCard = ({ prediction, isFollowed, onFollow, refreshTrigger }: { prediction: Prediction, isFollowed?: boolean, onFollow?: (e: React.MouseEvent) => void, refreshTrigger: number, key?: React.Key }) => {
   const periodDisplay = formatPeriod(prediction.period);
   const titleDisplay = prediction.title || prediction.contentTitle;
   
@@ -287,7 +278,7 @@ const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Pred
             </div>
           </div>
           <span className="text-[11px] text-gray-400 font-bold tracking-tight">
-            <JumpingNumber id={`view_${prediction.id}`} base={prediction.viewCount || 888} range={3} interval={2000} />次
+            <AnimatedRefreshNumber id={`view_${prediction.id}`} base={prediction.viewCount || 888} refreshTrigger={refreshTrigger} />次
           </span>
         </div>
       </div>
@@ -308,6 +299,7 @@ const Home = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const getOnlineCount = () => {
     const hour = new Date().getHours();
@@ -338,6 +330,7 @@ const Home = () => {
       setPredictions(predictionsData);
       setUser(profileData);
       setSettings(settingsData);
+      if (isRefresh) setRefreshTrigger(prev => prev + 1);
     } catch (err) {
       console.error('Failed to fetch data', err);
     } finally {
@@ -574,7 +567,7 @@ const Home = () => {
              <div className="flex items-center justify-end text-[10.5px] font-bold space-x-1 leading-none text-gray-900">
                <span>平台当前在线人数:</span>
                <span className="text-[#d32f2f] font-medium italic tracking-tighter text-[11.5px] min-w-[32px] text-center inline-block">
-                  <AnimatedNumber value={onlineCount} />
+                  <JumpingNumber id="online_count" base={onlineCount} range={10} interval={1500} />
                </span>
                <span>人</span>
              </div>
@@ -610,6 +603,7 @@ const Home = () => {
                 prediction={prediction} 
                 isFollowed={user?.following?.includes(prediction.authorId)}
                 onFollow={(e) => handleFollow(e, prediction.authorId)} 
+                refreshTrigger={refreshTrigger}
               />
             ))}
           

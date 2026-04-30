@@ -119,7 +119,12 @@ const TransferCodeGenerator = () => {
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'balance' | 'alipay'>('balance');
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     
+    const [isGeneratingBalance, setIsGeneratingBalance] = useState(false);
+
+    const [settings, setSettings] = useState<any>({});
+    
     useEffect(() => {
+        api.getSettings().then(setSettings).catch(console.error);
         if (userId) {
             fetch(`/api/transfer-code/history?userId=${userId}`)
                 .then(res => res.json())
@@ -128,14 +133,15 @@ const TransferCodeGenerator = () => {
         }
     }, [userId]);
 
+
     const handlePurchase = async () => {
         if (!userId) {
             alert("请先登录");
             return;
         }
-        setIsProcessingPayment(true);
         try {
             if (selectedPaymentMethod === 'balance') {
+                setIsGeneratingBalance(true);
                 const response = await fetch('/api/transfer-code/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -143,18 +149,20 @@ const TransferCodeGenerator = () => {
                 });
                 const data = await response.json();
                 if (response.ok) {
-                    setIsProcessingPayment(false);
+                    setIsGeneratingBalance(false);
                     setShortUrl(data.shortUrl);
                     setHistory([data, ...history]);
                     setShowPayment(false);
                 } else {
+                    setIsGeneratingBalance(false);
                     alert(data.error || '生成失败');
                 }
             } else {
-                const returnUrl = window.location.href;
-                localStorage.setItem('payment_initiated', 'true');
-                localStorage.setItem('payment_initiated_time', Date.now().toString());
-                localStorage.setItem('initial_balance', user?.balance || '0');
+                
+                const currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.set('payment_return', '1');
+                currentUrl.searchParams.set('init_bal', user?.balance || '0');
+                const returnUrl = currentUrl.toString();
                 setShowPayment(false); // Close modal immediately
                 setIsProcessingPayment(true); // Keep loading overlay
                 
@@ -163,18 +171,27 @@ const TransferCodeGenerator = () => {
                 if (paymentUrl) {
                     window.location.href = paymentUrl;
                 } else {
-                    localStorage.removeItem('payment_initiated');
-                        localStorage.removeItem('payment_initiated_time');
+                    
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('payment_return');
+                    url.searchParams.delete('init_bal');
+                    window.history.replaceState({}, '', url.toString());
+
                     alert('支付请求发送失败');
                     setIsProcessingPayment(false);
                 }
             }
         } catch (error: any) {
             console.error(error);
-            localStorage.removeItem('payment_initiated');
-                        localStorage.removeItem('payment_initiated_time');
+            
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('payment_return');
+                    url.searchParams.delete('init_bal');
+                    window.history.replaceState({}, '', url.toString());
+
             alert(error.message || '网络错误');
             setIsProcessingPayment(false);
+            setIsGeneratingBalance(false);
         }
     };
 
@@ -182,24 +199,28 @@ const TransferCodeGenerator = () => {
     useEffect(() => {
         if (!userId) return;
 
-        const initiatedTimeStr = localStorage.getItem('payment_initiated_time');
-        const isTimeValid = initiatedTimeStr && (Date.now() - parseInt(initiatedTimeStr) < 5 * 60 * 1000);
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const isPaymentReturn = urlParams.get('payment_return') === '1';
 
-        if (localStorage.getItem('payment_initiated') === 'true' && isTimeValid) {
+        if (isPaymentReturn && !isProcessingPayment) {
             setIsProcessingPayment(true);
-        } else if (localStorage.getItem('payment_initiated') === 'true') {
-            localStorage.removeItem('payment_initiated');
-                        localStorage.removeItem('payment_initiated_time');
-            localStorage.removeItem('initial_balance');
         }
 
+
         const pollInterval = setInterval(async () => {
-           if (localStorage.getItem('payment_initiated') !== 'true' && !isProcessingPayment) return;
+           
+           const isPaymentReturnPolling = new URLSearchParams(window.location.search).get('payment_return') === '1';
+           if (!isPaymentReturnPolling && !isProcessingPayment) return;
+
            
            // Fetch user to check balance increase
            const userRes = await fetch(`/api/profile?userId=${userId}`);
            const userData = await userRes.json();
-           const initialBalance = parseFloat(localStorage.getItem('initial_balance') || '0');
+           
+           const urlParamsForBal = new URLSearchParams(window.location.search);
+           const initialBalance = parseFloat(urlParamsForBal.get('init_bal') || '0');
+
            
            if (userData.balance > initialBalance) {
                console.log("Balance increased, attempting automatic generation");
@@ -216,9 +237,13 @@ const TransferCodeGenerator = () => {
                        setSelectedItem({name: formData.name, cardNo: formData.cardNo});
                        setShowQr(true);
                        setIsProcessingPayment(false);
-                       localStorage.removeItem('payment_initiated');
-                        localStorage.removeItem('payment_initiated_time');
-                       localStorage.removeItem('initial_balance');
+                       
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('payment_return');
+                    url.searchParams.delete('init_bal');
+                    window.history.replaceState({}, '', url.toString());
+
+                       
                        return; // Exit polling
                    }
                } catch (e) { console.error("Auto generation err:", e); }
@@ -238,9 +263,13 @@ const TransferCodeGenerator = () => {
                         setSelectedItem({name: latest.name, cardNo: latest.cardNo});
                         setShowQr(true);
                         setIsProcessingPayment(false);
-                        localStorage.removeItem('payment_initiated');
-                        localStorage.removeItem('payment_initiated_time');
-                        localStorage.removeItem('initial_balance');
+                        
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('payment_return');
+                    url.searchParams.delete('init_bal');
+                    window.history.replaceState({}, '', url.toString());
+
+                        
                     }
                 }
            }
@@ -344,7 +373,7 @@ const TransferCodeGenerator = () => {
                       </div>
                       
                       <div className="text-center mb-8">
-                        <span className="text-[#d32f2f] text-3xl font-bold">¥ 2.00</span>
+                        <span className="text-[#d32f2f] text-3xl font-bold">¥ {settings.transferCodePrice || '2.00'}</span>
                       </div>
         
                       <div className="space-y-4">
@@ -366,9 +395,9 @@ const TransferCodeGenerator = () => {
                         </div>
         
                         <div 
-                          className={`flex items-center justify-between p-4 rounded-xl border border-gray-100 cursor-pointer ${user?.balance < 2 ? 'bg-gray-50 opacity-60' : (selectedPaymentMethod === 'balance' ? 'bg-orange-50 border-orange-200' : 'bg-white')}`}
+                          className={`flex items-center justify-between p-4 rounded-xl border border-gray-100 cursor-pointer ${user?.balance < parseFloat(settings.transferCodePrice || '2') ? 'bg-gray-50 opacity-60' : (selectedPaymentMethod === 'balance' ? 'bg-orange-50 border-orange-200' : 'bg-white')}`}
                           onClick={() => {
-                            if (user?.balance < 2) {
+                            if (user?.balance < parseFloat(settings.transferCodePrice || '2')) {
                                navigate('/topup');
                             } else {
                                setSelectedPaymentMethod('balance');
@@ -379,7 +408,7 @@ const TransferCodeGenerator = () => {
                             <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center mr-3 text-white">¥</div>
                             <div>
                               <p className="font-medium">余额支付 (可用余额: ¥ {user?.balance || '0.00'})</p>
-                              {user?.balance < 2 && <p className="text-[10px] text-[#d32f2f]">余额不足，请充值</p>}
+                              {user?.balance < parseFloat(settings.transferCodePrice || '2') && <p className="text-[10px] text-[#d32f2f]">余额不足，请充值</p>}
                             </div>
                           </div>
                           <div className={`w-5 h-5 rounded-full border-2 ${selectedPaymentMethod === 'balance' ? 'border-orange-500 p-0.5' : 'border-gray-300'}`}>
@@ -390,10 +419,10 @@ const TransferCodeGenerator = () => {
         
                       <button 
                         onClick={(e) => { e.stopPropagation(); handlePurchase(); }}
-                        disabled={isProcessingPayment}
+                        disabled={isProcessingPayment || isGeneratingBalance}
                         className="w-full bg-[#d32f2f] text-white font-bold py-4 rounded-full mt-6 shadow-xl shadow-[#d32f2f]/20 active:scale-95 transition-transform disabled:opacity-50"
                       >
-                        {isProcessingPayment ? '正在支付...' : '立即支付'}
+                        {isGeneratingBalance ? '正在生成...' : (isProcessingPayment ? '正在跳转付款...' : '立即支付')}
                       </button>
                    </motion.div>
                 </div>
@@ -405,9 +434,13 @@ const TransferCodeGenerator = () => {
                         <button 
                             onClick={() => {
                                 setIsProcessingPayment(false);
-                                localStorage.removeItem('payment_initiated');
-                        localStorage.removeItem('payment_initiated_time');
-                                localStorage.removeItem('initial_balance');
+                                
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('payment_return');
+                    url.searchParams.delete('init_bal');
+                    window.history.replaceState({}, '', url.toString());
+
+                                
                             }} 
                             className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1"
                         >

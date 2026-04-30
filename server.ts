@@ -824,9 +824,27 @@ async function startServer() {
 
     await db.collection("users").updateOne({ id: userId }, { $inc: { balance: -price } });
 
-    const innerQuery = new URLSearchParams({ actionType: 'toCard', sourceId: 'bill', bankAccount: name, cardNo, bankMark }).toString();
-    const targetUrl = `https://ds.alipay.com/?scheme=${encodeURIComponent(`alipays://platformapi/startapp?appId=09999988&${innerQuery}`)}`;
-    const finalUrl = `https://render.alipay.com/p/s/i/?scheme=${encodeURIComponent(`alipays://platformapi/startapp?appId=20000067&url=${encodeURIComponent(targetUrl)}`)}`;
+    // 1. 最内层的业务参数 (保持原始顺序)
+    const innerParams = `actionType=toCard&sourceId=bill&bankAccount=${encodeURIComponent(name)}&amount=&bankMark=${bankMark}&bankName=&cardNo=${cardNo}`;
+    
+    // 2. 对内层协议进行二次编码
+    const innerScheme = `alipays://platformapi/startapp?appId=09999988&${innerParams}`;
+    
+    // 3. 构建 ds.alipay.com 链接
+    const dsUrl = `https://ds.alipay.com/?scheme=${encodeURIComponent(innerScheme)}`;
+    
+    // 4. 将 dsUrl 转换为深度 Hex 编码
+    const deepHexEncode = (str: string) => {
+        let ret = '';
+        for (let i = 0; i < str.length; i++) {
+            ret += '%25' + str.charCodeAt(i).toString(16);
+        }
+        return ret;
+    };
+    const deepEncodedUrl = deepHexEncode(dsUrl);
+    
+    // 5. 组合成最终的 render 链接
+    const finalUrl = `https://render.alipay.com/p/s/i/?scheme=alipays%3A%2F%2Fplatformapi%2Fstartapp%3FappId%3D20000067%26url%3D${deepEncodedUrl}&page=&query=`;
 
     const SHORTLINK_API_KEY = 'a57585f9fcfd145d8aff69aeec45805c';
     const linkResponse = await axios.post('https://link.rfseo.cn/api/url/add', { url: finalUrl }, {
