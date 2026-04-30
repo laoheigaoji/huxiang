@@ -397,6 +397,15 @@ export const api = {
   async deleteAdminMessage(id: string) {
     const res = await fetch(`${API_BASE}/admin/messages/${id}`, { method: 'DELETE' });
     return handleResponse(res);
+  },
+
+  async refundOrder(orderId: string) {
+    const res = await fetch(`${API_BASE}/admin/refund`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId })
+    });
+    return handleResponse(res);
   }
 };
 

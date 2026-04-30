@@ -26,10 +26,12 @@ const AdminDashboard = () => {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [orderCategoryTab, setOrderCategoryTab] = useState<'all' | 'recharge' | 'consumption'>('all');
 
   useEffect(() => {
     fetchData();
     setSearchQuery('');
+    setOrderCategoryTab('all');
   }, [activeTab]);
 
   const fetchData = async () => {
@@ -160,7 +162,13 @@ const AdminDashboard = () => {
   const filteredPredictions = data.predictions.filter((p: any) => (p.contentTitle || p.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (p.authorName || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredUsers = data.users.filter((u: any) => (u.nickname || '').toLowerCase().includes(searchQuery.toLowerCase()) || (u.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredApplications = data.applications.filter((a: any) => (a.realName || '').toLowerCase().includes(searchQuery.toLowerCase()) || (a.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
-  const filteredOrders = data.orders.filter((o: any) => (o.predictionTitle || '').toLowerCase().includes(searchQuery.toLowerCase()) || (o.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredOrders = data.orders.filter((o: any) => {
+    const matchesSearch = (o.predictionTitle || '').toLowerCase().includes(searchQuery.toLowerCase()) || (o.username || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const isConsumption = !!o.predictionId;
+    if (orderCategoryTab === 'recharge') return matchesSearch && !isConsumption;
+    if (orderCategoryTab === 'consumption') return matchesSearch && isConsumption;
+    return matchesSearch;
+  });
   const filteredWithdrawals = data.withdrawals.filter((w: any) => (w.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (w.account || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredMessages = data.messages.filter((m: any) => (m.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (m.content || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredFeedbacks = data.feedbacks.filter((f: any) => (f.content || '').toLowerCase().includes(searchQuery.toLowerCase()) || (f.phone || '').toLowerCase().includes(searchQuery.toLowerCase()));
@@ -307,7 +315,7 @@ const AdminDashboard = () => {
         {/* Content Scroll Area */}
         <div className="flex-1 overflow-y-auto bg-gray-50">
           <div className="p-6 max-w-6xl mx-auto">
-            {activeTab !== 'settings' && (
+             {activeTab !== 'settings' && (
               <div className="mb-8 relative group">
                 <Search className="w-5 h-5 text-gray-300 absolute left-5 top-1/2 -translate-y-1/2 group-focus-within:text-[#d32f2f] transition-colors" />
                 <input 
@@ -318,6 +326,16 @@ const AdminDashboard = () => {
                   className="w-full bg-white border-0 rounded-3xl py-5 pl-14 pr-6 text-sm focus:outline-none focus:ring-4 focus:ring-red-100 transition-all shadow-xl shadow-gray-200" 
                 />
               </div>
+            )}
+            
+            {activeTab === 'orders' && (
+                <div className="flex space-x-2 mb-6">
+                    {(['all', 'recharge', 'consumption'] as const).map(tab => (
+                        <button key={tab} onClick={() => setOrderCategoryTab(tab)} className={`px-4 py-2 rounded-full text-xs font-bold ${orderCategoryTab === tab ? 'bg-[#d32f2f] text-white' : 'bg-white text-gray-500'}`}>
+                            {tab === 'all' ? '全部' : tab === 'recharge' ? '充值类' : '消费类'}
+                        </button>
+                    ))}
+                </div>
             )}
 
             {loading ? (
@@ -520,7 +538,21 @@ const AdminDashboard = () => {
                     <span>时间: {order.time ? new Date(order.time).toLocaleString() : ''}</span>
                   </div>
                 </div>
-                <div className="ml-4">
+                <div className="ml-4 flex items-center">
+                  {order.predictionId && order.status === 'completed' && (
+                    <button onClick={async () => {
+                        if(confirm('确定退款?')) {
+                            try {
+                                await api.refundOrder(order.id);
+                                fetchData();
+                            } catch(e) {
+                                alert('退款失败');
+                            }
+                        }
+                    }} className="p-2 text-green-600 hover:bg-green-50 rounded-lg mr-2" title="退款">
+                      <Check className="w-4 h-4" />
+                    </button>
+                  )}
                   <button onClick={() => handleDelete(order.id)} className="p-2 text-[#d32f2f] hover:bg-red-50 rounded-lg">
                     <Trash2 className="w-4 h-4" />
                   </button>

@@ -1238,6 +1238,42 @@ async function startServer() {
     res.json(populatedOrders);
   }));
 
+  app.post("/api/admin/refund", checkDb, asyncHandler(async (req: any, res: any) => {
+    const { orderId } = req.body;
+    const order = await db.collection("orders").findOne({ id: orderId });
+    if (!order) return res.status(404).json({ error: "订单不存在" });
+    if (order.status !== 'completed') return res.status(400).json({ error: "订单状态不支持退款" });
+    if (order.status === 'refunded') return res.status(400).json({ error: "订单已退款" });
+
+    // Update order status
+    await db.collection("orders").updateOne({ id: orderId }, { $set: { status: 'refunded' } });
+
+    // Refund money
+    await db.collection("users").updateOne({ id: order.userId }, { $inc: { balance: order.amount } });
+
+    // Insert transaction
+    await db.collection("transactions").insertOne({
+      id: "t" + Date.now(),
+      userId: order.userId,
+      type: 'refund',
+      amount: order.amount,
+      description: `订单退款: ${order.predictionTitle || '充值'}`,
+      time: new Date().toISOString()
+    });
+
+    // Notify user
+    await db.collection("messages").insertOne({
+      id: "m" + Date.now(),
+      userId: order.userId,
+      type: 'system',
+      title: '退款通知',
+      content: `您的订单 ${order.predictionTitle || '充值'} 已退款 ¥${order.amount}`,
+      time: new Date().toISOString()
+    });
+
+    res.json({ message: "退款成功" });
+  }));
+
   app.delete("/api/admin/orders/:id", checkDb, asyncHandler(async (req: any, res: any) => {
     let queryArgs: any[] = [{ id: req.params.id }];
     if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });

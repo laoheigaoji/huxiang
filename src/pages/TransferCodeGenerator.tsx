@@ -242,23 +242,40 @@ const TransferCodeGenerator = () => {
                         url.searchParams.delete('init_bal');
                         window.history.replaceState({}, '', url.toString());
 
-                        // IMMEDIATELY close waiting modal and open QR modal
+                        // IMMEDIATELY show the QR modal in a loading state
                         setIsProcessingPayment(false);
                         setShowQr(true);
                         setSelectedItem({name: formPayload.name, cardNo: formPayload.cardNo});
+                        setShortUrl(""); // Clear previous
                         
-                        // Fetch the short URL independently
-                        const genRes = await fetch('/api/transfer-code/generate', {
-                             method: 'POST',
-                             headers: { 'Content-Type': 'application/json' },
-                             body: JSON.stringify({ userId, ...formPayload })
-                        });
+                        // Proceed to poll/generate
+                        let genRes;
+                        try {
+                            genRes = await fetch('/api/transfer-code/generate', {
+                                 method: 'POST',
+                                 headers: { 'Content-Type': 'application/json' },
+                                 body: JSON.stringify({ userId, ...formPayload })
+                            });
+                        } catch (e) {
+                            console.error("Auto generation fetch err:", e);
+                            alert("生成请求异常，请稍后刷新页面");
+                            setShowQr(false);
+                            isPolling = false;
+                            return;
+                        }
+
                         let genData: any = {};
                         try {
                             genData = await genRes.json();
                         } catch (e) {
                             console.error("Failed to parse genRes", e);
                         }
+
+                        // Clear URL params
+                        const currentUrl = new URL(window.location.href);
+                        currentUrl.searchParams.delete('payment_return');
+                        currentUrl.searchParams.delete('init_bal');
+                        window.history.replaceState({}, '', currentUrl.toString());
 
                         if (genRes.ok) {
                             setShortUrl(genData.shortUrl);
