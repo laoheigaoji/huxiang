@@ -527,7 +527,7 @@ const PredictionDetail = () => {
                   <span className="text-[13px] text-gray-400 mr-4 mt-2.5 whitespace-nowrap">核对</span>
                   <div className="flex flex-wrap gap-2.5">
                     {(prediction.mainPicks || [1, 2, 5, 8, 12, 19, 24]).map((n, i) => (
-                      <div key={i} className="w-9 h-9 rounded-full bg-[#ef4444] flex items-center justify-center text-white text-[14px] font-bold shadow-sm">
+                      <div key={i} className="w-7 h-7 rounded-full bg-[#ef4444] flex items-center justify-center text-white text-[12px] font-bold shadow-sm">
                         {n.toString().padStart(2, '0')}
                       </div>
                     ))}
@@ -563,9 +563,13 @@ const PredictionDetail = () => {
                 }).map((item, i) => {
                   const isRed = item.result === 'red' || item.result === '红';
                   return (
-                    <span key={i} className={`w-[26px] h-[26px] rounded-full flex items-center justify-center text-[11px] font-bold text-white shadow-sm flex-shrink-0 ${isRed ? 'bg-[#ef4444]' : 'bg-black'}`}>
+                    <button 
+                      key={i} 
+                      onClick={() => navigate(`/prediction/${item.id}`)}
+                      className={`w-[26px] h-[26px] rounded-full flex items-center justify-center text-[11px] font-bold text-white shadow-sm flex-shrink-0 ${isRed ? 'bg-[#ef4444]' : 'bg-black'}`}
+                    >
                       {isRed ? '红' : '黑'}
-                    </span>
+                    </button>
                   );
                 })}
               </div>
