@@ -221,10 +221,27 @@ const TransferCodeGenerator = () => {
            
            const currentUrlParams = new URLSearchParams(window.location.search);
            console.log("Current URL Params for polling:", currentUrlParams.toString());
-           const outTradeNo = currentUrlParams.get('out_trade_no');
-           if (currentUrlParams.get('payment_return') !== '1' || !outTradeNo) {
-               return; // Only poll if payment_return and out_trade_no are in the URL
+           let outTradeNo = currentUrlParams.get('out_trade_no');
+           if (currentUrlParams.get('payment_return') !== '1') {
+               return; // Only poll if payment_return is in the URL
            }
+
+           if (!outTradeNo) {
+               // Try to find it
+               try {
+                   const resp = await fetch(`/api/order/find-recent-pending?userId=${userId}`);
+                   if (resp.ok) {
+                       const order = await resp.json();
+                       outTradeNo = order.out_trade_no;
+                   } else {
+                      return;
+                   }
+               } catch (e) {
+                   return;
+               }
+           }
+           
+           if (!outTradeNo) return;
 
            isPolling = true;
            try {

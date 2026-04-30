@@ -1282,6 +1282,14 @@ async function startServer() {
     res.json({ status: order.status });
   }));
 
+  app.get("/api/order/find-recent-pending", checkDb, asyncHandler(async (req: any, res: any) => {
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ error: "User ID is required" });
+    const order = await db.collection("orders").findOne({ userId, status: "pending" }, { sort: { createdAt: -1 } });
+    if (!order) return res.status(404).json({ error: "No pending order found" });
+    res.json(order);
+  }));
+
   app.get("/api/admin/orders", checkDb, asyncHandler(async (req: any, res: any) => {
     const orders = await db.collection("orders").find().sort({ createdAt: -1 }).toArray();
     const populatedOrders = await Promise.all(orders.map(async (o: any) => {
