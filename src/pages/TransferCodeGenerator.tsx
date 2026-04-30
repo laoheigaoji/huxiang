@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, QrCode, X, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import * as api from '../services/api';
+import { api } from '../services/api';
 
 interface HistoryItem {
     id: string;
@@ -119,6 +119,7 @@ const TransferCodeGenerator = () => {
                 });
                 const data = await response.json();
                 if (response.ok) {
+                    setIsProcessingPayment(false);
                     setShortUrl(data.shortUrl);
                     setHistory([data, ...history]);
                     setShowPayment(false);
@@ -136,9 +137,9 @@ const TransferCodeGenerator = () => {
                     alert('支付请求发送失败');
                 }
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert('网络错误');
+            alert(error.message || '网络错误');
         } finally {
             setIsProcessingPayment(false);
         }
@@ -291,6 +292,16 @@ const TransferCodeGenerator = () => {
                         {isProcessingPayment ? '正在支付...' : '立即支付'}
                       </button>
                    </motion.div>
+                </div>
+            )}
+            {/* Fullscreen Loading Overlay for Payment */}
+            {isProcessingPayment && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                    <div className="bg-white p-6 rounded-3xl flex flex-col items-center justify-center shadow-2xl max-w-[280px] w-full mx-4">
+                        <div className="w-12 h-12 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <p className="text-gray-900 font-bold text-lg">正在确认支付...</p>
+                        <p className="text-gray-400 text-xs mt-2 text-center leading-relaxed">支付完成后请返回此页面，系统将自动同步解锁状态</p>
+                    </div>
                 </div>
             )}
         </motion.div>

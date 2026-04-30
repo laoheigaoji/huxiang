@@ -453,9 +453,11 @@ async function startServer() {
     params.sign = sign;
 
     try {
+      console.log('Sending payment request to YiPay:', { apiUrl, params });
       const response = await axios.post(`${apiUrl}/mapi.php`, new URLSearchParams(params).toString(), {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
+      console.log('YiPay response:', response.data);
 
       if (response.data.code === 1) {
         await db.collection("orders").insertOne({
