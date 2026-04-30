@@ -326,7 +326,8 @@ async function startServer() {
         yipayKey: "6fXAB353AFl8Pl9779xAO6598lO9b59P",
         yipayApiUrl: "http://yzf.dypm.top/",
         wechatAppId: "wxf0ea7bb3386e9d01",
-        wechatAppSecret: "2f7272be6bac718a0e09c393dce8c5aa"
+        wechatAppSecret: "2f7272be6bac718a0e09c393dce8c5aa",
+        wechatAuthUrl: "" // 新增微信授权入口配置 (支持无限回调地址)
       };
       await db.collection("settings").insertOne(settings);
     }
@@ -339,6 +340,7 @@ async function startServer() {
     if (!settings) return res.json({ wechatAppId: "wxf0ea7bb3386e9d01" });
     res.json({ 
       wechatAppId: settings.wechatAppId || "wxf0ea7bb3386e9d01",
+      wechatAuthUrl: settings.wechatAuthUrl || "", // 暴露授权URL
       siteName: settings.siteName || "智料汇享"
     });
   }));

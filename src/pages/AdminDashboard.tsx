@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, BookOpen, Clock, Settings, Plus, Edit, Trash2, 
   ChevronRight, ArrowLeft, Save, X, Search, ShoppingBag,
-  UserCheck, Check, Ban, LogOut, Volume2, Trophy
+  UserCheck, Check, Ban, LogOut, Volume2, Trophy, Menu
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -25,6 +25,7 @@ const AdminDashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -159,109 +160,173 @@ const AdminDashboard = () => {
   const filteredPredictions = data.predictions.filter((p: any) => (p.contentTitle || p.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (p.authorName || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredUsers = data.users.filter((u: any) => (u.nickname || '').toLowerCase().includes(searchQuery.toLowerCase()) || (u.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredApplications = data.applications.filter((a: any) => (a.realName || '').toLowerCase().includes(searchQuery.toLowerCase()) || (a.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredOrders = data.orders.filter((o: any) => (o.predictionTitle || '').toLowerCase().includes(searchQuery.toLowerCase()) || (o.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredWithdrawals = data.withdrawals.filter((w: any) => (w.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (w.account || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredMessages = data.messages.filter((m: any) => (m.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (m.content || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredFeedbacks = data.feedbacks.filter((f: any) => (f.content || '').toLowerCase().includes(searchQuery.toLowerCase()) || (f.phone || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredHistory = data.history.filter((h: any) => (h.period || '').toLowerCase().includes(searchQuery.toLowerCase()) || (h.type || '').toLowerCase().includes(searchQuery.toLowerCase()));
+
+  const tabs = [
+    { id: 'authors', label: '专家管理', icon: Users },
+    { id: 'predictions', label: '预测管理', icon: BookOpen },
+    { id: 'applications', label: '入驻审核', icon: UserCheck },
+    { id: 'withdrawals', label: '提现审核', icon: ShoppingBag },
+    { id: 'orders', label: '订单管理', icon: ShoppingBag },
+    { id: 'users', label: '用户管理', icon: Settings },
+    { id: 'history', label: '历史录入', icon: Clock },
+    { id: 'messages', label: '公告通知', icon: Volume2 },
+    { id: 'feedbacks', label: '意见反馈', icon: Volume2 },
+    { id: 'settings', label: '基础设置', icon: Settings },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Admin Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
-        <div className="flex items-center">
-          <button onClick={() => navigate('/')} className="mr-4 p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
-          </button>
-          <h1 className="text-xl font-bold text-gray-900 leading-none">管理后台</h1>
-        </div>
-        <div className="flex items-center space-x-2">
-          <button 
-             onClick={handleLogout}
-             className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg flex items-center text-sm font-bold shadow-sm active:scale-95 transition-transform"
-          >
-            <LogOut className="w-4 h-4 mr-1.5" />
-            退出
-          </button>
-          <button 
-             onClick={() => { setEditingItem(null); setIsModalOpen(true); }}
-             className="bg-[#b71c1c] text-white px-4 py-2 rounded-lg flex items-center text-sm font-bold shadow-sm active:scale-95 transition-transform"
-          >
-            <Plus className="w-4 h-4 mr-1.5" />
-            新增
-          </button>
-          {activeTab === 'predictions' && (
-            <button 
-              onClick={async () => {
-                const pass = window.prompt('请输入密码确认公开所有方案（可输入1确认）');
-                if (pass === '1' || pass === 'admin123') {
-                  try {
-                    await api.unlockAllPredictions();
-                    alert('已全部公开');
-                    fetchData();
-                  } catch (err) {
-                    alert('操作失败');
-                  }
-                }
-              }}
-              className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center text-sm font-bold shadow-sm active:scale-95 transition-transform"
-            >
-              <Check className="w-4 h-4 mr-1.5" />
-              一键公开
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white border-b border-gray-100 px-6 overflow-x-auto scrollbar-hide flex">
-        {[
-          { id: 'authors', label: '专家管理', icon: Users },
-          { id: 'predictions', label: '预测管理', icon: BookOpen },
-          { id: 'applications', label: '入驻审核', icon: UserCheck },
-          { id: 'withdrawals', label: '提现审核', icon: ShoppingBag },
-          { id: 'orders', label: '订单管理', icon: ShoppingBag },
-          { id: 'users', label: '用户管理', icon: Settings },
-          { id: 'history', label: '历史录入', icon: Clock },
-          { id: 'messages', label: '公告通知', icon: Volume2 },
-          { id: 'feedbacks', label: '意见反馈', icon: Volume2 },
-          { id: 'settings', label: '基础设置', icon: Settings },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center px-4 py-4 border-b-2 transition-all whitespace-nowrap ${
-              activeTab === tab.id 
-                ? 'border-[#b71c1c] text-[#b71c1c] font-bold' 
-                : 'border-transparent text-gray-500'
-            }`}
-          >
-            <tab.icon className={`w-4 h-4 mr-2 ${activeTab === tab.id ? 'text-[#b71c1c]' : 'text-gray-400'}`} />
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 p-6 overflow-y-auto">
-        {(activeTab === 'authors' || activeTab === 'users' || activeTab === 'applications' || activeTab === 'predictions') && (
-          <div className="mb-6 relative">
-            <Search className="w-5 h-5 text-gray-300 absolute left-4 top-1/2 -translate-y-1/2" />
-            <input 
-              type="text" 
-              placeholder={`在${
-                activeTab === 'authors' ? '专家' : 
-                activeTab === 'users' ? '用户' : 
-                activeTab === 'applications' ? '审核' :
-                activeTab === 'predictions' ? '文章' : ''
-              }中搜索...`}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#b71c1c]/20 transition-all shadow-sm" 
-            />
-          </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar Overlay */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          />
         )}
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="w-8 h-8 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin"></div>
+      </AnimatePresence>
+
+      {/* Sidebar */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-100 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:block
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <div className="h-full flex flex-col">
+          <div className="p-6 border-b border-gray-50 flex items-center justify-between">
+            <h2 className="text-xl font-black text-[#b71c1c] tracking-tighter">后台管理系统</h2>
+            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-gray-400 hover:bg-gray-50 rounded-xl transition-colors">
+              <X className="w-5 h-5" />
+            </button>
           </div>
-        ) : (
-          <div className="grid gap-4">
+
+          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full flex items-center px-4 py-3.5 rounded-2xl transition-all duration-200 group ${
+                  activeTab === tab.id 
+                    ? 'bg-[#b71c1c] text-white shadow-lg shadow-red-100' 
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <tab.icon className={`w-5 h-5 mr-3 transition-colors ${
+                  activeTab === tab.id ? 'text-white' : 'text-gray-400 group-hover:text-gray-900'
+                }`} />
+                <span className="font-bold text-sm">{tab.label}</span>
+                {activeTab === tab.id && (
+                  <ChevronRight className="w-4 h-4 ml-auto opacity-50" />
+                )}
+              </button>
+            ))}
+          </nav>
+
+          <div className="p-4 border-t border-gray-50 space-y-2">
+            <button
+               onClick={() => navigate('/')}
+               className="w-full flex items-center px-4 py-3.5 rounded-2xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all group"
+            >
+              <ArrowLeft className="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-900" />
+              <span className="font-bold text-sm">返回前台</span>
+            </button>
+            <button
+               onClick={handleLogout}
+               className="w-full flex items-center px-4 py-3.5 rounded-2xl text-red-500 hover:bg-red-50 transition-all font-bold group"
+            >
+              <LogOut className="w-5 h-5 mr-3 opacity-70" />
+              <span className="text-sm">退出登录</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Container */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        {/* Mobile Header */}
+        <header className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-30 lg:hidden shrink-0">
+          <div className="flex items-center">
+            <button onClick={() => setIsSidebarOpen(true)} className="mr-4 p-2 -ml-2 text-gray-500 hover:bg-gray-50 rounded-xl transition-colors">
+              <Menu className="w-6 h-6" />
+            </button>
+            <h1 className="text-lg font-black text-gray-900 leading-none">
+              {tabs.find(t => t.id === activeTab)?.label}
+            </h1>
+          </div>
+        </header>
+
+        {/* Action Header (Desktop & Mobile) */}
+        <div className="bg-white border-b border-gray-50 px-6 py-4 flex items-center justify-between shrink-0">
+          <div className="hidden lg:block">
+            <h1 className="text-xl font-black text-gray-900">
+              {tabs.find(t => t.id === activeTab)?.label}
+            </h1>
+            <p className="text-xs text-gray-400 font-bold mt-0.5">管理您的系统数据与配置</p>
+          </div>
+          <div className="flex items-center space-x-2 ml-auto">
+            <button 
+               onClick={() => { setEditingItem(null); setIsModalOpen(true); }}
+               className="bg-[#b71c1c] text-white px-5 py-2.5 rounded-2xl flex items-center text-sm font-bold shadow-xl shadow-red-100 active:scale-95 transition-all"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              新增记录
+            </button>
+            {activeTab === 'predictions' && (
+              <button 
+                onClick={async () => {
+                  const pass = window.prompt('请输入密码确认公开所有方案（可输入1确认）');
+                  if (pass === '1' || pass === 'admin123') {
+                    try {
+                      await api.unlockAllPredictions();
+                      alert('已全部公开');
+                      fetchData();
+                    } catch (err) {
+                      alert('操作失败');
+                    }
+                  }
+                }}
+                className="bg-green-500 text-white px-5 py-2.5 rounded-2xl flex items-center text-sm font-bold shadow-xl shadow-green-100 active:scale-95 transition-all"
+              >
+                <Check className="w-4 h-4 mr-2" />
+                一键公开
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Content Scroll Area */}
+        <div className="flex-1 overflow-y-auto bg-gray-50">
+          <div className="p-6 max-w-6xl mx-auto">
+            {activeTab !== 'settings' && (
+              <div className="mb-8 relative group">
+                <Search className="w-5 h-5 text-gray-300 absolute left-5 top-1/2 -translate-y-1/2 group-focus-within:text-[#b71c1c] transition-colors" />
+                <input 
+                  type="text" 
+                  placeholder={`在${tabs.find(t => t.id === activeTab)?.label || ''}中快速搜索...`}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-white border-0 rounded-3xl py-5 pl-14 pr-6 text-sm focus:outline-none focus:ring-4 focus:ring-red-100 transition-all shadow-xl shadow-gray-200" 
+                />
+              </div>
+            )}
+
+            {loading ? (
+              <div className="flex flex-col items-center justify-center h-96 space-y-4">
+                <div className="w-12 h-12 border-4 border-[#b71c1c] border-t-transparent rounded-full animate-spin shadow-lg"></div>
+                <p className="text-gray-400 font-bold text-sm animate-pulse">正在加载数据</p>
+              </div>
+            ) : (
+              <div className="grid gap-6">
             {activeTab === 'authors' && filteredAuthors.map((author: Author) => (
               <div key={author.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center">
                 <img src={author.avatar} className="w-12 h-12 rounded-full object-cover mr-4" alt="" />
@@ -443,7 +508,7 @@ const AdminDashboard = () => {
               </div>
             ))}
 
-            {activeTab === 'orders' && data.orders.map((order: any) => (
+            {activeTab === 'orders' && filteredOrders.map((order: any) => (
               <div key={order.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center">
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
@@ -463,7 +528,7 @@ const AdminDashboard = () => {
               </div>
             ))}
 
-            {activeTab === 'history' && data.history.map((item: HistoryItem) => (
+            {activeTab === 'history' && filteredHistory.map((item: HistoryItem) => (
               <div key={item.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center">
                 <div className="flex-1">
                    <h3 className="font-bold text-gray-900">{item.period} - {item.type}</h3>
@@ -475,7 +540,7 @@ const AdminDashboard = () => {
               </div>
             ))}
 
-            {activeTab === 'messages' && data.messages.map((msg: any) => (
+            {activeTab === 'messages' && filteredMessages.map((msg: any) => (
               <div key={msg.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
@@ -502,7 +567,7 @@ const AdminDashboard = () => {
               </div>
             ))}
 
-            {activeTab === 'withdrawals' && data.withdrawals.map((w: any) => (
+            {activeTab === 'withdrawals' && filteredWithdrawals.map((w: any) => (
               <div key={w.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-4">
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -535,7 +600,7 @@ const AdminDashboard = () => {
               </div>
             ))}
 
-            {activeTab === 'feedbacks' && data.feedbacks.map((fb: any) => (
+            {activeTab === 'feedbacks' && filteredFeedbacks.map((fb: any) => (
               <div key={fb.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-4">
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -638,6 +703,11 @@ const AdminDashboard = () => {
                         <label className="block text-[11px] text-gray-400 font-bold uppercase mb-1 ml-1">微信 AppSecret</label>
                         <input name="wechatAppSecret" className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" placeholder="输入新密钥将覆盖现有密钥" />
                       </div>
+                      <div>
+                        <label className="block text-[11px] text-gray-400 font-bold uppercase mb-1 ml-1">微信授权入口 (无限回调地址)</label>
+                        <input name="wechatAuthUrl" defaultValue={data.settings.wechatAuthUrl} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" placeholder="例如: http://wx.auth.com/redirect.php?url=..." />
+                        <p className="mt-1 text-[10px] text-gray-400 px-1">如果不填写，则默认使用官方标准授权链接。配置无限回调时，请确保参数名正确。</p>
+                      </div>
                     </div>
                   </div>
                   <div>
@@ -657,6 +727,8 @@ const AdminDashboard = () => {
           </div>
         )}
       </div>
+    </div>
+  </div>
 
       {/* Editor Modal */}
       <AnimatePresence>
