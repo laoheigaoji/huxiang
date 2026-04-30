@@ -128,22 +128,77 @@ const TransferCodeGenerator = () => {
                 }
             } else {
                 const returnUrl = window.location.href;
+                localStorage.setItem('payment_initiated', 'true');
                 const payRes = await api.createPayment(2, 'alipay', '转卡码生成', userId, undefined, returnUrl);
                 const paymentUrl = payRes.url || payRes.payurl || payRes.payment_url || payRes.qrcode;
                 if (paymentUrl) {
-                    setShowPayment(false);
                     window.location.href = paymentUrl;
                 } else {
+                    localStorage.removeItem('payment_initiated');
                     alert('支付请求发送失败');
+                    setIsProcessingPayment(false);
                 }
             }
         } catch (error: any) {
             console.error(error);
+            localStorage.removeItem('payment_initiated');
             alert(error.message || '网络错误');
-        } finally {
             setIsProcessingPayment(false);
         }
     };
+
+    // Polling to check if generation succeeded already
+    useEffect(() => {
+        if (!userId) return;
+
+        if (localStorage.getItem('payment_initiated') === 'true') {
+            setIsProcessingPayment(true);
+        }
+
+        const pollInterval = setInterval(async () => {
+           if (localStorage.getItem('payment_initiated') !== 'true' && !isProcessingPayment) return;
+           
+           // Attempt generation directly
+           try {
+               const genRes = await fetch('/api/transfer-code/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, ...formData })
+               });
+               const genData = await genRes.json();
+               if (genRes.ok) {
+                   setShortUrl(genData.shortUrl);
+                   setHistory([genData, ...history]);
+                   setSelectedItem({name: formData.name, cardNo: formData.cardNo});
+                   setShowQr(true);
+                   setIsProcessingPayment(false);
+                   localStorage.removeItem('payment_initiated');
+                   return; // Exit polling
+               } else {
+                   console.log("Auto generation not yet possible:", genData.error);
+               }
+           } catch (e) { console.error("Auto generation err:", e); }
+
+           // Fallback to checking history if already generated
+           const res = await fetch(`/api/transfer-code/history?userId=${userId}`);
+           const data = await res.json();
+           
+           if (data.length > 0) {
+               const latest = data[0]; 
+               const createdAt = new Date(latest.createdAt).getTime();
+               if (Date.now() - createdAt < 15000) { 
+                   setShortUrl(latest.shortUrl);
+                   setHistory(data);
+                   setSelectedItem({name: latest.name, cardNo: latest.cardNo});
+                   setShowQr(true);
+                   setIsProcessingPayment(false);
+                   localStorage.removeItem('payment_initiated');
+               }
+           }
+        }, 3000);
+        
+        return () => clearInterval(pollInterval);
+    }, [userId, isProcessingPayment]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
