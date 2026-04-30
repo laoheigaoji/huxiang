@@ -348,31 +348,25 @@ const Home = () => {
   const [pullOffset, setPullOffset] = useState(0);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (window.scrollY <= 5) {
+    if (window.scrollY === 0) {
       setStartY(e.touches[0].clientY);
-    } else {
-      setStartY(0);
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (startY <= 0) return;
+    if (startY === 0) return;
     const currentY = e.touches[0].clientY;
     const diff = currentY - startY;
-    if (diff > 0 && window.scrollY <= 5) {
-      // Apply resistance
-      const offset = Math.min(diff * 0.4, 80);
+    if (diff > 0 && window.scrollY === 0) {
+      const offset = Math.min(diff * 0.5, 80);
       setPullOffset(offset);
-      // Optional: stop scroll
-      if (diff > 20 && e.cancelable) {
-         e.preventDefault(); 
-      }
     }
   };
 
   const handleTouchEnd = () => {
     if (pullOffset > 50) {
-      fetchData(true);
+      setRefreshing(true);
+      fetchData(true).finally(() => setRefreshing(false));
     }
     setStartY(0);
     setPullOffset(0);
@@ -458,7 +452,7 @@ const Home = () => {
 
   return (
     <div 
-      className="bg-gray-100/50 min-h-screen relative overflow-x-hidden overscroll-y-none"
+      className="bg-gray-100/50 min-h-screen relative"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -490,7 +484,6 @@ const Home = () => {
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
         exit={{ opacity: 0 }}
-        style={{ y: pullOffset * 0.5 }}
       >
       {/* Sort Modal */}
       <SortModal 

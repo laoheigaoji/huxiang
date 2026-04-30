@@ -212,75 +212,85 @@ const TransferCodeGenerator = () => {
             setIsProcessingPayment(true);
         }
 
+        let isPolling = false;
         const pollInterval = setInterval(async () => {
-           const isPaymentReturnPolling = new URLSearchParams(window.location.search).get('payment_return') === '1';
-           if (!isPaymentReturnPolling && !isProcessingPayment) return;
-
-           // Fetch user to check balance increase
-           const userRes = await fetch(`/api/profile?userId=${userId}`);
-           const userData = await userRes.json();
+           if (isPolling) return;
            
-           const urlParamsForBal = new URLSearchParams(window.location.search);
-           const initialBalance = parseFloat(urlParamsForBal.get('init_bal') || '0');
+           const currentUrlParams = new URLSearchParams(window.location.search);
+           if (currentUrlParams.get('payment_return') !== '1' || !currentUrlParams.has('init_bal')) {
+               return; // Only poll if payment_return and init_bal are explicitly in the URL
+           }
 
-           if (userData.balance > initialBalance) {
-                console.log("Balance increased, attempting automatic generation");
-                try {
-                    const formStr = sessionStorage.getItem('tcForm');
-                    const formPayload = formStr ? JSON.parse(formStr) : formData;
-                    
-                    const genRes = await fetch('/api/transfer-code/generate', {
-                         method: 'POST',
-                         headers: { 'Content-Type': 'application/json' },
-                         body: JSON.stringify({ userId, ...formPayload })
-                    });
-                    const genData = await genRes.json();
-                    if (genRes.ok) {
-                        setShortUrl(genData.shortUrl);
+           isPolling = true;
+           try {
+               // Fetch user to check balance increase
+               const userRes = await fetch(`/api/profile?userId=${userId}`);
+               const userData = await userRes.json();
+               
+               const initialBalance = parseFloat(currentUrlParams.get('init_bal') || '0');
+
+               if (userData.balance > initialBalance) {
+                    console.log("Balance increased, attempting automatic generation");
+                    try {
+                        const formStr = sessionStorage.getItem('tcForm');
+                        const formPayload = formStr ? JSON.parse(formStr) : formData;
                         
-                        // fetch history to be safe
-                        fetch(`/api/transfer-code/history?userId=${userId}`)
-                           .then(res => res.json())
-                           .then(data => setHistory(data))
-                           .catch(() => {});
+                        const genRes = await fetch('/api/transfer-code/generate', {
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json' },
+                             body: JSON.stringify({ userId, ...formPayload })
+                        });
+                        const genData = await genRes.json();
+                        if (genRes.ok) {
+                            setShortUrl(genData.shortUrl);
+                            
+                            // fetch history to be safe
+                            fetch(`/api/transfer-code/history?userId=${userId}`)
+                               .then(res => res.json())
+                               .then(data => setHistory(data))
+                               .catch(() => {});
 
-                        setSelectedItem({name: formPayload.name, cardNo: formPayload.cardNo});
-                        setShowQr(true);
-                        setIsProcessingPayment(false);
-                        
-                        const url = new URL(window.location.href);
-                        url.searchParams.delete('payment_return');
-                        url.searchParams.delete('init_bal');
-                        window.history.replaceState({}, '', url.toString());
+                            setSelectedItem({name: formPayload.name, cardNo: formPayload.cardNo});
+                            setShowQr(true);
+                            setIsProcessingPayment(false);
+                            
+                            const url = new URL(window.location.href);
+                            url.searchParams.delete('payment_return');
+                            url.searchParams.delete('init_bal');
+                            window.history.replaceState({}, '', url.toString());
 
-                        sessionStorage.removeItem('tcForm');
-                        return; // Exit polling
-                    }
-                } catch (e) { console.error("Auto generation err:", e); }
-            }
+                            sessionStorage.removeItem('tcForm');
+                            isPolling = false;
+                            return; // Exit polling
+                        }
+                    } catch (e) { console.error("Auto generation err:", e); }
+                }
 
-            // Fallback to checking history if already generated, but only if balance actually increased
-            if (userData.balance > initialBalance) {
-                 const res = await fetch(`/api/transfer-code/history?userId=${userId}`);
-                 const data = await res.json();
-                 
-                 if (data.length > 0) {
-                     const latest = data[0]; 
-                     const createdAt = new Date(latest.createdAt).getTime();
-                     if (Date.now() - createdAt < 15000) { 
-                         setShortUrl(latest.shortUrl);
-                         setHistory(data);
-                         setSelectedItem({name: latest.name, cardNo: latest.cardNo});
-                         setShowQr(true);
-                         setIsProcessingPayment(false);
-                         
-                         const url = new URL(window.location.href);
-                         url.searchParams.delete('payment_return');
-                         url.searchParams.delete('init_bal');
-                         window.history.replaceState({}, '', url.toString());
+                // Fallback to checking history if already generated, but only if balance actually increased
+                if (userData.balance > initialBalance) {
+                     const res = await fetch(`/api/transfer-code/history?userId=${userId}`);
+                     const data = await res.json();
+                     
+                     if (data.length > 0) {
+                         const latest = data[0]; 
+                         const createdAt = new Date(latest.createdAt).getTime();
+                         if (Date.now() - createdAt < 15000) { 
+                             setShortUrl(latest.shortUrl);
+                             setHistory(data);
+                             setSelectedItem({name: latest.name, cardNo: latest.cardNo});
+                             setShowQr(true);
+                             setIsProcessingPayment(false);
+                             
+                             const url = new URL(window.location.href);
+                             url.searchParams.delete('payment_return');
+                             url.searchParams.delete('init_bal');
+                             window.history.replaceState({}, '', url.toString());
+                         }
                      }
-                 }
-            }
+                }
+           } finally {
+               isPolling = false;
+           }
         }, 3000);
         
         return () => clearInterval(pollInterval);
