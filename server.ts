@@ -1286,8 +1286,15 @@ async function startServer() {
   app.get("/api/order/find-recent-pending", checkDb, asyncHandler(async (req: any, res: any) => {
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
-    const order = await db.collection("orders").findOne({ userId, status: "pending" }, { sort: { createdAt: -1 } });
-    if (!order) return res.status(404).json({ error: "No pending order found" });
+    
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    // Find most recent order within 10 minutes, prioritize pending but accept completed
+    const order = await db.collection("orders").findOne(
+      { userId, createdAt: { $gte: tenMinutesAgo } }, 
+      { sort: { createdAt: -1 } }
+    );
+    
+    if (!order) return res.status(404).json({ error: "No recent order found" });
     res.json(order);
   }));
 

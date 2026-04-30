@@ -270,6 +270,10 @@ const PredictionDetail = () => {
         console.log('Payment response:', payRes);
         
         if (payRes.code === 1) {
+            const outTradeNo = payRes.out_trade_no;
+            if (outTradeNo) {
+                sessionStorage.setItem('last_out_trade_no', outTradeNo);
+            }
             if (isPC && payRes.url && payRes.params) {
                 // Form submit jump for PC
                 // Keep processing status while redirecting

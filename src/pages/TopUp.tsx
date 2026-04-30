@@ -89,6 +89,10 @@ const TopUp = () => {
       console.log('Payment response:', res);
       
       if (res.code === 1) {
+        const outTradeNo = res.out_trade_no;
+        if (outTradeNo) {
+            sessionStorage.setItem('last_out_trade_no', outTradeNo);
+        }
         if (isPC && res.url && res.params) {
             // Form submit jump for PC
             // Keep loading status while redirecting

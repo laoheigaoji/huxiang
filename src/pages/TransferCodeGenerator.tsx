@@ -179,6 +179,10 @@ const TransferCodeGenerator = () => {
                 const payRes = await api.createPayment(payAmount, 'alipay', '转卡码生成', userId, undefined, returnUrl, isPC);
                 
                 if (payRes.code === 1) {
+                    const outTradeNo = payRes.out_trade_no;
+                    if (outTradeNo) {
+                        sessionStorage.setItem('last_out_trade_no', outTradeNo);
+                    }
                     if (isPC && payRes.url && payRes.params) {
                         // Form submit jump for PC
                         const form = document.createElement('form');
@@ -256,7 +260,7 @@ const TransferCodeGenerator = () => {
            const currentUrlParams = new URLSearchParams(window.location.search);
            
            // Try to find it
-           let outTradeNo = currentUrlParams.get('out_trade_no');
+           let outTradeNo = currentUrlParams.get('out_trade_no') || sessionStorage.getItem('last_out_trade_no');
            
            if (!outTradeNo) {
                try {
