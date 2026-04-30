@@ -235,23 +235,30 @@ const TransferCodeGenerator = () => {
                         const formStr = sessionStorage.getItem('tcForm');
                         const formPayload = formStr ? JSON.parse(formStr) : formData;
                         
-                        const genRes = await fetch('/api/transfer-code/generate', {
-                             method: 'POST',
-                             headers: { 'Content-Type': 'application/json' },
-                             body: JSON.stringify({ userId, ...formPayload })
-                        });
-                        let genData = {};
-                        try {
-                            genData = await genRes.json();
-                        } catch (e) {
-                            console.error("Failed to parse genRes", e);
-                        }
                         
                         // Clear URL params BEFORE setting state to avoid effect re-triggering
                         const url = new URL(window.location.href);
                         url.searchParams.delete('payment_return');
                         url.searchParams.delete('init_bal');
                         window.history.replaceState({}, '', url.toString());
+
+                        // IMMEDIATELY close waiting modal and open QR modal
+                        setIsProcessingPayment(false);
+                        setShowQr(true);
+                        setSelectedItem({name: formPayload.name, cardNo: formPayload.cardNo});
+                        
+                        // Fetch the short URL independently
+                        const genRes = await fetch('/api/transfer-code/generate', {
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json' },
+                             body: JSON.stringify({ userId, ...formPayload })
+                        });
+                        let genData: any = {};
+                        try {
+                            genData = await genRes.json();
+                        } catch (e) {
+                            console.error("Failed to parse genRes", e);
+                        }
 
                         if (genRes.ok) {
                             setShortUrl(genData.shortUrl);
@@ -262,24 +269,20 @@ const TransferCodeGenerator = () => {
                                .then(data => setHistory(data))
                                .catch(() => {});
 
-                            setSelectedItem({name: formPayload.name, cardNo: formPayload.cardNo});
-                            
-                            // Trigger modals
-                            setIsProcessingPayment(false);
-                            setTimeout(() => setShowQr(true), 150);
-
                             sessionStorage.removeItem('tcForm');
                             isPolling = false;
                             return; // Exit polling
                         } else {
                             alert(genData.error || '生成失败，请检查余额是否足够或联系客服');
-                            setIsProcessingPayment(false);
+                            setShowQr(false); // Close QR modal on failure
                             isPolling = false;
                             return; // Exit polling
                         }
-                    } catch (e) {
+                    } catch (e: any) {
                         console.error("Auto generation err:", e);
                         alert("请求异常: " + (e.message || "未知错误"));
+                        setShowQr(false);
+                        
                         const url = new URL(window.location.href);
                         url.searchParams.delete('payment_return');
                         window.history.replaceState({}, '', url.toString());

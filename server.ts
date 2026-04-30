@@ -858,13 +858,11 @@ async function startServer() {
             shortUrl = linkResponse.data.shorturl;
         } else {
             console.error('Shortlink generation unexpected response:', linkResponse.data);
-            throw new Error(linkResponse.data?.msg || 'Failed to generate short url');
+            // Fallback to finalUrl if shortlink failed to return a URL
         }
     } catch (e: any) {
         console.error('Shortlink error:', e.message);
-        // Refund user
-        await db.collection("users").updateOne({ id: userId }, { $inc: { balance: price } });
-        return res.status(500).json({ error: "生成短链失败: " + e.message + "，金额已退回" });
+        // Fallback to finalUrl if shortlink service is down
     }
     const historyItem = {
         userId,
