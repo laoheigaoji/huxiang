@@ -153,6 +153,7 @@ const TransferCodeGenerator = () => {
             } else {
                 const returnUrl = window.location.href;
                 localStorage.setItem('payment_initiated', 'true');
+                localStorage.setItem('payment_initiated_time', Date.now().toString());
                 localStorage.setItem('initial_balance', user?.balance || '0');
                 setShowPayment(false); // Close modal immediately
                 setIsProcessingPayment(true); // Keep loading overlay
@@ -163,6 +164,7 @@ const TransferCodeGenerator = () => {
                     window.location.href = paymentUrl;
                 } else {
                     localStorage.removeItem('payment_initiated');
+                        localStorage.removeItem('payment_initiated_time');
                     alert('支付请求发送失败');
                     setIsProcessingPayment(false);
                 }
@@ -170,6 +172,7 @@ const TransferCodeGenerator = () => {
         } catch (error: any) {
             console.error(error);
             localStorage.removeItem('payment_initiated');
+                        localStorage.removeItem('payment_initiated_time');
             alert(error.message || '网络错误');
             setIsProcessingPayment(false);
         }
@@ -179,8 +182,15 @@ const TransferCodeGenerator = () => {
     useEffect(() => {
         if (!userId) return;
 
-        if (localStorage.getItem('payment_initiated') === 'true') {
+        const initiatedTimeStr = localStorage.getItem('payment_initiated_time');
+        const isTimeValid = initiatedTimeStr && (Date.now() - parseInt(initiatedTimeStr) < 5 * 60 * 1000);
+
+        if (localStorage.getItem('payment_initiated') === 'true' && isTimeValid) {
             setIsProcessingPayment(true);
+        } else if (localStorage.getItem('payment_initiated') === 'true') {
+            localStorage.removeItem('payment_initiated');
+                        localStorage.removeItem('payment_initiated_time');
+            localStorage.removeItem('initial_balance');
         }
 
         const pollInterval = setInterval(async () => {
@@ -207,6 +217,7 @@ const TransferCodeGenerator = () => {
                        setShowQr(true);
                        setIsProcessingPayment(false);
                        localStorage.removeItem('payment_initiated');
+                        localStorage.removeItem('payment_initiated_time');
                        localStorage.removeItem('initial_balance');
                        return; // Exit polling
                    }
@@ -228,6 +239,7 @@ const TransferCodeGenerator = () => {
                         setShowQr(true);
                         setIsProcessingPayment(false);
                         localStorage.removeItem('payment_initiated');
+                        localStorage.removeItem('payment_initiated_time');
                         localStorage.removeItem('initial_balance');
                     }
                 }
@@ -389,8 +401,19 @@ const TransferCodeGenerator = () => {
             {/* Fullscreen Loading Overlay for Payment */}
             {isProcessingPayment && (
                 <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                    <div className="bg-white p-6 rounded-3xl flex flex-col items-center justify-center shadow-2xl max-w-[280px] w-full mx-4">
-                        <div className="w-12 h-12 border-4 border-[#d32f2f] border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <div className="bg-white p-6 rounded-3xl flex flex-col items-center justify-center shadow-2xl max-w-[280px] w-full mx-4 relative">
+                        <button 
+                            onClick={() => {
+                                setIsProcessingPayment(false);
+                                localStorage.removeItem('payment_initiated');
+                        localStorage.removeItem('payment_initiated_time');
+                                localStorage.removeItem('initial_balance');
+                            }} 
+                            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1"
+                        >
+                            <X size={20} />
+                        </button>
+                        <div className="w-12 h-12 border-4 border-[#d32f2f] border-t-transparent rounded-full animate-spin mb-4 mt-2"></div>
                         <p className="text-gray-900 font-bold text-lg">正在确认支付...</p>
                         <p className="text-gray-400 text-xs mt-2 text-center leading-relaxed">支付完成后请返回此页面，系统将自动同步解锁状态</p>
                     </div>
