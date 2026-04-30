@@ -348,22 +348,24 @@ const Home = () => {
   const [pullOffset, setPullOffset] = useState(0);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (window.scrollY === 0) {
+    if (window.scrollY <= 5) {
       setStartY(e.touches[0].clientY);
+    } else {
+      setStartY(0);
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (startY === 0) return;
+    if (startY <= 0) return;
     const currentY = e.touches[0].clientY;
     const diff = currentY - startY;
-    if (diff > 0 && window.scrollY === 0) {
+    if (diff > 0 && window.scrollY <= 5) {
       // Apply resistance
       const offset = Math.min(diff * 0.4, 80);
       setPullOffset(offset);
       // Optional: stop scroll
-      if (diff > 10) {
-        // e.preventDefault(); // Might cause issues in some browsers
+      if (diff > 20 && e.cancelable) {
+         e.preventDefault(); 
       }
     }
   };
@@ -456,7 +458,7 @@ const Home = () => {
 
   return (
     <div 
-      className="bg-gray-100/50 min-h-screen relative overflow-x-hidden"
+      className="bg-gray-100/50 min-h-screen relative overflow-x-hidden overscroll-y-none"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
