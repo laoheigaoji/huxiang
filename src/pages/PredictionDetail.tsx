@@ -525,10 +525,15 @@ const PredictionDetail = () => {
 
                 <div className="flex items-start">
                   <span className="text-[13px] text-gray-400 mr-4 mt-2.5 whitespace-nowrap">核对</span>
-                  <div className="flex flex-wrap gap-2.5">
+                  <div className="flex flex-wrap gap-x-2.5 gap-y-4">
                     {(prediction.mainPicks || [1, 2, 5, 8, 12, 19, 24]).map((n, i) => (
-                      <div key={i} className="w-7 h-7 rounded-full bg-[#ef4444] flex items-center justify-center text-white text-[12px] font-bold shadow-sm">
-                        {n.toString().padStart(2, '0')}
+                      <div key={i} className="flex flex-col items-center">
+                        <div className="w-7 h-7 rounded-full bg-[#ef4444] flex items-center justify-center text-white text-[12px] font-bold shadow-sm">
+                          {n.toString().padStart(2, '0')}
+                        </div>
+                        {prediction.mainZodiacs && prediction.mainZodiacs[i] && (
+                          <span className="text-[10px] text-gray-500 mt-0.5 font-bold">{prediction.mainZodiacs[i]}</span>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -578,7 +583,11 @@ const PredictionDetail = () => {
 
           <div className="space-y-4 pb-12">
             {history.map(item => (
-              <div key={item.id} className="bg-white rounded-xl p-4 card-shadow relative">
+              <div 
+                key={item.id} 
+                className="bg-white rounded-xl p-4 card-shadow relative cursor-pointer active:scale-[0.98] transition-transform"
+                onClick={() => navigate(`/prediction/${item.id}`)}
+              >
                 <div className="absolute top-8 right-4 w-20 h-16 z-10 pointer-events-none opacity-90 select-none">
                    <img 
                      src={item.result === 'red' || item.result === '红' ? 'https://wxqun988.vxjuejin.com/IMG_1034.PNG' : 'https://wxqun988.vxjuejin.com/IMG_1035.PNG'} 
@@ -601,10 +610,15 @@ const PredictionDetail = () => {
                 
                 <div className="mt-4 flex items-start">
                   <span className="text-[13px] text-gray-400 mr-4 mt-2.5 whitespace-nowrap">核对</span>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-x-2 gap-y-3">
                     {(item.mainPicks || [14, 5, 48, 23, 31, 44, 36]).map((p: any, i: number) => (
-                      <div key={i} className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[13px] font-bold bg-[#ef4444] shadow-sm">
-                        {p.toString().padStart(2, '0')}
+                      <div key={i} className="flex flex-col items-center">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[13px] font-bold bg-[#ef4444] shadow-sm">
+                          {p.toString().padStart(2, '0')}
+                        </div>
+                        {item.mainZodiacs && item.mainZodiacs[i] && (
+                          <span className="text-[10px] text-gray-500 mt-0.5 font-bold">{item.mainZodiacs[i]}</span>
+                        )}
                       </div>
                     ))}
                   </div>

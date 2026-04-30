@@ -503,14 +503,10 @@ async function startServer() {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
       console.log('YiPay response:', response.data);
-          createdAt: new Date().toISOString()
-        });
-      }
-
       res.json({ ...response.data, out_trade_no: outTradeNo });
     } catch (error: any) {
-      console.error("Yipay request error:", error.message);
-      res.status(500).json({ error: "支付请求失败", details: error.message });
+      console.error('YiPay request error:', error.message);
+      res.status(500).json({ error: "YiPay request failed", details: error.message });
     }
   }));
 

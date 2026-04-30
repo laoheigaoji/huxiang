@@ -20,6 +20,7 @@ const PublishPrediction = () => {
     isFree: true,
     content: '',
     mainPicks: [36, 24, 12] as number[],
+    mainZodiacs: ['猴', '龙', '鼠'] as string[],
     unlockDuration: '',
     isUnlocked: false,
     result: undefined as '红' | '黑' | undefined,
@@ -57,6 +58,7 @@ const PublishPrediction = () => {
               isFree: pred.isFree,
               content: pred.content || '',
               mainPicks: pred.mainPicks || [36, 24, 12],
+              mainZodiacs: pred.mainZodiacs || (pred.mainPicks ? pred.mainPicks.map(() => '') : ['猴', '龙', '鼠']),
               unlockDuration: pred.unlockDuration || '',
               isUnlocked: pred.isUnlocked || false,
               result: pred.result,
@@ -311,6 +313,16 @@ const PublishPrediction = () => {
               value={formData.mainPicks.join(',')}
               onChange={e => setFormData({...formData, mainPicks: e.target.value.split(',').map(n => parseInt(n.trim()) || 0)})}
               placeholder="36,24,12"
+              className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-[#d32f2f] outline-none" 
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase">对应生肖 (逗号分隔，需与号码个数一致)</label>
+            <input 
+              value={formData.mainZodiacs.join(',')}
+              onChange={e => setFormData({...formData, mainZodiacs: e.target.value.split(',').map(s => s.trim())})}
+              placeholder="猴,龙,鼠"
               className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-[#d32f2f] outline-none" 
             />
           </div>
