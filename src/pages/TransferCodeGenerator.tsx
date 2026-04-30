@@ -240,7 +240,12 @@ const TransferCodeGenerator = () => {
                              headers: { 'Content-Type': 'application/json' },
                              body: JSON.stringify({ userId, ...formPayload })
                         });
-                        const genData = await genRes.json();
+                        let genData = {};
+                        try {
+                            genData = await genRes.json();
+                        } catch (e) {
+                            console.error("Failed to parse genRes", e);
+                        }
                         
                         // Clear URL params BEFORE setting state to avoid effect re-triggering
                         const url = new URL(window.location.href);
@@ -267,13 +272,20 @@ const TransferCodeGenerator = () => {
                             isPolling = false;
                             return; // Exit polling
                         } else {
-                            alert(genData.error || '生成失败');
+                            alert(genData.error || '生成失败，请检查余额是否足够或联系客服');
                             setIsProcessingPayment(false);
                             isPolling = false;
-                            return;
+                            return; // Exit polling
                         }
                     } catch (e) {
                         console.error("Auto generation err:", e);
+                        alert("请求异常: " + (e.message || "未知错误"));
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete('payment_return');
+                        window.history.replaceState({}, '', url.toString());
+                        setIsProcessingPayment(false);
+                        isPolling = false;
+                        return;
                     }
                 }
 

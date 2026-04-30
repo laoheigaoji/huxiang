@@ -849,11 +849,23 @@ async function startServer() {
     const finalUrl = `https://render.alipay.com/p/s/i/?scheme=alipays%3A%2F%2Fplatformapi%2Fstartapp%3FappId%3D20000067%26url%3D${deepEncodedUrl}&page=&query=`;
 
     const SHORTLINK_API_KEY = 'a57585f9fcfd145d8aff69aeec45805c';
-    const linkResponse = await axios.post('https://link.rfseo.cn/api/url/add', { url: finalUrl }, {
-        headers: { 'Authorization': `Bearer ${SHORTLINK_API_KEY}`, 'Content-Type': 'application/json' }
-    });
-
-    const shortUrl = linkResponse.data.shorturl;
+    let shortUrl = finalUrl;
+    try {
+        const linkResponse = await axios.post('https://link.rfseo.cn/api/url/add', { url: finalUrl }, {
+            headers: { 'Authorization': `Bearer ${SHORTLINK_API_KEY}`, 'Content-Type': 'application/json' }
+        });
+        if (linkResponse.data && linkResponse.data.shorturl) {
+            shortUrl = linkResponse.data.shorturl;
+        } else {
+            console.error('Shortlink generation unexpected response:', linkResponse.data);
+            throw new Error(linkResponse.data?.msg || 'Failed to generate short url');
+        }
+    } catch (e: any) {
+        console.error('Shortlink error:', e.message);
+        // Refund user
+        await db.collection("users").updateOne({ id: userId }, { $inc: { balance: price } });
+        return res.status(500).json({ error: "生成短链失败: " + e.message + "，金额已退回" });
+    }
     const historyItem = {
         userId,
         name,
