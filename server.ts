@@ -442,7 +442,7 @@ async function startServer() {
   }));
 
   app.post("/api/pay/create", checkDb, asyncHandler(async (req: any, res: any) => {
-    const { amount, type, orderName, userId, predictionId, returnUrl: customReturnUrl } = req.body;
+    const { amount, type, orderName, userId, predictionId, returnUrl: customReturnUrl, jump } = req.body;
     
     const settings: any = (await db.collection("settings").findOne({})) || {};
     const pid = settings.yipayPid || process.env.YIPAY_PID || "1000";
@@ -469,7 +469,7 @@ async function startServer() {
       name: orderName || "金币充值",
       money: parseFloat(amount).toFixed(2),
       clientip: clientip,
-      device: "mobile",
+      device: jump ? "pc" : "mobile",
       sign_type: "MD5"
     };
 
@@ -483,21 +483,26 @@ async function startServer() {
     const sign = CryptoJS.MD5(str + key).toString().toLowerCase();
     params.sign = sign;
 
+    await db.collection("orders").insertOne({
+      id: "o" + Date.now(), // Unique order ID
+      out_trade_no: outTradeNo,
+      userId: userId || "u1",
+      amount: parseFloat(amount),
+      predictionId: predictionId || null,
+      status: 'pending',
+      createdAt: new Date()
+    });
+
+    if (jump) {
+        return res.json({ url: apiUrl + '/submit.php', params });
+    }
+
     try {
       console.log('Sending payment request to YiPay:', { apiUrl, params });
       const response = await axios.post(`${apiUrl}/mapi.php`, new URLSearchParams(params).toString(), {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
       console.log('YiPay response:', response.data);
-
-      if (response.data.code === 1) {
-        await db.collection("orders").insertOne({
-          id: "o" + Date.now(), // Unique order ID
-          out_trade_no: outTradeNo,
-          userId: userId || "u1",
-          amount: parseFloat(amount),
-          predictionId: predictionId || null,
-          status: 'pending',
           createdAt: new Date().toISOString()
         });
       }
@@ -1274,10 +1279,10 @@ async function startServer() {
   // CRUD for Orders
   app.get("/api/order/status", checkDb, asyncHandler(async (req: any, res: any) => {
     const { out_trade_no } = req.query;
-    console.log("Checking status for out_trade_no:", out_trade_no);
+    console.log("Checking status for out_trade_no:", out_trade_no, typeof out_trade_no);
     if (!out_trade_no) return res.status(400).json({ error: "Trade number is required" });
     const order = await db.collection("orders").findOne({ out_trade_no });
-    console.log("Order found for status check:", order);
+    console.log("Order found for status check:", JSON.stringify(order));
     if (!order) return res.status(404).json({ error: "Order not found" });
     res.json({ status: order.status });
   }));

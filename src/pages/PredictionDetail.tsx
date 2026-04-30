@@ -257,12 +257,37 @@ const PredictionDetail = () => {
         const currentUrl = new URL(window.location.href);
         currentUrl.searchParams.set('payment_return', '1');
         const returnUrl = currentUrl.toString();
-        const payRes = await api.createPayment(prediction!.price, 'alipay', prediction!.title, user.id, id, returnUrl);
-        const paymentUrl = payRes.url || payRes.payurl || payRes.payment_url || payRes.qrcode;
-        if (paymentUrl) {
-            setShowPayment(false);
-            window.location.href = paymentUrl;
-            // Keep isProcessingPayment true, it will be cleared by pollStatus or manual close
+        
+        const isPC = !/Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const payRes = await api.createPayment(prediction!.price, 'alipay', prediction!.title, user.id, id, returnUrl, isPC);
+        
+        if (payRes.code === 1) {
+            if (isPC && payRes.url && payRes.params) {
+                // Form submit jump for PC
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = payRes.url;
+                form.target = '_blank';
+                Object.keys(payRes.params).forEach(key => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = payRes.params[key];
+                    form.appendChild(input);
+                });
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+            } else if (payRes.payurl || payRes.qrcode || payRes.url || payRes.payment_url) {
+                const paymentUrl = payRes.payurl || payRes.qrcode || payRes.url || payRes.payment_url;
+                setShowPayment(false);
+                window.location.href = paymentUrl;
+                // Keep isProcessingPayment true, it will be cleared by pollStatus or manual close
+            } else {
+                console.error('Payment failed', payRes);
+                alert('支付请求发送失败，请稍后再试');
+                setIsProcessingPayment(false);
+            }
         } else {
             console.error('Payment failed', payRes);
             alert('支付请求发送失败，请稍后再试');

@@ -96,11 +96,11 @@ export const api = {
     return handleResponse(res);
   },
 
-  async createPayment(amount: number, type: string, orderName: string, userId?: string, predictionId?: string, returnUrl?: string) {
+  async createPayment(amount: number, type: string, orderName: string, userId?: string, predictionId?: string, returnUrl?: string, jump: boolean = false) {
     const res = await fetch(`${API_BASE}/pay/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount, type, orderName, userId, predictionId, returnUrl })
+      body: JSON.stringify({ amount, type, orderName, userId, predictionId, returnUrl, jump })
     });
     return handleResponse(res);
   },

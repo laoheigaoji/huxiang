@@ -74,16 +74,40 @@ const TopUp = () => {
     
     setLoading(true);
     try {
-      const res = await api.createPayment(parseFloat(amount), selectedMethod, '金币充值', user?.id);
-      if (res.code === 1 && (res.payurl || res.qrcode || res.urlscheme)) {
-        const url = res.payurl || res.qrcode || res.urlscheme;
-        if (url.startsWith('http')) {
-          window.location.href = url;
-          // Keep loading true, it will be cleared by pollBalance or manual close
+      const isPC = !/Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      const res = await api.createPayment(parseFloat(amount), selectedMethod, '金币充值', user?.id, undefined, undefined, isPC);
+      
+      if (res.code === 1) {
+        if (isPC && res.url && res.params) {
+            // Form submit jump for PC
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = res.url;
+            form.target = '_blank';
+            Object.keys(res.params).forEach(key => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = res.params[key];
+                form.appendChild(input);
+            });
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        } else if (res.payurl || res.qrcode || res.urlscheme) {
+            const url = res.payurl || res.qrcode || res.urlscheme;
+            if (url.startsWith('http')) {
+              window.location.href = url;
+              // Keep loading true, it will be cleared by pollBalance or manual close
+            } else {
+              // For qrcode or urlscheme that aren't direct http links
+              alert(`请使用支付应用扫码或打开: ${url}`);
+              setLoading(false);
+            }
         } else {
-          // For qrcode or urlscheme that aren't direct http links
-          alert(`请使用支付应用扫码或打开: ${url}`);
-          setLoading(false);
+            alert('创建支付成功，但未能获取支付页面');
+            setLoading(false);
         }
       } else {
         alert(res.msg || '创建支付失败 (错误代码: ' + res.code + ')');

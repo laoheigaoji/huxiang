@@ -170,22 +170,48 @@ const TransferCodeGenerator = () => {
                 currentUrl.searchParams.set('payment_return', '1');
                 currentUrl.searchParams.set('init_bal', user?.balance || '0');
                 const returnUrl = currentUrl.toString();
-                setShowPayment(false); // Close modal immediately
-                setIsProcessingPayment(true); // Keep loading overlay
+                
+                const isPC = !/Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 
                 const payAmount = parseFloat(settings.transferCodePrice || '2');
-                const payRes = await api.createPayment(payAmount, 'alipay', '转卡码生成', userId, undefined, returnUrl);
-                const paymentUrl = payRes.url || payRes.payurl || payRes.payment_url || payRes.qrcode;
-                if (paymentUrl) {
-                    sessionStorage.setItem('tcForm', JSON.stringify(formData));
-                    window.location.href = paymentUrl;
+                const payRes = await api.createPayment(payAmount, 'alipay', '转卡码生成', userId, undefined, returnUrl, isPC);
+                
+                if (payRes.code === 1) {
+                    if (isPC && payRes.url && payRes.params) {
+                        // Form submit jump for PC
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = payRes.url;
+                        form.target = '_blank';
+                        Object.keys(payRes.params).forEach(key => {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = key;
+                            input.value = payRes.params[key];
+                            form.appendChild(input);
+                        });
+                        document.body.appendChild(form);
+                        form.submit();
+                        document.body.removeChild(form);
+                    } else if (payRes.payurl || payRes.qrcode || payRes.url || payRes.payment_url) {
+                        const paymentUrl = payRes.payurl || payRes.qrcode || payRes.url || payRes.payment_url;
+                        // Keep loading overlay, it will be cleared by poll or manual close
+                        window.location.href = paymentUrl;
+                    } else {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete('payment_return');
+                        url.searchParams.delete('init_bal');
+                        window.history.replaceState({}, '', url.toString());
+                        alert('创建支付成功，但未能获取支付页面');
+                        setIsProcessingPayment(false);
+                    }
                 } else {
                     const url = new URL(window.location.href);
                     url.searchParams.delete('payment_return');
                     url.searchParams.delete('init_bal');
                     window.history.replaceState({}, '', url.toString());
 
-                    alert('支付请求发送失败');
+                    alert(payRes.msg || '支付请求发送失败');
                     setIsProcessingPayment(false);
                 }
             }
@@ -220,34 +246,35 @@ const TransferCodeGenerator = () => {
            if (isPolling) return;
            
            const currentUrlParams = new URLSearchParams(window.location.search);
-           console.log("Current URL Params for polling:", currentUrlParams.toString());
+           
+           // Try to find it
            let outTradeNo = currentUrlParams.get('out_trade_no');
-           if (currentUrlParams.get('payment_return') !== '1') {
-               return; // Only poll if payment_return is in the URL
-           }
-
+           
            if (!outTradeNo) {
-               // Try to find it
                try {
                    const resp = await fetch(`/api/order/find-recent-pending?userId=${userId}`);
                    if (resp.ok) {
                        const order = await resp.json();
                        outTradeNo = order.out_trade_no;
-                   } else {
-                      return;
                    }
                } catch (e) {
-                   return;
+                   console.error("Polling: Failed to find pending order", e);
                }
            }
            
-           if (!outTradeNo) return;
+           if (!outTradeNo) return; // Nothing to poll
 
            isPolling = true;
            try {
             // Check order status
-            const res = await fetch(`/api/order/status?out_trade_no=${outTradeNo}`);
+            console.log("Polling: Fetching /api/order/status for:", outTradeNo);
+            const res = await fetch(`/api/order/status?out_trade_no=${String(outTradeNo)}`);
+            if (!res.ok) {
+                console.error("Polling: Status check failed with status:", res.status);
+                return;
+            }
             const data = await res.json();
+            console.log("Polling status check result for:", outTradeNo, data);
             
             if (data.status === 'completed') {
                  console.log("Order completed, attempting automatic generation");
