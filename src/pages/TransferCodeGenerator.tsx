@@ -52,7 +52,15 @@ const StyledQrModal: React.FC<StyledQrModalProps> = ({ isOpen, onClose, shortUrl
                     const textY = dstY + newQrHeight + 80;
                     ctx.fillText(`${name}    ${cardNo.slice(-4)}`, bg.width / 2, textY);
                 };
+                qr.onerror = () => {
+                    console.error("Failed to load QR code image");
+                    ctx.fillStyle = 'red';
+                    ctx.fillText('二维码加载失败', canvas.width / 2, canvas.height / 2);
+                };
                 qr.src = `/api/proxy/image?url=${encodeURIComponent(`https://api.2dcode.biz/v1/create-qr-code?data=${encodeURIComponent(shortUrl)}`)}`;
+            };
+            bg.onerror = () => {
+                console.error("Failed to load background image");
             };
             bg.src = '/api/proxy/image?url=https://wxqun988.vxjuejin.com/bg11.jpg';
         }
@@ -129,6 +137,9 @@ const TransferCodeGenerator = () => {
             } else {
                 const returnUrl = window.location.href;
                 localStorage.setItem('payment_initiated', 'true');
+                setShowPayment(false); // Close modal immediately
+                setIsProcessingPayment(true); // Keep loading overlay
+                
                 const payRes = await api.createPayment(2, 'alipay', '转卡码生成', userId, undefined, returnUrl);
                 const paymentUrl = payRes.url || payRes.payurl || payRes.payment_url || payRes.qrcode;
                 if (paymentUrl) {
