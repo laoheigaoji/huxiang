@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { User, Lock, ChevronLeft, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, ChevronLeft, Eye, EyeOff, MessageCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { api } from '../services/api';
 
@@ -13,31 +13,44 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isWechat, setIsWechat] = useState(false);
+  const [wechatBaseUrl, setWechatBaseUrl] = useState('');
+
+  const APP_ID = 'wxf0ea7bb3386e9d01';
 
   useEffect(() => {
+    // Detect WeChat environment
     const ua = window.navigator.userAgent.toLowerCase();
-    const wechat = ua.indexOf('micromessenger') !== -1;
-    setIsWechat(wechat);
+    const isWx = ua.indexOf('micromessenger') !== -1;
+    setIsWechat(isWx);
 
-    const code = searchParams.get('code');
-    const referrer = searchParams.get('ref') || localStorage.getItem('wechat_referrer');
+    api.getConfig().then(data => data?.wechatProxyUrl && setWechatBaseUrl(data.wechatProxyUrl)).catch(console.error);
 
-    if (code) {
-      handleWechatLogin(code, referrer);
-    }
-
+    let referrer = searchParams.get('ref');
     if (referrer) {
       localStorage.setItem('wechat_referrer', referrer);
+    } else {
+      referrer = localStorage.getItem('wechat_referrer');
+    }
+
+    // Handle wechat code in URL
+    const code = searchParams.get('code');
+    const nickname = searchParams.get('nickname');
+    const avatar = searchParams.get('avatar') || searchParams.get('headimgurl');
+
+    if (code) {
+      handleWechatLogin(code, nickname || undefined, avatar || undefined, referrer || undefined);
     }
   }, [searchParams]);
 
-  const handleWechatLogin = async (code: string, referrer?: string | null) => {
+  const handleWechatLogin = async (code: string, nickname?: string, avatar?: string, referrer?: string) => {
     setLoading(true);
     setError('');
     try {
-      const data = await api.wechatLogin(code, undefined, undefined, referrer || undefined);
+      // In a real app, send the code to your backend to exchange for a token/user
+      const data = await api.wechatLogin(code, nickname, avatar, referrer);
       localStorage.setItem('user', JSON.stringify(data));
-      navigate('/profile');
+      localStorage.removeItem('wechat_referrer');
+      navigate('/');
     } catch (err: any) {
       setError(err.message || '微信登录失败');
     } finally {
@@ -45,32 +58,13 @@ const Login = () => {
     }
   };
 
-  const startWechatLogin = async () => {
-    try {
-      const config = await api.getConfig();
-      const referrer = searchParams.get('ref');
-      const redirectUri = encodeURIComponent(window.location.origin + '/login' + (referrer ? `?ref=${referrer}` : ''));
-      
-      let url = '';
-      if (config.wechatAuthUrl) {
-          // If wechatAuthUrl is configured, use it for "infinite callback"
-          url = config.wechatAuthUrl.replace('[REDIRECT_URI]', redirectUri);
-          if (!url.includes(redirectUri) && !config.wechatAuthUrl.includes('[REDIRECT_URI]')) {
-              url = config.wechatAuthUrl + (config.wechatAuthUrl.includes('?') ? '&' : '?') + `redirect_uri=${redirectUri}`;
-          }
-      } else {
-          const appId = config.wechatAppId || 'wxf0ea7bb3386e9d01';
-          url = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${appId}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect`;
-      }
-      
-      window.location.href = url;
-    } catch (err) {
-      console.error('Failed to start WeChat login:', err);
-      // Fallback
-      const redirectUri = encodeURIComponent(window.location.origin + '/login' + (searchParams.get('ref') ? `?ref=${searchParams.get('ref')}` : ''));
-      const url = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=wxf0ea7bb3386e9d01&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect`;
-      window.location.href = url;
-    }
+  const redirectToWechat = () => {
+    const currentRef = searchParams.get('ref') || localStorage.getItem('wechat_referrer');
+    const targetUrl = currentRef ? `${window.location.origin}/login?ref=${currentRef}` : `${window.location.origin}/login`;
+    // Use configured proxy URL or fallback to the requested structure if config is missing
+    const baseUrl = wechatBaseUrl || 'https://gzh1.vxjuejin.com/api';
+    const wechatAuthUrl = `${baseUrl}?appid=${APP_ID}&redirect_uri=${encodeURIComponent(targetUrl)}&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect`;
+    window.location.href = wechatAuthUrl;
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -89,7 +83,7 @@ const Login = () => {
     }
   };
 
-  const referrer = searchParams.get('ref') || localStorage.getItem('wechat_referrer');
+  const referrer = searchParams.get('ref');
 
   return (
     <motion.div 
@@ -108,7 +102,31 @@ const Login = () => {
         <p className="text-gray-500">请登录您的账户以继续</p>
       </div>
 
-      {!isWechat ? (
+      {isWechat ? (
+        <div className=" flex flex-col items-center justify-center space-y-6">
+          <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mb-4">
+            <MessageCircle className="w-12 h-12 text-white" />
+          </div>
+          <button
+            onClick={redirectToWechat}
+            disabled={loading}
+            className="w-full bg-green-500 text-white py-4 rounded-xl font-bold shadow-lg shadow-green-200 active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
+          >
+            {loading ? '正在处理...' : (
+              <>
+                <MessageCircle className="w-5 h-5" />
+                <span>微信一键登录</span>
+              </>
+            )}
+          </button>
+          
+          {error && (
+            <p className="text-red-500 text-sm text-center font-medium bg-red-50 py-2 rounded-lg w-full">{error}</p>
+          )}
+          
+          <p className="text-gray-400 text-sm mt-4">检测到您正在微信环境，推荐使用微信快捷登录</p>
+        </div>
+      ) : (
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">用户名</label>
@@ -120,7 +138,7 @@ const Login = () => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-[#b71c1c] focus:border-[#b71c1c] bg-gray-50"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-red-500 focus:border-red-500 bg-gray-50"
                 placeholder="请输入用户名"
                 required
               />
@@ -137,7 +155,7 @@ const Login = () => {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-[#b71c1c] focus:border-[#b71c1c] bg-gray-50"
+                className="block w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-red-500 focus:border-red-500 bg-gray-50"
                 placeholder="请输入密码"
                 required
               />
@@ -152,45 +170,24 @@ const Login = () => {
           </div>
 
           {error && (
-            <p className="text-[#b71c1c] text-sm text-center font-medium bg-red-50 py-2 rounded-lg">{error}</p>
+            <p className="text-red-500 text-sm text-center font-medium bg-red-50 py-2 rounded-lg">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#b71c1c] text-white py-4 rounded-xl font-bold shadow-lg shadow-[#b71c1c]/10 active:scale-[0.98] transition-all disabled:opacity-50"
+            className="w-full bg-[#e53935] text-white py-4 rounded-xl font-bold shadow-lg shadow-red-200 active:scale-[0.98] transition-all disabled:opacity-50"
           >
             {loading ? '正在登录...' : '登录'}
           </button>
         </form>
-      ) : (
-        <div className="space-y-6">
-          {error && (
-            <p className="text-[#b71c1c] text-sm text-center font-medium bg-red-50 py-2 rounded-lg">{error}</p>
-          )}
-          
-          <button
-            onClick={startWechatLogin}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-[#07c160] text-white py-5 rounded-2xl font-bold shadow-xl shadow-[#07c160]/20 active:scale-[0.98] transition-all disabled:opacity-50 text-lg"
-          >
-            <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
-              <path d="M8.309 3c-4.57 0-8.309 3.256-8.309 7.273 0 2.273 1.258 4.309 3.221 5.674l-.821 2.395 2.872-1.439c.64.182 1.32.273 2.036.273.197 0 .394-.015.586-.039-.364-.788-.574-1.65-.574-2.564 0-3.321 3.012-6.014 6.726-6.014 1.157 0 2.235.265 3.167.728-.521-3.418-4.045-6.087-8.204-6.087zm3.111 2.455c.421 0 .764.343.764.764 0 .421-.343.764-.764.764s-.764-.343-.764-.764c0-.421.343-.764.764-.764zm-6.111 0c.421 0 .764.343.764.764 0 .421-.343.764-.764.764s-.764-.343-.764-.764c0-.421.343-.764.764-.764zM16.142 9.545c-3.14 0-5.711 2.213-5.711 4.942 0 1.543.812 2.923 2.083 3.864l-.532 1.637 1.86-.982c.453.153.943.238 1.455.238 3.14 0 5.711-2.213 5.711-4.942s-2.571-4.957-5.711-4.957zm-2.143 1.91c.287 0 .52.233.52.52s-.233.52-.52.52-.52-.233-.52-.52.233-.52.52-.52zm4.286 0c.287 0 .52.233.52.52s-.233.52-.52.52-.52-.233-.52-.52.233-.52.52-.52z" />
-            </svg>
-            微信一键登录
-          </button>
-          
-          <p className="text-center text-gray-400 text-xs px-10">
-            为了您的账户安全，建议使用微信直接登录，无需记忆账号密码
-          </p>
-        </div>
       )}
 
-      {(!isWechat) && (
-        <div className="mt-8 text-center">
+      {!isWechat && (
+        <div className="mt-8 text-center space-y-4">
           <p className="text-gray-500">
             还没有账户?{' '}
-            <Link to={`/register${referrer ? `?ref=${referrer}` : ''}`} className="text-[#b71c1c] font-bold">
+            <Link to={`/register${referrer ? `?ref=${referrer}` : ''}`} className="text-[#e53935] font-bold">
               立即注册
             </Link>
           </p>
