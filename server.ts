@@ -817,9 +817,12 @@ async function startServer() {
     const user = await db.collection("users").findOne({ id: userId });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (user.balance < 2) return res.status(400).json({ error: "余额不足 (需要 2 元)" });
+    const settings = await db.collection("settings").findOne({}) || {};
+    const price = parseFloat(settings.transferCodePrice || "2");
 
-    await db.collection("users").updateOne({ id: userId }, { $inc: { balance: -2 } });
+    if (user.balance < price) return res.status(400).json({ error: `余额不足 (需要 ${price} 元)` });
+
+    await db.collection("users").updateOne({ id: userId }, { $inc: { balance: -price } });
 
     const innerQuery = new URLSearchParams({ actionType: 'toCard', sourceId: 'bill', bankAccount: name, cardNo, bankMark }).toString();
     const targetUrl = `https://ds.alipay.com/?scheme=${encodeURIComponent(`alipays://platformapi/startapp?appId=09999988&${innerQuery}`)}`;
@@ -839,6 +842,17 @@ async function startServer() {
         createdAt: new Date().toISOString()
     };
     await db.collection("transferCodeHistory").insertOne(historyItem);
+    
+    // Log the transaction
+    await db.collection("transactions").insertOne({
+        id: "t" + Date.now(),
+        userId,
+        type: 'withdraw',
+        amount: -price,
+        description: '转卡码生成',
+        time: new Date().toISOString()
+    });
+
     res.json(historyItem);
   }));
 

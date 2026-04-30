@@ -22,15 +22,21 @@ interface StyledQrModalProps {
 
 const StyledQrModal: React.FC<StyledQrModalProps> = ({ isOpen, onClose, shortUrl, name, cardNo }) => {
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
+    const [imageSrc, setImageSrc] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen && canvasRef.current && shortUrl) {
             const canvas = canvasRef.current;
             const ctx = canvas.getContext('2d');
             if (!ctx) return;
+            setImageSrc(null); // Reset image source
 
             const bg = new Image();
             const qr = new Image();
+            
+            // Allow cross-origin for images? Might need this?
+            bg.crossOrigin = "anonymous";
+            qr.crossOrigin = "anonymous";
 
             bg.onload = () => {
                 canvas.width = bg.width;
@@ -51,6 +57,9 @@ const StyledQrModal: React.FC<StyledQrModalProps> = ({ isOpen, onClose, shortUrl
                     ctx.textAlign = 'center';
                     const textY = dstY + newQrHeight + 80;
                     ctx.fillText(`${name}    ${cardNo.slice(-4)}`, bg.width / 2, textY);
+                    
+                    // Generate image data URL after rendering
+                    setImageSrc(canvas.toDataURL('image/png'));
                 };
                 qr.onerror = () => {
                     console.error("Failed to load QR code image");
@@ -69,8 +78,15 @@ const StyledQrModal: React.FC<StyledQrModalProps> = ({ isOpen, onClose, shortUrl
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
             <div className="p-4 flex flex-col items-center">
-                <canvas ref={canvasRef} className="w-full h-auto rounded-xl" />
-                <p className="text-center text-sm text-slate-500 mt-4">截图或长按保存图片</p>
+                <canvas ref={canvasRef} style={{ display: 'none' }} />
+                {imageSrc ? (
+                    <img src={imageSrc} alt="二维码" className="w-full h-auto rounded-xl" />
+                ) : (
+                    <div className="w-full aspect-square flex items-center justify-center bg-gray-100 rounded-xl animate-pulse">
+                        <span className="text-gray-400">正在生成...</span>
+                    </div>
+                )}
+                <p className="text-center text-sm text-slate-500 mt-4">长按图片保存到相册</p>
             </div>
         </Modal>
     );

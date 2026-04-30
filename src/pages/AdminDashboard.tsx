@@ -652,6 +652,10 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                   <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">转卡码生成价格</label>
+                    <input name="transferCodePrice" type="number" step="0.01" defaultValue={data.settings.transferCodePrice || 2} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" required />
+                  </div>
+                  <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">首页公告</label>
                     <textarea name="announcement" rows={3} defaultValue={data.settings.announcement} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#b71c1c] transition-all font-medium" required />
                   </div>

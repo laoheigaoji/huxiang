@@ -287,6 +287,7 @@ const PredictionCard = ({ prediction, isFollowed, onFollow }: { prediction: Pred
 const Home = () => {
   const [isSortModalOpen, setIsSortModalOpen] = useState(false);
   const [selectedSort, setSelectedSort] = useState('default');
+  const [isAnnouncementVisible, setIsAnnouncementVisible] = useState(true);
   const [authors, setAuthors] = useState<Author[]>([]);
   const [authorType, setAuthorType] = useState<'top' | 'new'>('top');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
@@ -567,12 +568,14 @@ const Home = () => {
       </div>
 
       {/* Yellow Notice Bar */}
-      <div className="bg-[#fffef2] px-4 py-1.5 flex items-center justify-between border-b border-orange-100/30 mb-0.5">
-        <span className="text-[11.5px] text-orange-400 font-bold tracking-tight">
-           {settings?.announcement || '关系推荐人进行开通'}
-        </span>
-        <X className="w-3.5 h-3.5 text-orange-200 cursor-pointer" />
-      </div>
+      {isAnnouncementVisible && (
+        <div className="bg-[#fffef2] px-4 py-1.5 flex items-center justify-between border-b border-orange-100/30 mb-0.5">
+          <span className="text-[11.5px] text-orange-400 font-bold tracking-tight">
+             {settings?.announcement || '关系推荐人进行开通'}
+          </span>
+          <X className="w-3.5 h-3.5 text-orange-200 cursor-pointer" onClick={() => setIsAnnouncementVisible(false)} />
+        </div>
+      )}
 
       <div className="flex-1 pb-4">
         <div className="space-y-0">
