@@ -25,7 +25,10 @@ const Feedback = () => {
       return new Promise<string>((resolve, reject) => {
         const observable = qiniu.upload(file, key, token);
         observable.subscribe({
-          complete: (res) => resolve(`${domain}/${res.key}`),
+          complete: (res) => {
+            const url = `${domain}/${res.key}`;
+            resolve(url.startsWith('http') ? url : `https://${url.replace('//', '/')}`);
+          },
           error: (err) => reject(err),
         });
       });
@@ -63,6 +66,7 @@ const Feedback = () => {
       <div className="px-6 py-4 flex items-center sticky top-0 bg-[#f8fbff] z-20">
         <ChevronLeft className="w-6 h-6 text-gray-800 cursor-pointer" onClick={() => navigate(-1)} />
         <h2 className="text-[17px] font-bold text-gray-900 text-center flex-1 pr-6">意见反馈</h2>
+        <button onClick={() => navigate('/feedback-history')} className="text-[14px] font-bold text-gray-600">反馈工单</button>
       </div>
 
       {/* Form Content */}

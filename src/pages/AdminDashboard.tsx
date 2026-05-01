@@ -61,11 +61,15 @@ const AdminDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [orderCategoryTab, setOrderCategoryTab] = useState<'all' | 'recharge' | 'consumption'>('all');
+  const [feedbackStatusTab, setFeedbackStatusTab] = useState<'all' | 'pending' | 'replied'>('all');
+  const [withdrawalStatusTab, setWithdrawalStatusTab] = useState<'all' | 'pending' | 'processed'>('all');
 
   useEffect(() => {
     fetchData();
     setSearchQuery('');
     setOrderCategoryTab('all');
+    setFeedbackStatusTab('all');
+    setWithdrawalStatusTab('all');
   }, [activeTab]);
 
   const fetchData = async () => {
@@ -196,9 +200,9 @@ const AdminDashboard = () => {
     setExpandedApplications(prev => ({ ...prev, [id]: !prev[id] }));
   };
   
-  const filteredAuthors = data.authors.filter((a: any) => a.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  const filteredPredictions = data.predictions.filter((p: any) => (p.contentTitle || p.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (p.authorName || '').toLowerCase().includes(searchQuery.toLowerCase()));
-  const filteredUsers = data.users.filter((u: any) => (u.nickname || '').toLowerCase().includes(searchQuery.toLowerCase()) || (u.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredAuthors = data.authors.filter((a: any) => (a.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (a.phone || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredPredictions = data.predictions.filter((p: any) => (p.contentTitle || p.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (p.authorName || '').toLowerCase().includes(searchQuery.toLowerCase()) || (p.period || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredUsers = data.users.filter((u: any) => (u.nickname || '').toLowerCase().includes(searchQuery.toLowerCase()) || (u.username || '').toLowerCase().includes(searchQuery.toLowerCase()) || (u.id || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredApplications = data.applications.filter((a: any) => (a.realName || '').toLowerCase().includes(searchQuery.toLowerCase()) || (a.username || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredOrders = data.orders.filter((o: any) => {
     // console.log("Filtering order:", o);
@@ -211,9 +215,22 @@ const AdminDashboard = () => {
     if (orderCategoryTab === 'consumption') return matchesSearch && isConsumption;
     return matchesSearch;
   });
-  const filteredWithdrawals = data.withdrawals.filter((w: any) => (w.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (w.account || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredWithdrawals = data.withdrawals.filter((w: any) => {
+    const matchesSearch = (w.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (w.account || '').toLowerCase().includes(searchQuery.toLowerCase());
+    if (withdrawalStatusTab === 'pending') return matchesSearch && w.status === 'pending';
+    if (withdrawalStatusTab === 'processed') return matchesSearch && w.status !== 'pending';
+    return matchesSearch;
+  });
   const filteredMessages = data.messages.filter((m: any) => (m.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || (m.content || '').toLowerCase().includes(searchQuery.toLowerCase()));
-  const filteredFeedbacks = data.feedbacks.filter((f: any) => (f.content || '').toLowerCase().includes(searchQuery.toLowerCase()) || (f.phone || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredFeedbacks = data.feedbacks.filter((f: any) => {
+    const userNickname = f.user?.nickname || '';
+    const matchesSearch = (f.content || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (f.phone || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          userNickname.toLowerCase().includes(searchQuery.toLowerCase());
+    if (feedbackStatusTab === 'pending') return matchesSearch && !f.reply;
+    if (feedbackStatusTab === 'replied') return matchesSearch && !!f.reply;
+    return matchesSearch;
+  });
   const filteredHistory = data.history.filter((h: any) => (h.period || '').toLowerCase().includes(searchQuery.toLowerCase()) || (h.type || '').toLowerCase().includes(searchQuery.toLowerCase()));
 
   const tabs = [
@@ -641,6 +658,16 @@ const AdminDashboard = () => {
               </div>
             ))}
 
+            {activeTab === 'withdrawals' && (
+                <div className="flex space-x-2 mb-6">
+                    {(['all', 'pending', 'processed'] as const).map(tab => (
+                        <button key={tab} onClick={() => setWithdrawalStatusTab(tab)} className={`px-4 py-2 rounded-full text-xs font-bold ${withdrawalStatusTab === tab ? 'bg-[#d32f2f] text-white' : 'bg-white text-gray-500'}`}>
+                            {tab === 'all' ? '全部' : tab === 'pending' ? '未处理' : '已处理'}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {activeTab === 'withdrawals' && filteredWithdrawals.map((w: any) => (
               <div key={w.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-4">
                 <div className="flex justify-between items-start mb-2">
@@ -674,12 +701,30 @@ const AdminDashboard = () => {
               </div>
             ))}
 
+            {activeTab === 'feedbacks' && (
+                <div className="flex space-x-2 mb-6">
+                    {(['all', 'pending', 'replied'] as const).map(tab => (
+                        <button key={tab} onClick={() => setFeedbackStatusTab(tab)} className={`px-4 py-2 rounded-full text-xs font-bold ${feedbackStatusTab === tab ? 'bg-[#d32f2f] text-white' : 'bg-white text-gray-500'}`}>
+                            {tab === 'all' ? '全部' : tab === 'pending' ? '未回复' : '已回复'}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {activeTab === 'feedbacks' && filteredFeedbacks.map((fb: any) => (
               <div key={fb.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-4">
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <h3 className="font-bold text-gray-900 text-lg">问题反馈</h3>
-                    <p className="text-xs text-gray-500">反馈场景: {fb.scenario || '通用'}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                       {fb.user && (
+                         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-gray-100 rounded-md">
+                           <span className="text-[11px] font-bold text-gray-600">用户:</span>
+                           <span className="text-[11px] font-medium text-gray-800">{fb.user.nickname}</span>
+                         </div>
+                       )}
+                       <p className="text-xs text-gray-500">反馈场景: {fb.scenario || '通用'}</p>
+                    </div>
                   </div>
                   <button onClick={() => handleDelete(fb.id)} className="p-2 text-[#d32f2f] hover:bg-red-50 rounded-lg shrink-0">
                     <Trash2 className="w-4 h-4" />
@@ -695,6 +740,29 @@ const AdminDashboard = () => {
                     ))}
                   </div>
                 )}
+                {fb.reply && (
+                   <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800 mb-3">
+                      <strong>管理员回复:</strong> {fb.reply}
+                   </div>
+                )}
+                <div className="flex gap-2 mb-3">
+                   <input 
+                     type="text" 
+                     placeholder="回复反馈..."
+                     className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm"
+                     id={`reply-input-${fb.id}`}
+                   />
+                   <button onClick={async () => {
+                     const input = document.getElementById(`reply-input-${fb.id}`) as HTMLInputElement;
+                     if (input && input.value.trim()) {
+                       try {
+                         await api.replyToFeedback(fb.id, input.value.trim());
+                         input.value = '';
+                         fetchData();
+                       } catch (err) { alert('回复失败'); }
+                     }
+                   }} className="bg-[#d32f2f] text-white rounded-lg px-4 text-sm font-bold">回复</button>
+                </div>
                 <div className="flex justify-between items-center text-xs text-gray-400">
                   <span>联系电话: {fb.phone || '未提供'}</span>
                   <span>{new Date(fb.time).toLocaleString()}</span>

@@ -1342,9 +1342,47 @@ async function startServer() {
     res.json(newFeedback);
   }));
 
-  app.get("/api/admin/feedbacks", checkDb, asyncHandler(async (req: any, res: any) => {
-    const feedbacks = await db.collection("feedbacks").find().sort({ time: -1 }).toArray();
+  app.get("/api/feedback", checkDb, asyncHandler(async (req: any, res: any) => {
+    const { userId } = req.query;
+    const query: any = {};
+    if (userId) {
+      query.userId = userId;
+    }
+    const feedbacks = await db.collection("feedbacks").find(query).sort({ time: -1 }).toArray();
     res.json(feedbacks.map(fb => ({ ...fb, id: fb.id || fb._id.toString() })));
+  }));
+
+  app.get("/api/admin/feedbacks", checkDb, asyncHandler(async (req: any, res: any) => {
+    const feedbacks = await db.collection("feedbacks").aggregate([
+      { $sort: { time: -1 } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "id",
+          as: "user"
+        }
+      },
+      { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } }
+    ]).toArray();
+    res.json(feedbacks.map(fb => ({ ...fb, id: fb.id || fb._id.toString() })));
+  }));
+
+  app.post("/api/admin/feedbacks/:id/reply", checkDb, asyncHandler(async (req: any, res: any) => {
+    const { reply } = req.body;
+    let queryArgs: any[] = [{ id: req.params.id }];
+    if (ObjectId.isValid(req.params.id)) queryArgs.push({ _id: new ObjectId(req.params.id) });
+    
+    const result = await db.collection("feedbacks").updateOne(
+      { $or: queryArgs },
+      { $set: { reply, replyTime: new Date().toISOString() } }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Feedback not found" });
+    }
+    
+    res.json({ message: "Replied" });
   }));
 
   app.delete("/api/admin/feedbacks/:id", checkDb, asyncHandler(async (req: any, res: any) => {

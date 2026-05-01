@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, X, MoreHorizontal, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, X, MoreHorizontal, CheckCircle2, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { api } from '../services/api';
@@ -11,6 +11,7 @@ const TopUp = () => {
   const [loading, setLoading] = useState(false);
   const [balanceAtStart, setBalanceAtStart] = useState<number | null>(null);
   const [user, setUser] = useState<any>(null);
+  const [agreed, setAgreed] = useState(false);
 
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -78,6 +79,11 @@ const TopUp = () => {
   const handlePay = async () => {
     if (!amount || parseFloat(amount) <= 0) {
       alert('请输入正确的充值金额');
+      return;
+    }
+    
+    if (!agreed) {
+      alert('请先阅读并同意《支付协议》');
       return;
     }
     
@@ -232,11 +238,14 @@ const TopUp = () => {
 
         {/* Agreement */}
         <div className="mt-8 flex items-center justify-center space-x-2">
-           <div className="w-4 h-4 border border-gray-200 rounded flex items-center justify-center bg-gray-50">
-             <div className="w-2.5 h-2.5 bg-white rounded-sm"></div>
+           <div 
+             className={`w-4 h-4 border rounded flex items-center justify-center cursor-pointer transition-colors ${agreed ? 'bg-[#d32f2f] border-[#d32f2f]' : 'border-gray-300 bg-white'}`}
+             onClick={() => setAgreed(!agreed)}
+           >
+             {agreed && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
            </div>
            <span className="text-[13px] text-gray-800">
-             支付即视为同意 <span className="text-[#3b82f6] underline">《支付协议》</span>
+             支付即视为同意 <span className="text-[#3b82f6] underline cursor-pointer" onClick={() => navigate('/user-agreement')}>《支付协议》</span>
            </span>
         </div>
 

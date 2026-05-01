@@ -12,6 +12,7 @@ import EditProfile from './pages/EditProfile';
 import FAQ from './pages/FAQ';
 import Settings from './pages/Settings';
 import Feedback from './pages/Feedback';
+import FeedbackHistory from './pages/FeedbackHistory';
 import Footprints from './pages/Footprints';
 import AuthorSearch from './pages/AuthorSearch';
 import TransferCodeGenerator from './pages/TransferCodeGenerator';
@@ -145,6 +146,7 @@ const AppContent = () => {
             <Route path="/faq" element={<FAQ />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/feedback" element={<Feedback />} />
+            <Route path="/feedback-history" element={<FeedbackHistory />} />
             <Route path="/footprints" element={<Footprints />} />
             <Route path="/author-search" element={<AuthorSearch />} />
             <Route path="/transfer-code-generator" element={<TransferCodeGenerator />} />

@@ -328,62 +328,55 @@ const PredictionDetail = () => {
       {/* Disclaimer Modal */}
       <AnimatePresence>
         {showDisclaimer && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/60 backdrop-blur-[2px]">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/60">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-sm relative"
+              className="w-full max-w-[320px] relative pt-[110px]"
             >
-              {/* Floating Bell Icon Wrapper */}
-              <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-pink-200 blur-2xl opacity-50 translate-y-8"></div>
-                  <img 
-                    src="https://api.iconify.design/noto/bell.svg" 
-                    alt="bell" 
-                    className="w-24 h-24 object-contain relative z-10 drop-shadow-xl" 
-                  />
-                  <div className="absolute top-4 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/40 blur-sm rounded-full"></div>
-                </div>
-              </div>
-
               {/* Main Modal Card */}
-              <div className="bg-white w-full rounded-[32px] overflow-hidden shadow-2xl mt-8">
-                <div className="h-20 bg-gradient-to-b from-pink-50 to-white relative flex items-center justify-center overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(255,182,193,0.3),transparent)]"></div>
+              <div className="w-full rounded-[28px] shadow-xl relative pt-20 px-5 pb-8 text-center min-h-[300px] flex flex-col justify-between" style={{ background: 'linear-gradient(180deg, #ffe4e6 0%, #ffffff 35%, #ffffff 100%)' }}>
+                {/* Floating Header Image (Bulging Out) */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-[40%] z-20 w-[95%] flex justify-center pointer-events-none">
+                  <img 
+                    src="https://wxqun988.vxjuejin.com/IMG_10851.png" 
+                    alt="Disclaimer Banner" 
+                    className="w-full max-w-[280px] h-auto object-contain drop-shadow-md" 
+                  />
                 </div>
-
-                <div className="px-6 pb-8 text-center pt-2">
-                  <h3 className="text-xl font-black text-gray-900 mb-4 tracking-wider">免费声明</h3>
-                <div className="text-[14px] text-gray-600 leading-relaxed space-y-4 font-medium mb-6 text-center">
-                  <p>
-                    本平台所展示的方案均为 <span className="text-orange-500">模拟演示内容</span>，仅供学习与交流参考。不代表平台立场， <span className="text-orange-500">不构成任何建议</span>。平台不对方案的实用性或结果作出任何保证。
-                  </p>
-                  <div className="bg-orange-50/50 rounded-2xl p-4 py-6 border border-orange-100/50">
-                    <h4 className="text-orange-500 font-bold text-lg mb-2">温馨提示</h4>
-                    <p className="text-gray-700 font-bold">请理性判断，切勿轻信或传播未经证实的信息。</p>
+                <div>
+                  <h3 className="text-[20px] font-black text-gray-900 mb-4 tracking-wider mt-2">免费声明</h3>
+                  <div className="text-[13px] text-gray-600 leading-relaxed space-y-3 font-medium mb-6 text-center">
+                    <p>
+                      本平台所展示的方案均为 <span className="text-orange-500">模拟演示内容</span>，仅供学习与交流参考。不代表平台立场， <span className="text-orange-500">不构成任何建议</span>。平台不对方案的实用性或结果作出任何保证。
+                    </p>
+                    <div className="bg-orange-50/50 rounded-xl p-3 py-4 border border-orange-100/50">
+                      <h4 className="text-orange-500 font-bold text-[15px] mb-1.5">温馨提示</h4>
+                      <p className="text-gray-700 font-bold">请理性判断，切勿轻信或传播未经证实的信息。</p>
+                    </div>
                   </div>
                 </div>
 
-                <button 
-                  onClick={handleCloseDisclaimer}
-                  className="w-full bg-[#d32f2f] text-white font-bold py-4 rounded-full text-lg shadow-xl shadow-[#d32f2f]/10 mb-4 active:scale-95 transition-transform"
-                >
-                  好的
-                </button>
+                <div>
+                  <button 
+                    onClick={handleCloseDisclaimer}
+                    className="w-full bg-[#d32f2f] text-white font-bold py-3.5 rounded-full text-[16px] shadow-lg shadow-[#d32f2f]/10 mb-3 active:scale-95 transition-transform"
+                  >
+                    好的
+                  </button>
 
-                <div 
-                  className="flex items-center justify-center space-x-2 cursor-pointer"
-                  onClick={() => setDontShowAgain(!dontShowAgain)}
-                >
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${dontShowAgain ? 'bg-[#d32f2f] border-[#d32f2f]' : 'border-gray-300'}`}>
-                    {dontShowAgain && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                  <div 
+                    className="flex items-center justify-center space-x-1.5 cursor-pointer pt-1"
+                    onClick={() => setDontShowAgain(!dontShowAgain)}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center transition-colors ${dontShowAgain ? 'bg-[#d32f2f] border-[#d32f2f]' : 'border-gray-300'}`}>
+                      {dontShowAgain && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
+                    </div>
+                    <span className="text-gray-400 text-xs font-medium">今日不再弹出</span>
                   </div>
-                  <span className="text-gray-400 text-sm font-medium">今日不再弹出</span>
                 </div>
               </div>
-            </div>
             </motion.div>
           </div>
         )}
@@ -844,20 +837,20 @@ const PredictionDetail = () => {
               animate={{ y: 0 }} 
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="bg-white w-full max-w-lg rounded-t-[32px] overflow-hidden relative pb-8 max-h-[85vh] overflow-y-auto"
+              className="bg-white w-full max-w-lg rounded-t-[32px] overflow-hidden relative pb-6 pt-2 max-h-[85vh] overflow-y-auto"
               onClick={e => e.stopPropagation()}
             >
               {/* Drag Handle Bar */}
-              <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-1"></div>
+              <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-2"></div>
 
               {/* Close Button */}
-              <div className="absolute top-4 right-6 z-20">
+              <div className="absolute top-4 right-5 z-20">
                 <X className="w-6 h-6 text-gray-400 cursor-pointer p-0.5" onClick={() => setShowShare(false)} />
               </div>
 
               {/* Poster Content Area */}
               <div className="relative">
-                <div ref={posterRef} className="relative p-5 bg-white">
+                <div ref={posterRef} className="relative p-4 bg-white">
                   {/* Background Watermark Pattern */}
                   <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none overflow-hidden select-none" style={{ 
                     backgroundImage: 'radial-gradient(#000 1px, transparent 1px)',
@@ -876,15 +869,15 @@ const PredictionDetail = () => {
                   {/* Poster Content Area */}
                   <div className="relative z-10">
                     {/* Poster Header */}
-                    <div className="text-center mb-5">
-                      <h3 className="text-[20px] font-black text-gray-900 tracking-tight" style={{ color: '#111827' }}>{prediction.authorName}</h3>
-                      <p className="text-[10px] font-bold mt-1 uppercase tracking-widest" style={{ color: '#9ca3af' }}>{prediction.period} 专属方案</p>
+                    <div className="text-center mb-3 mt-2">
+                      <h3 className="text-[16px] font-black tracking-tight" style={{ color: '#111827' }}>{prediction.authorName}</h3>
+                      <p className="text-[10px] font-bold mt-0.5 uppercase tracking-widest" style={{ color: '#9ca3af' }}>{prediction.period} 专属方案</p>
                     </div>
 
                     {/* Prediction Summary Section - Conditional Rendering */}
                     {!prediction.isFree && !isPurchased && !isUnlocked ? (
                       /* Locked Version */
-                      <div className="rounded-2xl p-5 border flex flex-col items-center mb-6 overflow-hidden relative" style={{ backgroundColor: '#fff5f5', borderColor: '#fee2e2' }}>
+                      <div className="rounded-xl p-4 border flex flex-col items-center mb-4 overflow-hidden relative" style={{ backgroundColor: '#fff5f5', borderColor: '#fee2e2' }}>
                         <div className="absolute top-0 left-0 w-full h-1 overflow-hidden" style={{ backgroundColor: '#d32f2f' }}>
                           <motion.div 
                             animate={{ x: ["-100%", "100%"] }} 
@@ -893,25 +886,25 @@ const PredictionDetail = () => {
                           />
                         </div>
                         
-                        <h4 className="font-black text-[15px] mb-4 tracking-widest flex items-center" style={{ color: '#d32f2f' }}>
+                        <h4 className="font-black text-[14px] mb-3 tracking-widest flex items-center" style={{ color: '#d32f2f' }}>
                           <Lock className="w-3.5 h-3.5 mr-1.5" style={{ fill: '#d32f2f' }} />
                           解锁公开倒计时
                         </h4>
                         
                         {/* Countdown Timer in Poster */}
-                        <div className="flex justify-center items-center space-x-1.5 mb-5 transition-all">
+                        <div className="flex justify-center items-center space-x-1.5 mb-3 transition-all">
                           {['h', 'm', 's'].map((key) => (
                             <React.Fragment key={key}>
-                              <div className="text-white text-base font-bold w-9 h-9 flex items-center justify-center rounded-lg shadow-sm" style={{ backgroundColor: '#d32f2f' }}>
+                              <div className="text-white text-[15px] font-bold w-8 h-8 flex items-center justify-center rounded-lg shadow-sm" style={{ backgroundColor: '#d32f2f' }}>
                                 {timeLeft[key as keyof typeof timeLeft]}
                               </div>
-                              {key !== 's' && <span className="text-lg font-black" style={{ color: '#d32f2f' }}>:</span>}
+                              {key !== 's' && <span className="text-base font-black" style={{ color: '#d32f2f' }}>:</span>}
                             </React.Fragment>
                           ))}
                         </div>
 
                         {/* Payment Info */}
-                        <div className="bg-white/80 backdrop-blur-sm px-5 py-2.5 rounded-full border flex items-center justify-center space-x-2 font-black text-[13px] mb-4 shadow-sm" style={{ borderColor: '#fee2e2', color: '#111827' }}>
+                        <div className="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border flex items-center justify-center space-x-2 font-black text-[12px] mb-3 shadow-sm" style={{ borderColor: '#fee2e2', color: '#111827' }}>
                           <span>付费 ¥ {prediction.price} 立即解锁</span>
                         </div>
 
@@ -922,66 +915,99 @@ const PredictionDetail = () => {
                       </div>
                     ) : (
                       /* Unlocked Version */
-                      <div className="rounded-2xl p-5 border flex flex-col items-center mb-6" style={{ backgroundColor: '#fff7ed', borderColor: '#ffedd5' }}>
-                        <h4 className="font-black text-[15px] mb-4 tracking-widest flex items-center" style={{ color: '#ea580c' }}>
-                          <Star className="w-3.5 h-3.5 mr-1.5" style={{ fill: '#f97316' }} />
-                          付费推荐内容
-                        </h4>
-                        
-                        {/* Paid Content Box */}
-                        <div className="w-full bg-white/60 backdrop-blur-sm border-2 border-dashed rounded-xl py-5 flex flex-col items-center shadow-sm" style={{ borderColor: '#fed7aa' }}>
-                          <div className="flex space-x-3 mb-4">
-                            {(prediction.mainPicks || [36, 24, 12]).map((n, i) => (
-                              <motion.div 
-                                key={i}
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                className="w-10 h-10 rounded-full flex items-center justify-center text-white text-lg font-black shadow-md"
-                                style={{ background: 'linear-gradient(to bottom right, #d32f2f, #9a1a1a)' }}
-                              >
-                                {n}
-                              </motion.div>
-                            ))}
-                          </div>
-                          <div className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase" style={{ backgroundColor: '#ffedd5', color: '#ea580c' }}>
-                            VIP 内部精选方案
-                          </div>
-                          {prediction.content && (
-                            <div className="mt-3 px-4 text-[10px] text-center font-bold" style={{ color: '#4b5563' }}>
-                              {prediction.content.substring(0, 40)}{prediction.content.length > 40 ? '...' : ''}
+                      (() => {
+                        const contentTokens = (prediction.content || '').split(/[\s,，、]+/).filter(Boolean);
+            
+                        return (
+                          <div className="rounded-[20px] p-4 mb-4 border relative overflow-hidden" style={{ backgroundColor: '#fdf2f2', borderColor: '#fee2e2' }}>
+                            {/* Title: 模拟核对第XX期 */}
+                            <div className="text-center mb-2">
+                              <h3 className="font-bold text-[14px]" style={{ color: '#374151' }}>
+                                模拟核对第{prediction.period?.replace(/[^\d]/g, '')}期
+                              </h3>
                             </div>
-                          )}
-                        </div>
-                        
-                        <div className="mt-4 text-[9px] font-medium text-center" style={{ color: '#9ca3af' }}>
-                          * 这是为您精心挑选的号码，基于大数据模拟分析。
-                        </div>
-                      </div>
+            
+                            {/* Check Grid: 核对 (Top) */}
+                            <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-2 mb-3">
+                              {(prediction.mainPicks || [1, 2, 5, 8, 12, 19, 24]).map((n, i) => {
+                                const formattedN = n === null ? '' : String(n || 0).padStart(2, '0');
+                                const publishedColor = prediction.ballColors?.[i];
+                                const ballBgColor = publishedColor === 'blue' ? '#2563eb' : '#ef4444';
+                                const textColor = publishedColor === 'blue' ? '#2563eb' : '#6b7280';
+            
+                                return (
+                                  <div key={i} className="flex flex-col items-center min-w-[28px]">
+                                    <div 
+                                      className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold shadow-sm"
+                                      style={{ backgroundColor: ballBgColor }}
+                                    >
+                                      {formattedN}
+                                    </div>
+                                    {prediction.mainZodiacs && prediction.mainZodiacs[i] && (
+                                      <span className="text-[8px] mt-0.5 font-bold" style={{ color: textColor }}>
+                                        {prediction.mainZodiacs[i]}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+            
+                            {/* Paid Content Label */}
+                            <h4 className="font-black text-[13px] mb-2 flex justify-center items-center space-x-1" style={{ color: '#f97316' }}>
+                              <Star className="w-3 h-3 fill-[#f97316]" />
+                              <span>付费内容</span>
+                              <Star className="w-3 h-3 fill-[#f97316]" />
+                            </h4>
+                            
+                            {/* Body Content Grid (Bottom) */}
+                            <div className="rounded-lg p-2 border border-dashed relative shadow-inner" style={{ backgroundColor: '#fff7ed', borderColor: 'rgba(253, 186, 116, 0.5)' }}>
+                              <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-1.5">
+                                {(prediction.contentPicks || contentTokens).map((p, i) => {
+                                  const formattedP = p === '' ? '' : String(p).padStart(2, '0');
+                                  const publishedColor = prediction.contentColors?.[i];
+                                  const ballBgColor = publishedColor === 'blue' ? '#2563eb' : '#ef4444';
+            
+                                  return (
+                                    <div 
+                                      key={i} 
+                                      className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold shadow-sm"
+                                      style={{ backgroundColor: ballBgColor }}
+                                    >
+                                      {formattedP}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()
                     )}
 
                     {/* QR Code Section */}
-                    <div className="flex items-center justify-between px-2 mb-2">
+                    <div className="flex items-center justify-between px-2">
                       <div className="flex-1">
-                         <h4 className="font-black text-[15px] mb-1" style={{ color: '#111827' }}>智料汇享</h4>
-                         <p className="text-[10px] font-bold leading-relaxed pr-4" style={{ color: '#9ca3af' }}>
+                         <h4 className="font-black text-[14px] mb-1" style={{ color: '#111827' }}>智料汇享</h4>
+                         <p className="text-[10px] font-bold leading-relaxed pr-3" style={{ color: '#9ca3af' }}>
                            专业数字概率分析平台<br />
                            每日更新独家数据方案
                          </p>
-                         <div className="mt-3 text-[9px] font-medium" style={{ color: '#d1d5db' }}>
+                         <div className="mt-2 text-[9px] font-medium" style={{ color: '#d1d5db' }}>
                            {new Date().toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-')}
                          </div>
                       </div>
                       <div className="flex flex-col items-center">
-                        <div className="bg-white p-2 rounded-xl border shadow-md mb-1.5" style={{ borderColor: '#f3f4f6' }}>
+                        <div className="bg-white p-1.5 rounded-xl border shadow-sm mb-1.5" style={{ borderColor: '#f3f4f6' }}>
                           <QRCodeSVG 
                             value={`https://${window.location.host}/prediction/${id}`} 
-                            size={70}
+                            size={56}
                             bgColor="#ffffff"
                             fgColor="#000000"
                             level="H"
                           />
                         </div>
-                        <p className="font-black text-[10px] tracking-widest" style={{ color: '#111827' }}>扫码查看详情</p>
+                        <p className="font-black text-[9px] tracking-widest" style={{ color: '#111827' }}>扫码查看详情</p>
                       </div>
                     </div>
                   </div>

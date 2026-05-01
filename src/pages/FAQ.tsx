@@ -3,7 +3,7 @@ import { ChevronLeft, X, MoreHorizontal, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 
-const FAQItem = ({ question, answer }: { question: string, answer: string }) => (
+const FAQItem: React.FC<{ question: string, answer: string }> = ({ question, answer }) => (
   <div className="border-b border-gray-100 last:border-b-0">
     <FAQItemContent question={question} answer={answer} />
   </div>

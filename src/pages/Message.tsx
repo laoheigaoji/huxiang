@@ -47,9 +47,24 @@ const Message = () => {
 
   const fetchMessages = async () => {
     try {
-      const data = await api.getMessages();
+      const [messagesData, feedbackData] = await Promise.all([
+        api.getMessages(),
+        api.getFeedbackHistory()
+      ]);
+      
+      const feedbackMessages = feedbackData
+        .filter((fb: any) => fb.reply)
+        .map((fb: any) => ({
+          id: `feedback-${fb.id}`,
+          title: `反馈回复: ${fb.scenario}`,
+          content: fb.reply,
+          time: fb.time,
+        }));
+      
+      const allMessages = [...messagesData, ...feedbackMessages].sort((a: any, b: any) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      
       // Add unread status simulation since real API might not have it
-      setMessages(data.map((m: any, i: number) => ({ ...m, isRead: i > 2 })));
+      setMessages(allMessages.map((m: any, i: number) => ({ ...m, isRead: i > 2 })));
     } catch (err) {
       console.error('Failed to fetch messages', err);
     } finally {

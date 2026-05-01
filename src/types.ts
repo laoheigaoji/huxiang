@@ -113,3 +113,14 @@ export interface Withdrawal {
   status: 'pending' | 'approved' | 'rejected';
   time: string;
 }
+
+export interface Feedback {
+  id: string;
+  userId: string;
+  scenario: string;
+  content: string;
+  phone: string;
+  images: string[];
+  reply?: string;
+  time: string;
+}

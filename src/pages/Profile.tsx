@@ -237,7 +237,10 @@ const Profile = () => {
         </div>
 
         {/* Bottom Promotion Banner */}
-        <div className="h-24 bg-gradient-to-r from-[#81d4fa] via-[#e1f5fe] to-[#f8bbd0] rounded-[24px] p-6 relative overflow-hidden flex items-center shadow-sm">
+        <div 
+          className="h-24 bg-gradient-to-r from-[#81d4fa] via-[#e1f5fe] to-[#f8bbd0] rounded-[24px] p-6 relative overflow-hidden flex items-center shadow-sm cursor-pointer"
+          onClick={() => navigate(user?.isAuthor ? '/publish' : '/partner-join')}
+        >
           <div className="relative z-10">
             <h4 className="text-2xl font-black text-white italic tracking-tight italic">
               发文章 享好料

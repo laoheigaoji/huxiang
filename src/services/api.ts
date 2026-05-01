@@ -416,6 +416,22 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getFeedbackHistory() {
+    const userStr = localStorage.getItem('user');
+    const userId = userStr ? JSON.parse(userStr).id : null;
+    const res = await fetchWithRetry(`${API_BASE}/feedback${userId ? `?userId=${userId}` : ''}`);
+    return handleResponse(res);
+  },
+
+  async replyToFeedback(feedbackId: string, reply: string) {
+    const res = await fetchWithRetry(`${API_BASE}/admin/feedbacks/${feedbackId}/reply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reply })
+    });
+    return handleResponse(res);
+  },
+
   async getAdminFeedbacks() {
     const res = await fetchWithRetry(`${API_BASE}/admin/feedbacks`);
     return handleResponse(res);
