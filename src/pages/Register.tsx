@@ -57,7 +57,8 @@ const Register = () => {
     try {
       const newUser = await api.register(username, password, nickname, referrer || undefined);
       localStorage.setItem('user', JSON.stringify(newUser));
-      navigate('/');
+      const redirect = searchParams.get('redirect') || '/';
+      navigate(redirect);
     } catch (err: any) {
       setError(err.message || '注册失败');
     } finally {
@@ -181,7 +182,7 @@ const Register = () => {
         <div className="mt-8 text-center">
           <p className="text-gray-500">
             已有账户?{' '}
-            <Link to="/login" className="text-[#d32f2f] font-bold">
+            <Link to={`/login${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`} className="text-[#d32f2f] font-bold">
               立即登录
             </Link>
           </p>

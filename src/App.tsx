@@ -99,7 +99,7 @@ const AppContent = () => {
     }
 
     if (!user && !publicPaths.includes(location.pathname)) {
-       navigate('/login');
+       navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`);
     }
   }, [location.pathname, navigate]);
 

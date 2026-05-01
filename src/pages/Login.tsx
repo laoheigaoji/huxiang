@@ -50,7 +50,8 @@ const Login = () => {
       const data = await api.wechatLogin(code, nickname, avatar, referrer);
       localStorage.setItem('user', JSON.stringify(data));
       localStorage.removeItem('wechat_referrer');
-      navigate('/');
+      const redirect = searchParams.get('redirect') || '/';
+      navigate(redirect);
     } catch (err: any) {
       setError(err.message || '微信登录失败');
     } finally {
@@ -60,7 +61,11 @@ const Login = () => {
 
   const redirectToWechat = () => {
     const currentRef = searchParams.get('ref') || localStorage.getItem('wechat_referrer');
-    const targetUrl = currentRef ? `${window.location.origin}/login?ref=${currentRef}` : `${window.location.origin}/login`;
+    const redirect = searchParams.get('redirect');
+    let targetUrl = currentRef ? `${window.location.origin}/login?ref=${currentRef}` : `${window.location.origin}/login`;
+    if (redirect) {
+      targetUrl += (targetUrl.includes('?') ? '&' : '?') + `redirect=${encodeURIComponent(redirect)}`;
+    }
     // Use configured proxy URL or fallback to the requested structure if config is missing
     const baseUrl = wechatBaseUrl || 'https://gzh1.vxjuejin.com/api';
     const wechatAuthUrl = `${baseUrl}?appid=${APP_ID}&redirect_uri=${encodeURIComponent(targetUrl)}&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect`;
@@ -75,7 +80,8 @@ const Login = () => {
     try {
       const data = await api.login(username, password);
       localStorage.setItem('user', JSON.stringify(data));
-      navigate('/profile');
+      const redirect = searchParams.get('redirect') || '/profile';
+      navigate(redirect);
     } catch (err: any) {
       setError(err.message || '登录失败');
     } finally {
@@ -187,7 +193,7 @@ const Login = () => {
         <div className="mt-8 text-center space-y-4">
           <p className="text-gray-500">
             还没有账户?{' '}
-            <Link to={`/register${referrer ? `?ref=${referrer}` : ''}`} className="text-[#e53935] font-bold">
+            <Link to={`/register${(referrer || searchParams.get('redirect')) ? '?' : ''}${referrer ? `ref=${referrer}` : ''}${referrer && searchParams.get('redirect') ? '&' : ''}${searchParams.get('redirect') ? `redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : ''}`} className="text-[#e53935] font-bold">
               立即注册
             </Link>
           </p>
