@@ -58,7 +58,7 @@ const BottomNav = () => {
     }
   }, [location.pathname, visitedTabs]);
 
-  const hideNavPaths = ['/publish', '/admin', '/admin/dashboard', '/login', '/register', '/partner-join', '/author/dashboard', '/profile/bind-phone', '/profile/real-name', '/settings', '/user-agreement', '/privacy-policy', '/about-us'];
+  const hideNavPaths = ['/publish', '/admin', '/admin/dashboard', '/login', '/register', '/partner-join', '/author/dashboard', '/profile/bind-phone', '/profile/real-name', '/settings', '/user-agreement', '/privacy-policy', '/about-us', '/faq', '/feedback'];
   if (hideNavPaths.includes(location.pathname)) return null;
 
   return (

@@ -324,7 +324,7 @@ const PredictionDetail = () => {
   if (!prediction) return null;
 
   return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-gray-50 h-[100dvh] flex flex-col">
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-gray-50 h-[100dvh] flex flex-col overflow-hidden">
       {/* Disclaimer Modal */}
       <AnimatePresence>
         {showDisclaimer && (
@@ -335,7 +335,7 @@ const PredictionDetail = () => {
               exit={{ scale: 0.9, opacity: 0 }}
               className="w-full max-w-sm relative"
             >
-              {/* Floating Bell Icon Wrapper (Outside clipping container) */}
+              {/* Floating Bell Icon Wrapper */}
               <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center">
                 <div className="relative">
                   <div className="absolute inset-0 bg-pink-200 blur-2xl opacity-50 translate-y-8"></div>
@@ -350,38 +350,19 @@ const PredictionDetail = () => {
 
               {/* Main Modal Card */}
               <div className="bg-white w-full rounded-[32px] overflow-hidden shadow-2xl mt-8">
-                {/* Top Header Background */}
                 <div className="h-20 bg-gradient-to-b from-pink-50 to-white relative flex items-center justify-center overflow-hidden">
                   <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(255,182,193,0.3),transparent)]"></div>
-                  
-                  {/* Decorative Elements */}
-                  <div className="absolute top-6 left-10 w-12 h-8 bg-white/80 rounded-xl flex items-center justify-center shadow-sm">
-                     <div className="flex space-x-1">
-                        <div className="w-1 h-1 bg-pink-300 rounded-full"></div>
-                        <div className="w-1 h-1 bg-pink-300 rounded-full"></div>
-                        <div className="w-1 h-1 bg-pink-300 rounded-full"></div>
-                     </div>
-                  </div>
-                  <div className="absolute top-8 right-10 w-16 h-10 bg-white/80 rounded-xl shadow-sm flex flex-col p-1.5 space-y-1">
-                     <div className="w-full h-1 bg-pink-100 rounded-full"></div>
-                     <div className="w-3/4 h-1 bg-pink-100 rounded-full"></div>
-                  </div>
                 </div>
 
-                {/* Modal Content */}
                 <div className="px-6 pb-8 text-center pt-2">
                   <h3 className="text-xl font-black text-gray-900 mb-4 tracking-wider">免费声明</h3>
-                
-                <div className="text-[14px] text-gray-600 leading-relaxed space-y-4 font-medium mb-6">
+                <div className="text-[14px] text-gray-600 leading-relaxed space-y-4 font-medium mb-6 text-center">
                   <p>
                     本平台所展示的方案均为 <span className="text-orange-500">模拟演示内容</span>，仅供学习与交流参考。不代表平台立场， <span className="text-orange-500">不构成任何建议</span>。平台不对方案的实用性或结果作出任何保证。
                   </p>
-                  
                   <div className="bg-orange-50/50 rounded-2xl p-4 py-6 border border-orange-100/50">
                     <h4 className="text-orange-500 font-bold text-lg mb-2">温馨提示</h4>
-                    <p className="text-gray-700 font-bold">
-                      请理性判断，切勿轻信或传播未经证实的信息。
-                    </p>
+                    <p className="text-gray-700 font-bold">请理性判断，切勿轻信或传播未经证实的信息。</p>
                   </div>
                 </div>
 
@@ -407,8 +388,9 @@ const PredictionDetail = () => {
           </div>
         )}
       </AnimatePresence>
-      {/* Sticky Top Section */}
-      <div className="flex-none relative z-20">
+      
+      {/* Fixed Top Section */}
+      <div className="flex-none relative h-auto z-20">
         {/* Red Header Background */}
         <div className="h-48 red-gradient absolute top-0 left-0 right-0 z-0 opacity-90 rounded-b-[40px]">
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
@@ -428,7 +410,7 @@ const PredictionDetail = () => {
         </div>
 
         {/* Author Card */}
-        <div className="relative z-10 px-4 mt-2">
+        <div className="relative z-10 px-4 mt-2 mb-2">
           <div className="bg-white rounded-2xl p-4 card-shadow">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -465,11 +447,11 @@ const PredictionDetail = () => {
               </span></span>
             </div>
 
-            <div className="mt-6">
-              <h1 className="text-lg font-bold text-gray-900 leading-relaxed">
+            <div className="mt-4">
+              <h1 className="text-[16px] font-bold text-gray-900 leading-tight">
                 <span className="text-[#d32f2f]">{formatPeriod(prediction.period)}</span> {prediction.title || prediction.contentTitle}
               </h1>
-              <div className="mt-4 flex items-center justify-between text-xs text-gray-400">
+              <div className="mt-2 flex items-center justify-between text-[11px] text-gray-400">
                 <span>{prediction.time}</span>
                 <div className="flex items-center">
                   <div className="flex -space-x-1 overflow-hidden mr-1">
@@ -485,8 +467,8 @@ const PredictionDetail = () => {
         </div>
       </div>
 
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto px-4 pb-20 scrollbar-hide">
+      {/* Scrollable Content Section */}
+      <div className="flex-1 overflow-y-auto px-4 pb-20 custom-scrollbar overscroll-contain">
         {/* Lock Section / Result Section */}
         {!prediction.isFree && !isPurchased && !isUnlocked ? (
           <div className="relative mt-3">

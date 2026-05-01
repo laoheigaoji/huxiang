@@ -125,18 +125,18 @@ const AuthorProfile = () => {
   );
   
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-[#f0f7ff] min-h-screen">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-[#f0f7ff] h-[100dvh] flex flex-col overflow-hidden">
       {/* Sky Background */}
-      <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-[#b3e5fc] to-[#f0f7ff] -z-0"></div>
+      <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-[#b3e5fc] to-[#f0f7ff] z-0"></div>
 
       {/* Header Nav */}
-      <div className="relative z-10 flex items-center justify-between p-4 px-5 text-gray-800 pt-6">
+      <div className="relative z-10 flex-none flex items-center justify-between p-4 px-5 text-gray-800 pt-6">
         <ChevronLeft className="w-7 h-7 cursor-pointer" onClick={() => navigate(-1)} />
         <h2 className="text-[19px] font-bold">作者主页</h2>
         <Headset className="w-6 h-6 cursor-pointer" onClick={() => navigate('/feedback')} />
       </div>
 
-      <div className="relative z-10 px-5 pt-2">
+      <div className="relative z-10 flex-none px-5 pt-2 mb-4">
         {/* Author Info Card */}
         <div className="bg-white rounded-2xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-white">
           <div className="flex items-center justify-between">
@@ -185,9 +185,11 @@ const AuthorProfile = () => {
             </div>
           )}
         </div>
+      </div>
 
-        {/* Prediction Feed */}
-        <div className="mt-6 space-y-4 pb-20">
+      {/* Prediction Feed - Scrollable Section */}
+      <div className="flex-1 overflow-y-auto px-5 pb-20 custom-scrollbar overscroll-contain">
+        <div className="space-y-4">
           {predictions.length > 0 ? (
             predictions.map((prediction) => (
               <Link 

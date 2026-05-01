@@ -83,8 +83,8 @@ const PublishPrediction = () => {
     initPage();
   }, [navigate, editId]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!formData.title || !formData.period) return alert('请填全必填项');
     
     setLoading(true);
@@ -500,6 +500,7 @@ const PublishPrediction = () => {
 
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 z-50 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.03)] focus-within:relative">
         <button 
+          type="button"
           onClick={handleSubmit}
           disabled={loading || fetching}
           className="w-full bg-[#d32f2f] text-white font-bold h-14 rounded-xl shadow-lg shadow-red-100 flex items-center justify-center active:scale-[0.98] transition-all disabled:opacity-50"

@@ -49,13 +49,15 @@ const Profile = () => {
 
     const fetchData = async () => {
       try {
-        const [userData, apps, settingsData] = await Promise.all([
+        const [userData, appsData, settingsData] = await Promise.all([
           api.getProfile(),
           api.getAdminApplications().catch(() => []),
           api.getSettings().catch(() => null)
         ]);
         setUser(userData);
         setSettings(settingsData);
+        
+        const apps = Array.isArray(appsData) ? appsData : [];
         const userApp = apps.find((a: any) => a.userId === userData.id);
         setApplication(userApp);
       } catch (err: any) {

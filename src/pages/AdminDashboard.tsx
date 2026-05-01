@@ -823,9 +823,9 @@ const AdminDashboard = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl w-full max-w-md overflow-hidden relative z-10"
+              className={`bg-white rounded-2xl w-full ${activeTab === 'predictions' ? 'max-w-4xl' : 'max-w-md'} max-h-[90vh] flex flex-col relative z-10 shadow-2xl`}
             >
-              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0">
                 <h2 className="text-lg font-bold text-gray-900">
                   {editingItem ? '编辑' : '制作'} {
                     activeTab === 'authors' ? '专家' : 
@@ -835,281 +835,297 @@ const AdminDashboard = () => {
                     activeTab === 'messages' ? '消息通知' : ''
                   }
                 </h2>
-                <button onClick={() => setIsModalOpen(false)} className="p-2">
+                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                   <X className="w-5 h-5 text-gray-400" />
                 </button>
               </div>
               
-              <div className="p-6">
+              <div className="p-6 overflow-y-auto">
                 <form onSubmit={(e) => {
                   e.preventDefault();
                   const formData = new FormData(e.currentTarget);
                   handleSave(Object.fromEntries(formData.entries()));
-                }} className="space-y-4">
+                }} className="space-y-6">
                   {activeTab === 'authors' ? (
-                    <>
+                    <div className="space-y-4">
                       <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1">专家姓名</label>
-                        <input name="name" defaultValue={editingItem?.name} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                        <input name="name" defaultValue={editingItem?.name} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" required />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1">头像URL</label>
-                        <input name="avatar" defaultValue={editingItem?.avatar} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                        <input name="avatar" defaultValue={editingItem?.avatar} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" required />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-bold text-gray-500 mb-1">连红数</label>
-                          <input name="streak" type="number" defaultValue={editingItem?.streak} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" />
+                          <input name="streak" type="number" defaultValue={editingItem?.streak} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" />
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-gray-500 mb-1">粉丝数</label>
-                          <input name="fans" type="number" defaultValue={editingItem?.fans} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" />
+                          <input name="fans" type="number" defaultValue={editingItem?.fans} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" />
                         </div>
                       </div>
-                    </>
+                    </div>
                   ) : activeTab === 'predictions' ? (
-                    <>
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">文章大标题</label>
-                        <input name="title" defaultValue={editingItem?.title} placeholder="如：独家分析 精准推荐" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">正文小标题</label>
-                        <input name="contentTitle" defaultValue={editingItem?.contentTitle} placeholder="如：精准平特一肖 重点推荐" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">标签 (逗号分隔)</label>
-                        <input name="tags" placeholder="精选推荐,独家分析" defaultValue={editingItem?.tags?.join(',')} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {/* Left Column: Basic Info */}
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-black text-gray-900 border-l-4 border-red-500 pl-3">基本信息</h3>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 mb-1">文章大标题</label>
+                          <input name="title" defaultValue={editingItem?.title} placeholder="如：独家分析 精准推荐" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 mb-1">正文小标题</label>
+                          <input name="contentTitle" defaultValue={editingItem?.contentTitle} placeholder="如：精准平特一肖 重点推荐" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" required />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 mb-1">作者名称</label>
+                          <input name="authorName" defaultValue={editingItem?.authorName} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" required />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">价格 (¥)</label>
+                            <input name="price" type="number" defaultValue={editingItem?.price} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" />
+                          </div>
+                          <div>
+                             <label className="block text-xs font-bold text-gray-500 mb-1">期数</label>
+                             <input name="period" defaultValue={editingItem?.period} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">公开状态</label>
+                            <select name="isUnlocked" defaultValue={editingItem?.isUnlocked ? 'true' : 'false'} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all appearance-none cursor-pointer">
+                              <option value="false">锁定中</option>
+                              <option value="true">已公开</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">方案结果</label>
+                            <select name="result" defaultValue={editingItem?.result || ''} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all appearance-none cursor-pointer">
+                              <option value="">未公开</option>
+                              <option value="红">红</option>
+                              <option value="黑">黑</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 mb-1">公开倒计时 (HH:MM:SS)</label>
+                          <input name="unlockDuration" defaultValue={editingItem?.unlockDuration || data.settings?.defaultUnlockDuration} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" placeholder="01:25:20" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 mb-1">标签 (逗号分隔)</label>
+                          <input name="tags" placeholder="精选推荐,独家分析" defaultValue={editingItem?.tags?.join(',')} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" />
+                        </div>
                       </div>
 
-                      {/* Main Picks Visual Manager */}
-                      <div className="space-y-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                        <div className="flex items-center justify-between">
-                          <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider">精选号码 & 生肖</label>
-                          <button 
-                            type="button" 
-                            onClick={() => setModalFormData({...modalFormData, mainPicks: [...modalFormData.mainPicks, null], mainZodiacs: [...modalFormData.mainZodiacs, ''], ballColors: [...modalFormData.ballColors, 'red']})}
-                            className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md text-[10px] font-bold border border-blue-100"
-                          >
-                            + 新增
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          {modalFormData.mainPicks.map((pick: any, i: number) => (
-                            <div key={i} className="flex flex-col space-y-1.5 p-2 bg-white rounded-xl border border-gray-100 relative group">
-                              <button 
-                                type="button" 
-                                onClick={() => {
-                                  const newState = {...modalFormData};
-                                  newState.mainPicks.splice(i, 1);
-                                  newState.mainZodiacs.splice(i, 1);
-                                  newState.ballColors.splice(i, 1);
-                                  setModalFormData(newState);
-                                }}
-                                className="absolute -top-1 -right-1 w-5 h-5 bg-white text-red-500 rounded-full shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                              <div className="flex items-center space-x-2">
-                                <div 
+                      {/* Right Column: Numbers Management */}
+                      <div className="space-y-6">
+                        <h3 className="text-sm font-black text-gray-900 border-l-4 border-orange-500 pl-3">核心数据管理</h3>
+                        
+                        {/* Main Picks Visual Manager */}
+                        <div className="space-y-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider">精选号码 & 生肖</label>
+                            <button 
+                              type="button" 
+                              onClick={() => setModalFormData({...modalFormData, mainPicks: [...modalFormData.mainPicks, null], mainZodiacs: [...modalFormData.mainZodiacs, ''], ballColors: [...modalFormData.ballColors, 'red']})}
+                              className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl text-[10px] font-black border border-blue-100 hover:bg-blue-100 transition-colors"
+                            >
+                              + 新增
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                            {modalFormData.mainPicks.map((pick: any, i: number) => (
+                              <div key={i} className="flex flex-col space-y-2 p-3 bg-white rounded-xl border border-gray-100 relative group shadow-sm">
+                                <button 
+                                  type="button" 
                                   onClick={() => {
-                                    const newColors = [...modalFormData.ballColors];
-                                    newColors[i] = newColors[i] === 'red' ? 'blue' : 'red';
-                                    setModalFormData({...modalFormData, ballColors: newColors});
+                                    const newState = {...modalFormData};
+                                    newState.mainPicks.splice(i, 1);
+                                    newState.mainZodiacs.splice(i, 1);
+                                    newState.ballColors.splice(i, 1);
+                                    setModalFormData(newState);
                                   }}
-                                  className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 cursor-pointer ${modalFormData.ballColors[i] === 'blue' ? 'bg-blue-600' : 'bg-red-500'}`}
+                                  className="absolute -top-2 -right-2 w-6 h-6 bg-white text-red-500 rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-10 hover:bg-red-50"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                                <div className="flex items-center space-x-2">
+                                  <div 
+                                    onClick={() => {
+                                      const newColors = [...modalFormData.ballColors];
+                                      newColors[i] = newColors[i] === 'red' ? 'blue' : 'red';
+                                      setModalFormData({...modalFormData, ballColors: newColors});
+                                    }}
+                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-black shrink-0 cursor-pointer transition-transform active:scale-90 ${modalFormData.ballColors[i] === 'blue' ? 'bg-blue-600 shadow-blue-100' : 'bg-red-500 shadow-red-100'}`}
+                                  >
+                                    <input 
+                                      type="text"
+                                      value={pick === null ? '' : pick}
+                                      onClick={e => e.stopPropagation()}
+                                      onChange={e => {
+                                        const newPicks = [...modalFormData.mainPicks];
+                                        newPicks[i] = e.target.value === '' ? null : (parseInt(e.target.value) || 0);
+                                        setModalFormData({...modalFormData, mainPicks: newPicks});
+                                      }}
+                                      className="w-full bg-transparent text-center outline-none border-none text-[12px] font-black"
+                                    />
+                                  </div>
+                                  <input 
+                                    value={modalFormData.mainZodiacs[i]}
+                                    onChange={e => {
+                                      const newZodiacs = [...modalFormData.mainZodiacs];
+                                      newZodiacs[i] = e.target.value;
+                                      setModalFormData({...modalFormData, mainZodiacs: newZodiacs});
+                                    }}
+                                    placeholder="生肖"
+                                    className="w-full bg-gray-50 rounded-lg px-2 py-1.5 text-[11px] font-black outline-none focus:ring-2 focus:ring-red-100"
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Content Picks Visual Manager */}
+                        <div className="space-y-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider">正文号码 (无需生肖)</label>
+                            <button 
+                              type="button" 
+                              onClick={() => setModalFormData({...modalFormData, contentPicks: [...modalFormData.contentPicks, ''], contentColors: [...modalFormData.contentColors, 'red']})}
+                              className="bg-orange-50 text-orange-600 px-3 py-1.5 rounded-xl text-[10px] font-black border border-orange-100 hover:bg-orange-100 transition-colors"
+                            >
+                              + 新增
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                            {modalFormData.contentPicks.map((pick: any, i: number) => (
+                              <div key={i} className="relative group bg-white border border-gray-100 p-3 rounded-xl flex items-center space-x-3 shadow-sm">
+                                <button 
+                                  type="button" 
+                                  onClick={() => {
+                                    const newState = {...modalFormData};
+                                    newState.contentPicks.splice(i, 1);
+                                    newState.contentColors.splice(i, 1);
+                                    setModalFormData(newState);
+                                  }}
+                                  className="absolute -top-2 -right-2 w-6 h-6 bg-white text-red-500 rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-10 hover:bg-red-50"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                                
+                                <div 
+                                  className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-[12px] font-black transition-all cursor-pointer active:scale-90 ${modalFormData.contentColors[i] === 'blue' ? 'bg-blue-600 shadow-blue-100' : 'bg-red-500 shadow-red-100'}`}
+                                  onClick={() => {
+                                    const newColors = [...modalFormData.contentColors];
+                                    newColors[i] = newColors[i] === 'red' ? 'blue' : 'red';
+                                    setModalFormData({...modalFormData, contentColors: newColors});
+                                  }}
                                 >
                                   <input 
                                     type="text"
-                                    value={pick === null ? '' : pick}
+                                    value={pick}
                                     onClick={e => e.stopPropagation()}
                                     onChange={e => {
-                                      const newPicks = [...modalFormData.mainPicks];
-                                      newPicks[i] = e.target.value === '' ? null : (parseInt(e.target.value) || 0);
-                                      setModalFormData({...modalFormData, mainPicks: newPicks});
+                                      const newPicks = [...modalFormData.contentPicks];
+                                      newPicks[i] = e.target.value;
+                                      setModalFormData({...modalFormData, contentPicks: newPicks});
                                     }}
-                                    className="w-full bg-transparent text-center outline-none border-none text-[11px]"
+                                    className="w-full bg-transparent text-center outline-none border-none font-black"
                                   />
                                 </div>
-                                <input 
-                                  value={modalFormData.mainZodiacs[i]}
-                                  onChange={e => {
-                                    const newZodiacs = [...modalFormData.mainZodiacs];
-                                    newZodiacs[i] = e.target.value;
-                                    setModalFormData({...modalFormData, mainZodiacs: newZodiacs});
+
+                                <button 
+                                  type="button"
+                                  onClick={() => {
+                                    const newColors = [...modalFormData.contentColors];
+                                    newColors[i] = newColors[i] === 'red' ? 'blue' : 'red';
+                                    setModalFormData({...modalFormData, contentColors: newColors});
                                   }}
-                                  placeholder="生肖"
-                                  className="w-full bg-gray-50 rounded-lg px-2 py-1 text-[11px] font-bold outline-none"
-                                />
+                                  className={`text-[10px] px-2 py-1 rounded-lg border font-black transition-all ${
+                                    modalFormData.contentColors[i] === 'blue' 
+                                      ? 'bg-blue-50 text-blue-600 border-blue-100' 
+                                      : 'bg-red-50 text-red-600 border-red-100'
+                                    }`}
+                                >
+                                  {modalFormData.contentColors[i] === 'blue' ? '蓝' : '红'}
+                                </button>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                       </div>
-
-                      {/* Content Picks Visual Manager */}
-                      <div className="space-y-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                        <div className="flex items-center justify-between">
-                          <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider">正文号码 (无需生肖)</label>
-                          <button 
-                            type="button" 
-                            onClick={() => setModalFormData({...modalFormData, contentPicks: [...modalFormData.contentPicks, ''], contentColors: [...modalFormData.contentColors, 'red']})}
-                            className="bg-orange-50 text-orange-600 px-2 py-1 rounded-md text-[10px] font-bold border border-orange-100"
-                          >
-                            + 新增
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-3 gap-3">
-                          {modalFormData.contentPicks.map((pick: any, i: number) => (
-                            <div key={i} className="relative group bg-white border border-gray-100 p-2 rounded-xl flex items-center space-x-2">
-                              <button 
-                                type="button" 
-                                onClick={() => {
-                                  const newState = {...modalFormData};
-                                  newState.contentPicks.splice(i, 1);
-                                  newState.contentColors.splice(i, 1);
-                                  setModalFormData(newState);
-                                }}
-                                className="absolute -top-2 -right-2 w-5 h-5 bg-white text-red-500 rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                              
-                              <div 
-                                className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-[11px] font-bold transition-colors ${modalFormData.contentColors[i] === 'blue' ? 'bg-blue-600 shadow-blue-100' : 'bg-red-500 shadow-red-100'}`}
-                              >
-                                <input 
-                                  type="text"
-                                  value={pick}
-                                  onChange={e => {
-                                    const newPicks = [...modalFormData.contentPicks];
-                                    newPicks[i] = e.target.value;
-                                    setModalFormData({...modalFormData, contentPicks: newPicks});
-                                  }}
-                                  className="w-full bg-transparent text-center outline-none border-none"
-                                />
-                              </div>
-
-                              <button 
-                                type="button"
-                                onClick={() => {
-                                  const newColors = [...modalFormData.contentColors];
-                                  newColors[i] = newColors[i] === 'red' ? 'blue' : 'red';
-                                  setModalFormData({...modalFormData, contentColors: newColors});
-                                }}
-                                className={`text-[10px] px-1.5 py-0.5 rounded border font-bold transition-all ${
-                                  modalFormData.contentColors[i] === 'blue' 
-                                    ? 'bg-blue-50 text-blue-600 border-blue-200' 
-                                    : 'bg-red-50 text-red-600 border-red-200'
-                                  }`}
-                              >
-                                {modalFormData.contentColors[i] === 'blue' ? '蓝' : '红'}
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">作者名称</label>
-                        <input name="authorName" defaultValue={editingItem?.authorName} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-bold text-gray-500 mb-1">价格</label>
-                          <input name="price" type="number" defaultValue={editingItem?.price} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" />
-                        </div>
-                        <div>
-                           <label className="block text-xs font-bold text-gray-500 mb-1">期数</label>
-                           <input name="period" defaultValue={editingItem?.period} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-bold text-gray-500 mb-1">公开状态</label>
-                          <select name="isUnlocked" defaultValue={editingItem?.isUnlocked ? 'true' : 'false'} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm">
-                            <option value="false">锁定中</option>
-                            <option value="true">已公开</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-gray-500 mb-1">方案结果</label>
-                          <select name="result" defaultValue={editingItem?.result || ''} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm">
-                            <option value="">未公开</option>
-                            <option value="红">红</option>
-                            <option value="黑">黑</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">公开倒计时 (HH:MM:SS)</label>
-                        <input name="unlockDuration" defaultValue={editingItem?.unlockDuration || data.settings?.defaultUnlockDuration} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" placeholder="01:25:20" />
-                      </div>
-                    </>
+                    </div>
                   ) : activeTab === 'users' ? (
-                    <>
+                    <div className="space-y-4">
                       <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1">用户昵称</label>
-                        <input name="nickname" defaultValue={editingItem?.nickname} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                        <input name="nickname" defaultValue={editingItem?.nickname} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" required />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1">账户余额</label>
-                        <input name="balance" type="number" step="0.01" defaultValue={editingItem?.balance} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                        <input name="balance" type="number" step="0.01" defaultValue={editingItem?.balance} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" required />
                       </div>
-                    </>
+                    </div>
                   ) : activeTab === 'history' ? (
-                    <>
+                    <div className="space-y-4">
                       <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1">期数</label>
-                        <input name="period" placeholder="如：第116期" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                        <input name="period" placeholder="如：第116期" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" required />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-bold text-gray-500 mb-1">类型</label>
-                          <input name="type" placeholder="如：全7位" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                          <input name="type" placeholder="如：全7位" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" required />
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-gray-500 mb-1">核心选型</label>
-                          <input name="mainPick" placeholder="如：猴" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                          <input name="mainPick" placeholder="如：猴" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" required />
                         </div>
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1">号码 (逗号分隔)</label>
-                        <input name="numbers" placeholder="21,16,25..." className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                        <input name="numbers" placeholder="21,16,25..." className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" required />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1">生肖 (逗号分隔)</label>
-                        <input name="animals" placeholder="狗,兔,马..." className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                        <input name="animals" placeholder="狗,兔,马..." className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" required />
                       </div>
-                    </>
+                    </div>
                   ) : activeTab === 'messages' ? (
-                    <>
+                    <div className="space-y-4">
                       <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1">消息类型</label>
-                        <select name="type" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm">
+                        <select name="type" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all">
                           <option value="system">系统公告</option>
                           <option value="activity">优惠活动</option>
                         </select>
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1">推送对象 (填写ID或all)</label>
-                        <input name="userId" placeholder="all" defaultValue="all" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                        <input name="userId" placeholder="all" defaultValue="all" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" required />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1">标题</label>
-                        <input name="title" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                        <input name="title" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" required />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1">内容</label>
-                        <textarea name="content" rows={4} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                        <textarea name="content" rows={4} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" required />
                       </div>
-                    </>
+                    </div>
                   ) : null}
                   
-                  <button type="submit" className="w-full bg-[#d32f2f] text-white py-4 rounded-xl font-bold shadow-lg shadow-red-100 flex items-center justify-center">
-                    <Save className="w-4 h-4 mr-2" />
-                    保存修改
-                  </button>
+                  <div className="shrink-0 pt-4">
+                    <button type="submit" className="w-full bg-[#d32f2f] text-white py-4 rounded-2xl font-black shadow-xl shadow-red-100 flex items-center justify-center hover:scale-[1.01] active:scale-[0.99] transition-all">
+                      <Save className="w-5 h-5 mr-2" />
+                      确认并保存记录
+                    </button>
+                  </div>
                 </form>
               </div>
             </motion.div>

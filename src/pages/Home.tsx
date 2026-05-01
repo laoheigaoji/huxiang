@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, SlidersHorizontal, Trophy, Pencil, User as UserIcon, X, ChevronRight, Check, ArrowLeftRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../services/api';
 import { Author, Prediction } from '../types';
 import JumpingNumber from '../components/JumpingNumber';
-
-import AnimatedNumber from '../components/AnimatedNumber';
 import AnimatedRefreshNumber from '../components/AnimatedRefreshNumber';
 
 const SortIcon = ({ type, direction }: { type: string, direction?: 'up' | 'down' }) => {
@@ -172,7 +170,7 @@ const PredictionCard = ({ prediction, isFollowed, onFollow, refreshTrigger }: { 
   const titleDisplay = prediction.title || prediction.contentTitle;
   
   return (
-  <Link to={`/prediction/${prediction.id}`} className="block bg-white rounded-xl mb-4 overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] relative border border-gray-100/30 mx-3">
+  <Link to={`/prediction/${prediction.id}`} className="block bg-white rounded-xl mb-2 overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] relative border border-gray-100/30 mx-3">
     {prediction.isHot && (
       <div className="absolute top-0 left-0 z-10 w-8 h-8 flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 rounded-br-2xl shadow-sm">
         <Trophy className="w-4 h-4 text-white rotate-[-15deg] drop-shadow-sm" />
@@ -185,10 +183,10 @@ const PredictionCard = ({ prediction, isFollowed, onFollow, refreshTrigger }: { 
       </div>
     )}
     
-    <div className="p-4 relative">
+    <div className="p-2.5 relative">
       {/* Result Stamp */}
       {prediction.result && (
-        <div className="absolute top-12 right-2 w-16 h-12 z-10 pointer-events-none opacity-90 select-none">
+        <div className="absolute top-10 right-2 w-14 h-10 z-10 pointer-events-none opacity-90 select-none">
           <img 
             src={prediction.result === '红' ? 'https://wxqun988.vxjuejin.com/IMG_1034.PNG' : 'https://wxqun988.vxjuejin.com/IMG_1035.PNG'} 
             alt={prediction.result}
@@ -198,14 +196,14 @@ const PredictionCard = ({ prediction, isFollowed, onFollow, refreshTrigger }: { 
       )}
       
       {/* Author Info */}
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start justify-between mb-2">
         <div className="flex items-center">
-          <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-100 shadow-sm mr-2.5">
+          <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 shadow-sm mr-2">
             <img src={prediction.authorAvatar} alt={prediction.authorName} className="w-full h-full object-cover" />
           </div>
           <div className="flex flex-col">
-            <h3 className="text-[15px] font-bold text-gray-900 leading-tight">{prediction.authorName}</h3>
-            <span className="text-[11px] text-orange-500 font-bold mt-0.5">{prediction.authorFans} 粉丝</span>
+            <h3 className="text-[14px] font-bold text-gray-900 leading-tight">{prediction.authorName}</h3>
+            <span className="text-[10px] text-orange-500 font-bold mt-0.5">{prediction.authorFans} 粉丝</span>
           </div>
         </div>
         {!prediction.isUnlocked && !prediction.isFree && prediction.unlockAt && (
@@ -214,7 +212,7 @@ const PredictionCard = ({ prediction, isFollowed, onFollow, refreshTrigger }: { 
         {(!prediction.unlockAt || prediction.isFree) && !prediction.isUnlocked && (
           <button 
             onClick={onFollow}
-            className={`text-[12px] font-bold px-4 py-1.5 rounded-full active:scale-95 transition-all shadow-sm ${
+            className={`text-[11px] font-bold px-3 py-1 rounded-full active:scale-95 transition-all shadow-sm ${
               isFollowed 
                 ? 'bg-gray-100 text-gray-400' 
                 : 'bg-[#fef2f2] text-[#d32f2f]'
@@ -226,26 +224,26 @@ const PredictionCard = ({ prediction, isFollowed, onFollow, refreshTrigger }: { 
       </div>
 
       {/* Content Title */}
-      <h4 className="text-[16px] leading-[1.4] mb-3 flex items-start">
+      <h4 className="text-[15px] leading-[1.3] mb-2.5 flex items-start">
         {periodDisplay && <span className="font-bold text-gray-900 shrink-0 mr-1">{periodDisplay}</span>}
         <span className="font-medium text-gray-800">{prediction.title || prediction.contentTitle}</span>
       </h4>
 
       {/* Badges/Tags & Price */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex bg-white border border-[#d32f2f] rounded-[5px] overflow-hidden scale-95 origin-left shrink-0">
-            <span className="text-[10px] text-[#d32f2f] px-2 py-0.5 font-bold bg-white">{prediction.authorRecentRecord || '精选'}</span>
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex bg-white border border-[#d32f2f] rounded-[4px] overflow-hidden scale-95 origin-left shrink-0">
+            <span className="text-[9px] text-[#d32f2f] px-1.5 py-0.5 font-bold bg-white">{prediction.authorRecentRecord || '精选'}</span>
             {prediction.authorStreak > 0 && (
-              <div className="flex items-center bg-[#d32f2f] text-white text-[10px] px-2 py-0.5 font-bold space-x-1 shrink-0">
+              <div className="flex items-center bg-[#d32f2f] text-white text-[9px] px-1.5 py-0.5 font-bold space-x-0.5 shrink-0">
                 <span>{prediction.authorStreak}连红</span>
-                <span className="text-[9px]">👍</span>
+                <span className="text-[8px]">👍</span>
               </div>
             )}
           </div>
           
           {prediction.tags && prediction.tags.map((tag, idx) => (
-            <div key={idx} className="bg-red-50 text-[#d32f2f] text-[10px] font-bold px-2.5 py-0.5 rounded-[5px] border border-red-100/50 scale-95 origin-left shrink-0">
+            <div key={idx} className="bg-red-50 text-[#d32f2f] text-[9px] font-bold px-2 py-0.5 rounded-[4px] border border-red-100/50 scale-95 origin-left shrink-0">
               {tag}
             </div>
           ))}
@@ -253,35 +251,36 @@ const PredictionCard = ({ prediction, isFollowed, onFollow, refreshTrigger }: { 
 
         <div className={`shrink-0 ${prediction.isFree || prediction.isUnlocked ? 'text-green-500' : 'text-[#d32f2f]'}`}>
           {prediction.isFree || prediction.isUnlocked ? (
-            <span className="text-[15px] font-black">免费</span>
+            <span className="text-[14px] font-black">免费</span>
           ) : (
             <div className="flex items-baseline">
-              <span className="text-[12px] font-black mr-0.5">¥</span>
-              <span className="text-[17px] font-black">{Math.floor(prediction.price)}</span>
-              <span className="text-[11px] font-medium">.00</span>
+              <span className="text-[11px] font-black mr-0.5">¥</span>
+              <span className="text-[16px] font-black">{Math.floor(prediction.price)}</span>
+              <span className="text-[10px] font-medium">.00</span>
             </div>
           )}
         </div>
       </div>
 
       {/* Card Footer */}
-      <div className="flex items-center justify-between pt-3 border-t border-gray-50/80">
-        <span className="text-[11px] text-gray-400 font-medium">{prediction.time}</span>
+      <div className="flex items-center justify-between pt-2 border-t border-gray-50/80">
+        <span className="text-[10px] text-gray-400 font-medium">{prediction.time}</span>
         <div className="flex items-center">
-          <div className="flex flex-col items-end mr-3">
+          <div className="flex flex-col items-end mr-2">
             <div className="flex -space-x-1.5">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="w-4 h-4 rounded-full border border-white overflow-hidden bg-gray-100 ring-1 ring-gray-100">
+                <div key={i} className="w-3.5 h-3.5 rounded-full border border-white overflow-hidden bg-gray-100">
                   <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${prediction.id}${i}`} className="w-full h-full object-cover" alt="viewer" />
                 </div>
               ))}
             </div>
           </div>
-          <span className="text-[11px] text-gray-400 font-bold tracking-tight">
+          <span className="text-[10px] text-gray-400 font-bold tracking-tight">
             <AnimatedRefreshNumber id={`view_${prediction.id}`} base={prediction.viewCount || 888} refreshTrigger={refreshTrigger} />次
           </span>
         </div>
       </div>
+
     </div>
   </Link>
   );
@@ -346,9 +345,10 @@ const Home = () => {
   // Pull to refresh logic
   const [startY, setStartY] = useState(0);
   const [pullOffset, setPullOffset] = useState(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (window.scrollY === 0) {
+    if (scrollContainerRef.current?.scrollTop === 0) {
       setStartY(e.touches[0].clientY);
     }
   };
@@ -357,7 +357,7 @@ const Home = () => {
     if (startY === 0) return;
     const currentY = e.touches[0].clientY;
     const diff = currentY - startY;
-    if (diff > 0 && window.scrollY === 0) {
+    if (diff > 0 && scrollContainerRef.current?.scrollTop === 0) {
       const offset = Math.min(diff * 0.5, 80);
       setPullOffset(offset);
     }
@@ -452,7 +452,7 @@ const Home = () => {
 
   return (
     <div 
-      className="bg-gray-100/50 min-h-screen relative"
+      className="bg-gray-100/50 h-[100dvh] flex flex-col relative overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -460,9 +460,14 @@ const Home = () => {
       {/* Refresh Indicator */}
       <motion.div 
         style={{ height: pullOffset }} 
-        className="flex items-center justify-center overflow-hidden bg-gray-50/50"
+        className="flex items-center justify-center overflow-hidden bg-gray-50/50 flex-none"
       >
-        <div className={`w-6 h-6 border-2 border-[#d32f2f] border-t-transparent rounded-full animate-spin transition-opacity ${pullOffset > 20 ? 'opacity-100' : 'opacity-0'}`} />
+        <div className={`flex flex-col items-center justify-center transition-opacity ${pullOffset > 20 ? 'opacity-100' : 'opacity-0'}`}>
+           <div className={`w-6 h-6 border-2 border-[#d32f2f] border-t-transparent rounded-full animate-spin transition-opacity ${pullOffset > 20 ? 'opacity-100' : 'opacity-0'}`} />
+           <span className="text-[10px] text-gray-500 font-bold mt-1">
+             {pullOffset > 50 ? '松开即可刷新' : '下拉刷新'}
+           </span>
+        </div>
       </motion.div>
 
       {/* Actual Refreshing Indicator (when loading) */}
@@ -484,6 +489,7 @@ const Home = () => {
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
         exit={{ opacity: 0 }}
+        className="flex flex-col h-full overflow-hidden"
       >
       {/* Sort Modal */}
       <SortModal 
@@ -493,9 +499,8 @@ const Home = () => {
         onSelect={setSelectedSort}
       />
 
-      {/* Main Top Content Container */}
-      <div className="bg-white px-3 py-2.5 shadow-sm mb-1 border-b border-gray-100">
-        {/* User & Search Area */}
+      {/* Main Top Content Container (FIXED) */}
+      <div className="flex-none bg-white px-3 py-2.5 shadow-sm mb-1 border-b border-gray-100 z-10">
         <div className="flex items-center justify-between mb-3">
            <div className="flex items-center shrink-0">
               <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm border-[1.5px] border-white ring-1 ring-gray-100">
@@ -527,9 +532,12 @@ const Home = () => {
               </Link>
            </div>
         </div>
+      </div>
 
+      {/* Content Container (SCROLLABLE) */}
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto scrollbar-hide overscroll-contain">
         {/* Tab Buttons & Stats */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="bg-white px-3 py-3 border-b border-gray-100 flex items-center justify-between mb-1">
           <div className="flex items-center space-x-1.5">
             <button 
               onClick={() => setAuthorType('top')}
@@ -569,18 +577,15 @@ const Home = () => {
           </div>
         </div>
 
-
         {/* Author Avatars Grid - Two Rows of Five */}
-        <div className="mt-1">
-          <div className="grid grid-cols-5 gap-y-2 gap-x-1">
+        <div className="bg-white pb-2 mb-1">
+          <div className="grid grid-cols-5 gap-y-2 gap-x-1 px-3">
              {(authorType === 'top' ? authors : authors.slice().reverse()).slice(0, 10).map((author, index) => (
                <AuthorAvatarGrid key={author.id + index} author={author} />
              ))}
           </div>
         </div>
-      </div>
 
-      <div className="flex-1 pb-4">
         <div className="space-y-0">
           {sortedPredictions.map((prediction) => (
               <PredictionCard 
@@ -644,10 +649,10 @@ const Home = () => {
           onClick={() => setIsSortModalOpen(true)}
           className="w-14 h-14 bg-[#d32f2f] rounded-full flex items-center justify-center text-white shadow-[0_8px_30px_rgba(183,28,28,0.4)] active:scale-90 active:shadow-lg transition-all duration-300"
         >
-          <div className="flex flex-col space-y-[4px]">
-             <div className="w-6 h-[2.5px] bg-white rounded-full"></div>
-             <div className="w-4 h-[2.5px] bg-white rounded-full self-end"></div>
-             <div className="w-6 h-[2.5px] bg-white rounded-full"></div>
+          <div className="flex flex-col space-y-[2.5px]">
+             <div className="w-4 h-[2px] bg-white rounded-full"></div>
+             <div className="w-3 h-[2px] bg-white rounded-full self-end"></div>
+             <div className="w-4 h-[2px] bg-white rounded-full"></div>
           </div>
         </button>
       </div>
