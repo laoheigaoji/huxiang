@@ -580,16 +580,6 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Yellow Notice Bar */}
-      {isAnnouncementVisible && (
-        <div className="bg-[#fffef2] px-4 py-1.5 flex items-center justify-between border-b border-orange-100/30 mb-0.5">
-          <span className="text-[11.5px] text-orange-400 font-bold tracking-tight">
-             {settings?.announcement || '关系推荐人进行开通'}
-          </span>
-          <X className="w-3.5 h-3.5 text-orange-200 cursor-pointer" onClick={() => setIsAnnouncementVisible(false)} />
-        </div>
-      )}
-
       <div className="flex-1 pb-4">
         <div className="space-y-0">
           {sortedPredictions.map((prediction) => (
@@ -610,17 +600,41 @@ const Home = () => {
           )}
           
           {/* Legal Disclaimer Footer */}
-          <div className="mx-4 mt-4 p-4 rounded-xl border border-gray-100/50 bg-white/50 relative overflow-hidden backdrop-blur-sm">
+          <div className="mx-4 mt-4 p-4 rounded-xl border border-gray-100/50 bg-white/50 relative overflow-hidden backdrop-blur-sm mb-12">
              <div className="absolute top-0 right-0 p-2 cursor-pointer" onClick={(e) => e.currentTarget.parentElement?.remove()}>
                 <X className="w-3.5 h-3.5 text-gray-300 hover:text-gray-500" />
              </div>
              <p className="text-[10.5px] text-gray-400 font-bold text-center leading-relaxed">
                文章内容为作者个人观点，不代表平台立场，仅供参考！不保证实用性
              </p>
-             <div className="h-px bg-gradient-to-r from-transparent via-gray-100 to-transparent my-3 w-full"></div>
+             <div className="h-px bg-gradient-to-r from-transparent via-gray-100 to-transparent my-2 w-full"></div>
           </div>
         </div>
       </div>
+
+      {/* Floating Notice Bar (Bottom) */}
+      <AnimatePresence>
+        {isAnnouncementVisible && (
+          <motion.div 
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 50, opacity: 0 }}
+            className="fixed bottom-[56px] left-0 right-0 z-40 bg-black/40 backdrop-blur-sm px-4 py-1.5 flex items-center justify-between"
+          >
+            <div className="flex-1 overflow-hidden">
+               <p className="text-white/90 text-[10px] font-medium leading-tight truncate">
+                 文章内容为作者个人观点，不代表平台立场，仅供参考！不保证实用性
+               </p>
+            </div>
+            <button 
+              onClick={() => setIsAnnouncementVisible(false)}
+              className="ml-3 p-1 text-white/50 hover:text-white"
+            >
+              <X size={12} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       </motion.div>
 

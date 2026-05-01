@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Headset, Share2, Lock, ArrowRight, UserPlus, X, Star, Download } from 'lucide-react';
+import { ChevronLeft, Headset, Share2, Lock, ArrowRight, UserPlus, X, Star, Download, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { api } from '../services/api';
@@ -322,7 +322,7 @@ const PredictionDetail = () => {
   if (!prediction) return null;
 
   return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-gray-50 min-h-screen">
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-gray-50 h-screen flex flex-col overflow-hidden">
       {/* Disclaimer Modal */}
       <AnimatePresence>
         {showDisclaimer && (
@@ -405,80 +405,86 @@ const PredictionDetail = () => {
           </div>
         )}
       </AnimatePresence>
-      {/* Red Header Background */}
-      <div className="h-48 red-gradient absolute top-0 left-0 right-0 z-0 opacity-90 rounded-b-[40px]">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-      </div>
-
-      {/* Header Nav */}
-      <div className="relative z-10 flex items-center justify-between p-4 text-white">
-        <ChevronLeft className="w-6 h-6 cursor-pointer" onClick={() => navigate(-1)} />
-        <h2 className="text-lg font-medium">方案详情</h2>
-        
-        <div className="flex items-center space-x-2">
-            {prediction.status === 'public' && (
-                <span className="bg-green-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">公开</span>
-            )}
-            <Headset className="w-6 h-6 cursor-pointer" />
+      {/* Sticky Top Section */}
+      <div className="flex-none relative z-20">
+        {/* Red Header Background */}
+        <div className="h-48 red-gradient absolute top-0 left-0 right-0 z-0 opacity-90 rounded-b-[40px]">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="relative z-10 px-4 mt-2">
-        <div className="bg-white rounded-2xl p-4 card-shadow">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <img src={prediction.authorAvatar} alt="" className="w-12 h-12 rounded-full" />
-              <div className="ml-3">
-                <h3 className="font-bold text-gray-800">{prediction.authorName}</h3>
-                <p className="text-xs text-orange-500">{prediction.authorFans} 粉丝</p>
-              </div>
-            </div>
-            <button 
-              onClick={handleFollow}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold border flex items-center transition-all active:scale-95 ${
-                isFollowed 
-                  ? 'bg-gray-100 text-gray-400 border-gray-200' 
-                  : 'bg-pink-50 text-[#d32f2f] border-red-100'
-              }`}
-            >
-              <UserPlus className={`w-3 h-3 mr-1 ${isFollowed ? 'hidden' : 'block'}`} /> {isFollowed ? '已关注' : '关注'}
-            </button>
+        {/* Header Nav */}
+        <div className="relative z-10 flex items-center justify-between p-4 text-white">
+          <ChevronLeft className="w-6 h-6 cursor-pointer" onClick={() => navigate(-1)} />
+          <h2 className="text-lg font-medium">方案详情</h2>
+          
+          <div className="flex items-center space-x-2">
+              {prediction.status === 'public' && (
+                  <span className="bg-green-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">公开</span>
+              )}
+              <Headset className="w-6 h-6 cursor-pointer" />
           </div>
+        </div>
 
-          <div className="mt-2 flex items-center flex-wrap gap-2">
-            <span className="text-[10px] text-[#d32f2f] bg-red-50 px-1.5 py-0.5 border border-red-100 rounded-sm">
-              {prediction.authorRecentRecord || '精选'}
-            </span>
-            {prediction.tags && prediction.tags.map((tag, idx) => (
-              <span key={idx} className="text-[10px] text-[#d32f2f] bg-red-50 px-1.5 py-0.5 border border-red-100 rounded-sm">
-                {tag}
-              </span>
-            ))}
-            <div className="flex-grow"></div>
-            <span className="text-[10px] text-gray-400">近七日人气 <span className="text-[#d32f2f] font-bold">
-              <JumpingNumber id={`view_total_${prediction.id}`} base={prediction.viewCount + 15000} range={20} interval={86400000} />
-            </span></span>
-          </div>
-
-          <div className="mt-6">
-            <h1 className="text-lg font-bold text-gray-900 leading-relaxed">
-              <span className="text-[#d32f2f]">{formatPeriod(prediction.period)}</span> {prediction.title || prediction.contentTitle}
-            </h1>
-            <div className="mt-4 flex items-center justify-between text-xs text-gray-400">
-              <span>{prediction.time}</span>
+        {/* Author Card */}
+        <div className="relative z-10 px-4 mt-2">
+          <div className="bg-white rounded-2xl p-4 card-shadow">
+            <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="flex -space-x-1 overflow-hidden mr-1">
-                   {[1, 2, 3].map(i => (
-                    <img key={i} className="h-4 w-4 rounded-full ring-1 ring-white" src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i + 100}`} alt="" />
-                  ))}
+                <img src={prediction.authorAvatar} alt="" className="w-12 h-12 rounded-full" />
+                <div className="ml-3">
+                  <h3 className="font-bold text-gray-800">{prediction.authorName}</h3>
+                  <p className="text-xs text-orange-500">{prediction.authorFans} 粉丝</p>
                 </div>
-                <span><JumpingNumber id={`view_count_${prediction.id}`} base={3616} range={5} interval={2500} />人查看</span>
+              </div>
+              <button 
+                onClick={handleFollow}
+                className={`px-4 py-1.5 rounded-full text-xs font-bold border flex items-center transition-all active:scale-95 ${
+                  isFollowed 
+                    ? 'bg-gray-100 text-gray-400 border-gray-200' 
+                    : 'bg-pink-50 text-[#d32f2f] border-red-100'
+                }`}
+              >
+                <UserPlus className={`w-3 h-3 mr-1 ${isFollowed ? 'hidden' : 'block'}`} /> {isFollowed ? '已关注' : '关注'}
+              </button>
+            </div>
+
+            <div className="mt-2 flex items-center flex-wrap gap-2">
+              <span className="text-[10px] text-[#d32f2f] bg-red-50 px-1.5 py-0.5 border border-red-100 rounded-sm">
+                {prediction.authorRecentRecord || '精选'}
+              </span>
+              {prediction.tags && prediction.tags.map((tag, idx) => (
+                <span key={idx} className="text-[10px] text-[#d32f2f] bg-red-50 px-1.5 py-0.5 border border-red-100 rounded-sm">
+                  {tag}
+                </span>
+              ))}
+              <div className="flex-grow"></div>
+              <span className="text-[10px] text-gray-400">近七日人气 <span className="text-[#d32f2f] font-bold">
+                <JumpingNumber id={`view_total_${prediction.id}`} base={prediction.viewCount + 15000} range={20} interval={86400000} />
+              </span></span>
+            </div>
+
+            <div className="mt-6">
+              <h1 className="text-lg font-bold text-gray-900 leading-relaxed">
+                <span className="text-[#d32f2f]">{formatPeriod(prediction.period)}</span> {prediction.title || prediction.contentTitle}
+              </h1>
+              <div className="mt-4 flex items-center justify-between text-xs text-gray-400">
+                <span>{prediction.time}</span>
+                <div className="flex items-center">
+                  <div className="flex -space-x-1 overflow-hidden mr-1">
+                    {[1, 2, 3].map(i => (
+                      <img key={i} className="h-4 w-4 rounded-full ring-1 ring-white" src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i + 100}`} alt="" />
+                    ))}
+                  </div>
+                  <span><JumpingNumber id={`view_count_${prediction.id}`} base={3616} range={5} interval={2500} />人查看</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto px-4 pb-20 scrollbar-hide">
         {/* Lock Section / Result Section */}
         {!prediction.isFree && !isPurchased && !isUnlocked && (
           <div className="mt-4 bg-orange-50 rounded-2xl p-6 border border-orange-100 text-center relative overflow-hidden">
@@ -516,45 +522,47 @@ const PredictionDetail = () => {
         )}
 
         {(prediction.isFree || isPurchased || isUnlocked) && (
-          <div className="mt-4 bg-[#fff0f1] rounded-[32px] p-5 pb-6 border border-[#fee2e2] shadow-sm relative overflow-hidden">
+          <div className="mt-4 bg-[#fdf2f2] rounded-[32px] p-5 pb-6 border border-[#fee2e2] shadow-sm relative overflow-hidden">
             <div className="absolute top-4 right-4 text-gray-400 z-10">
               <Share2 className="w-5 h-5 cursor-pointer" onClick={() => setShowShare(true)} />
             </div>
             
-            <h4 className="text-[#ea580c] font-black text-lg mb-4 flex justify-center items-center space-x-2 tracking-widest">
-              <Star className="w-5 h-5 fill-[#ea580c]" />
+            {/* Title: 模拟核对第XX期 */}
+            <div className="text-center mb-2 relative">
+              <h3 className="text-[#374151] font-bold text-[15px] flex items-center justify-center">
+                模拟核对第{prediction.period?.replace(/[^\d]/g, '')}期
+              </h3>
+            </div>
+
+            {/* Check Grid: 核对 (Top) */}
+            <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-2 mb-3">
+              {(prediction.mainPicks || [1, 2, 5, 8, 12, 19, 24]).map((n, i) => (
+                <div key={i} className="flex flex-col items-center min-w-[32px]">
+                  <div className="w-7 h-7 rounded-full bg-[#ef4444] flex items-center justify-center text-white text-[12px] font-bold shadow-sm">
+                    {n.toString().padStart(2, '0')}
+                  </div>
+                  {prediction.mainZodiacs && prediction.mainZodiacs[i] && (
+                    <span className="text-[9px] text-gray-500 mt-0.5 font-bold">{prediction.mainZodiacs[i]}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Paid Content Label */}
+            <h4 className="text-[#f97316] font-black text-[14px] mb-2 flex justify-center items-center space-x-1.5 tracking-widest">
+              <Star className="w-3.5 h-3.5 fill-[#f97316]" />
               <span>付费内容</span>
-              <Star className="w-5 h-5 fill-[#ea580c]" />
+              <Star className="w-3.5 h-3.5 fill-[#f97316]" />
             </h4>
             
-            <div className="bg-[#fff9c4] rounded-2xl p-5 border border-dashed border-[#ffb74d]/50 relative">
-              <div className="space-y-6">
-                <div className="flex items-start">
-                  <span className="text-[13px] text-gray-400 mr-4 mt-2 whitespace-nowrap">正文</span>
-                  <div className="flex flex-wrap gap-2.5">
-                    {(prediction.content || '测试').split(/[\s,，、]+/).filter(Boolean).map((p, i) => (
-                      <div key={i} className="w-6 h-6 rounded-full bg-[#ef4444] flex items-center justify-center text-white text-[11px] font-bold shadow-sm">
-                        {p}
-                      </div>
-                    ))}
+            {/* Body Content Grid (Bottom) */}
+            <div className="bg-[#fff7ed] rounded-xl p-3 border border-dashed border-[#fdba74]/50 relative shadow-inner">
+              <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-2">
+                {(prediction.content || '').split(/[\s,，、]+/).filter(Boolean).map((p, i) => (
+                  <div key={i} className="w-7 h-7 rounded-full bg-[#f97316] flex items-center justify-center text-white text-[12px] font-bold shadow-sm">
+                    {p}
                   </div>
-                </div>
-
-                <div className="flex items-start">
-                  <span className="text-[13px] text-gray-400 mr-4 mt-2.5 whitespace-nowrap">核对</span>
-                  <div className="flex flex-wrap gap-x-2.5 gap-y-4">
-                    {(prediction.mainPicks || [1, 2, 5, 8, 12, 19, 24]).map((n, i) => (
-                      <div key={i} className="flex flex-col items-center">
-                        <div className="w-6 h-6 rounded-full bg-[#ef4444] flex items-center justify-center text-white text-[11px] font-bold shadow-sm">
-                          {n.toString().padStart(2, '0')}
-                        </div>
-                        {prediction.mainZodiacs && prediction.mainZodiacs[i] && (
-                          <span className="text-[9px] text-gray-500 mt-0.5 font-bold">{prediction.mainZodiacs[i]}</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
@@ -657,7 +665,7 @@ const PredictionDetail = () => {
         </div>
       </div>
 
-      {/* Fullscreen Loading Overlay for Payment */}
+      {/* Overlays and Modals (Fixed to screen) */}
       {isProcessingPayment && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm">
             <div className="bg-white p-6 rounded-3xl flex flex-col items-center justify-center shadow-2xl max-w-[280px] w-full mx-4 relative">
@@ -944,21 +952,6 @@ const PredictionDetail = () => {
            返回
         </button>
       </div>
-      {isProcessingPayment && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-            <div className="bg-white p-6 rounded-3xl flex flex-col items-center justify-center shadow-2xl max-w-[280px] w-full mx-4 relative">
-                <button 
-                    onClick={() => setIsProcessingPayment(false)} 
-                    className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1"
-                >
-                    <X size={20} />
-                </button>
-                <div className="w-12 h-12 border-4 border-[#d32f2f] border-t-transparent rounded-full animate-spin mb-4 mt-2"></div>
-                <p className="text-gray-900 font-bold text-lg">正在确认支付...</p>
-                <p className="text-gray-400 text-xs mt-2 text-center leading-relaxed">支付完成后请返回此页面，系统将自动为您解锁内容</p>
-            </div>
-        </div>
-      )}
     </motion.div>
   );
 };

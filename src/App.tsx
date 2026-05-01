@@ -38,10 +38,25 @@ const BottomNav = () => {
   const location = useLocation();
   const tabs = [
     { name: '首页', path: '/', icon: HomeIcon },
-    { name: '关注', path: '/follow', icon: Star },
-    { name: '消息', path: '/message', icon: MessageCircle },
+    { name: '关注', path: '/follow', icon: Star, hasDot: true, key: 'follow_read' },
+    { name: '消息', path: '/message', icon: MessageCircle, hasDot: true, key: 'message_read' },
     { name: '我的', path: '/profile', icon: User },
   ];
+
+  // Simple state to track if user has viewed the tabs with dots
+  const [visitedTabs, setVisitedTabs] = React.useState<Record<string, boolean>>(() => ({
+    follow_read: localStorage.getItem('follow_read') === 'true',
+    message_read: localStorage.getItem('message_read') === 'true'
+  }));
+
+  React.useEffect(() => {
+    const currentTab = tabs.find(t => t.path === location.pathname);
+    if (currentTab?.key && !visitedTabs[currentTab.key]) {
+      const newVisited = { ...visitedTabs, [currentTab.key]: true };
+      setVisitedTabs(newVisited);
+      localStorage.setItem(currentTab.key, 'true');
+    }
+  }, [location.pathname, visitedTabs]);
 
   const hideNavPaths = ['/publish', '/admin', '/admin/dashboard', '/login', '/register', '/partner-join', '/author/dashboard', '/profile/bind-phone', '/profile/real-name', '/settings', '/user-agreement', '/privacy-policy', '/about-us'];
   if (hideNavPaths.includes(location.pathname)) return null;
@@ -50,9 +65,14 @@ const BottomNav = () => {
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around py-2 items-center bottom-nav-shadow z-50">
       {tabs.map((tab) => {
         const isActive = location.pathname === tab.path;
+        const showDot = tab.hasDot && !visitedTabs[tab.key!] && !isActive;
+
         return (
-          <Link key={tab.path} to={tab.path} className="flex flex-col items-center">
+          <Link key={tab.path} to={tab.path} className="flex flex-col items-center relative">
             <tab.icon className={`w-6 h-6 ${isActive ? 'text-[#d32f2f] fill-[#d32f2f]' : 'text-gray-400'}`} />
+            {showDot && (
+              <div className="absolute top-0 -right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full" />
+            )}
             <span className={`text-xs mt-1 ${isActive ? 'text-[#d32f2f]' : 'text-gray-500'}`}>{tab.name}</span>
           </Link>
         );
