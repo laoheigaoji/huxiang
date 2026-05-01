@@ -230,7 +230,7 @@ const Follow = () => {
           })()
         ) : (
           (() => {
-            const list = followers.filter(f => !searchQuery || f.nickname?.toLowerCase().includes(searchQuery.toLowerCase()) || f.id?.toString().includes(searchQuery));
+            const list = followers.filter(f => !searchQuery || f.nickname?.toLowerCase().includes(searchQuery.toLowerCase()) || f.id?.toString()?.includes(searchQuery));
             return list.length > 0 ? (
               <div className="space-y-3">
                 {list.map(follower => (

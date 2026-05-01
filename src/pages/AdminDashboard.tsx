@@ -24,6 +24,40 @@ const AdminDashboard = () => {
   const [data, setData] = useState<any>({ authors: [], predictions: [], history: [], users: [], orders: [], applications: [], messages: [], settings: null, withdrawals: [], feedbacks: [] });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [modalFormData, setModalFormData] = useState<any>({
+    mainPicks: [] as number[],
+    mainZodiacs: [] as string[],
+    ballColors: [] as string[],
+    contentPicks: [] as string[],
+    contentColors: [] as string[]
+  });
+
+  useEffect(() => {
+    if (editingItem && activeTab === 'predictions') {
+      const picks = editingItem.mainPicks || [];
+      const zodiacs = editingItem.mainZodiacs || [];
+      const colors = editingItem.ballColors || (picks.length > 0 ? picks.map(() => 'red') : []);
+      const cPicks = editingItem.contentPicks || (editingItem.content ? editingItem.content.split(/[\s,，、]+/).filter(Boolean) : []);
+      const cColors = editingItem.contentColors || (cPicks.length > 0 ? cPicks.map(() => 'red') : []);
+      
+      setModalFormData({
+        mainPicks: picks,
+        mainZodiacs: zodiacs,
+        ballColors: colors,
+        contentPicks: cPicks,
+        contentColors: cColors
+      });
+    } else if (!editingItem && activeTab === 'predictions') {
+      setModalFormData({
+        mainPicks: [],
+        mainZodiacs: [],
+        ballColors: [],
+        contentPicks: [],
+        contentColors: []
+      });
+    }
+  }, [editingItem, activeTab, isModalOpen]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [orderCategoryTab, setOrderCategoryTab] = useState<'all' | 'recharge' | 'consumption'>('all');
@@ -107,10 +141,14 @@ const AdminDashboard = () => {
         else await api.createAuthor(formData);
       } else if (activeTab === 'predictions') {
         const payload = {
+          ...editingItem,
           ...formData,
+          ...modalFormData, // Spread the complex array fields
+          content: modalFormData.contentPicks.join(' '), // Sync to string
           isUnlocked: formData.isUnlocked === 'true',
+          isFree: (parseInt(formData.price) || 0) === 0,
           price: parseInt(formData.price) || 0,
-          mainPicks: formData.mainPicks ? formData.mainPicks.split(',').map((n: string) => parseInt(n.trim())) : [36, 24, 12],
+          tags: formData.tags ? formData.tags.split(',').map((s: string) => s.trim()) : [],
           time: editingItem?.time || new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
         };
         if (editingItem) await api.updatePrediction(editingItem.id, payload);
@@ -180,7 +218,7 @@ const AdminDashboard = () => {
 
   const tabs = [
     { id: 'authors', label: '专家管理', icon: Users },
-    { id: 'predictions', label: '预测管理', icon: BookOpen },
+    { id: 'predictions', label: '文章管理', icon: BookOpen },
     { id: 'applications', label: '入驻审核', icon: UserCheck },
     { id: 'withdrawals', label: '提现审核', icon: ShoppingBag },
     { id: 'orders', label: '订单管理', icon: ShoppingBag },
@@ -791,7 +829,7 @@ const AdminDashboard = () => {
                 <h2 className="text-lg font-bold text-gray-900">
                   {editingItem ? '编辑' : '制作'} {
                     activeTab === 'authors' ? '专家' : 
-                    activeTab === 'predictions' ? '预测' : 
+                    activeTab === 'predictions' ? '文章' : 
                     activeTab === 'users' ? '用户' : 
                     activeTab === 'history' ? '开奖结果' : 
                     activeTab === 'messages' ? '消息通知' : ''
@@ -832,17 +870,146 @@ const AdminDashboard = () => {
                   ) : activeTab === 'predictions' ? (
                     <>
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">文章标题</label>
-                        <input name="contentTitle" defaultValue={editingItem?.contentTitle || editingItem?.title} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
+                        <label className="block text-xs font-bold text-gray-500 mb-1">文章大标题</label>
+                        <input name="title" defaultValue={editingItem?.title} placeholder="如：独家分析 精准推荐" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">精选号码 (逗号分隔)</label>
-                        <input name="mainPicks" placeholder="36,24,12" defaultValue={editingItem?.mainPicks?.join(',')} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" />
+                        <label className="block text-xs font-bold text-gray-500 mb-1">正文小标题</label>
+                        <input name="contentTitle" defaultValue={editingItem?.contentTitle} placeholder="如：精准平特一肖 重点推荐" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">正文号码 (逗号分隔)</label>
-                        <input name="content" defaultValue={editingItem?.content} placeholder="如：5,15,25,35" className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" />
+                        <label className="block text-xs font-bold text-gray-500 mb-1">标签 (逗号分隔)</label>
+                        <input name="tags" placeholder="精选推荐,独家分析" defaultValue={editingItem?.tags?.join(',')} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" />
                       </div>
+
+                      {/* Main Picks Visual Manager */}
+                      <div className="space-y-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider">精选号码 & 生肖</label>
+                          <button 
+                            type="button" 
+                            onClick={() => setModalFormData({...modalFormData, mainPicks: [...modalFormData.mainPicks, null], mainZodiacs: [...modalFormData.mainZodiacs, ''], ballColors: [...modalFormData.ballColors, 'red']})}
+                            className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md text-[10px] font-bold border border-blue-100"
+                          >
+                            + 新增
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          {modalFormData.mainPicks.map((pick: any, i: number) => (
+                            <div key={i} className="flex flex-col space-y-1.5 p-2 bg-white rounded-xl border border-gray-100 relative group">
+                              <button 
+                                type="button" 
+                                onClick={() => {
+                                  const newState = {...modalFormData};
+                                  newState.mainPicks.splice(i, 1);
+                                  newState.mainZodiacs.splice(i, 1);
+                                  newState.ballColors.splice(i, 1);
+                                  setModalFormData(newState);
+                                }}
+                                className="absolute -top-1 -right-1 w-5 h-5 bg-white text-red-500 rounded-full shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                              <div className="flex items-center space-x-2">
+                                <div 
+                                  onClick={() => {
+                                    const newColors = [...modalFormData.ballColors];
+                                    newColors[i] = newColors[i] === 'red' ? 'blue' : 'red';
+                                    setModalFormData({...modalFormData, ballColors: newColors});
+                                  }}
+                                  className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 cursor-pointer ${modalFormData.ballColors[i] === 'blue' ? 'bg-blue-600' : 'bg-red-500'}`}
+                                >
+                                  <input 
+                                    type="text"
+                                    value={pick === null ? '' : pick}
+                                    onClick={e => e.stopPropagation()}
+                                    onChange={e => {
+                                      const newPicks = [...modalFormData.mainPicks];
+                                      newPicks[i] = e.target.value === '' ? null : (parseInt(e.target.value) || 0);
+                                      setModalFormData({...modalFormData, mainPicks: newPicks});
+                                    }}
+                                    className="w-full bg-transparent text-center outline-none border-none text-[11px]"
+                                  />
+                                </div>
+                                <input 
+                                  value={modalFormData.mainZodiacs[i]}
+                                  onChange={e => {
+                                    const newZodiacs = [...modalFormData.mainZodiacs];
+                                    newZodiacs[i] = e.target.value;
+                                    setModalFormData({...modalFormData, mainZodiacs: newZodiacs});
+                                  }}
+                                  placeholder="生肖"
+                                  className="w-full bg-gray-50 rounded-lg px-2 py-1 text-[11px] font-bold outline-none"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Content Picks Visual Manager */}
+                      <div className="space-y-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider">正文号码 (无需生肖)</label>
+                          <button 
+                            type="button" 
+                            onClick={() => setModalFormData({...modalFormData, contentPicks: [...modalFormData.contentPicks, ''], contentColors: [...modalFormData.contentColors, 'red']})}
+                            className="bg-orange-50 text-orange-600 px-2 py-1 rounded-md text-[10px] font-bold border border-orange-100"
+                          >
+                            + 新增
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          {modalFormData.contentPicks.map((pick: any, i: number) => (
+                            <div key={i} className="relative group bg-white border border-gray-100 p-2 rounded-xl flex items-center space-x-2">
+                              <button 
+                                type="button" 
+                                onClick={() => {
+                                  const newState = {...modalFormData};
+                                  newState.contentPicks.splice(i, 1);
+                                  newState.contentColors.splice(i, 1);
+                                  setModalFormData(newState);
+                                }}
+                                className="absolute -top-2 -right-2 w-5 h-5 bg-white text-red-500 rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                              
+                              <div 
+                                className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-[11px] font-bold transition-colors ${modalFormData.contentColors[i] === 'blue' ? 'bg-blue-600 shadow-blue-100' : 'bg-red-500 shadow-red-100'}`}
+                              >
+                                <input 
+                                  type="text"
+                                  value={pick}
+                                  onChange={e => {
+                                    const newPicks = [...modalFormData.contentPicks];
+                                    newPicks[i] = e.target.value;
+                                    setModalFormData({...modalFormData, contentPicks: newPicks});
+                                  }}
+                                  className="w-full bg-transparent text-center outline-none border-none"
+                                />
+                              </div>
+
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  const newColors = [...modalFormData.contentColors];
+                                  newColors[i] = newColors[i] === 'red' ? 'blue' : 'red';
+                                  setModalFormData({...modalFormData, contentColors: newColors});
+                                }}
+                                className={`text-[10px] px-1.5 py-0.5 rounded border font-bold transition-all ${
+                                  modalFormData.contentColors[i] === 'blue' 
+                                    ? 'bg-blue-50 text-blue-600 border-blue-200' 
+                                    : 'bg-red-50 text-red-600 border-red-200'
+                                  }`}
+                              >
+                                {modalFormData.contentColors[i] === 'blue' ? '蓝' : '红'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
                       <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1">作者名称</label>
                         <input name="authorName" defaultValue={editingItem?.authorName} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm" required />
@@ -868,7 +1035,7 @@ const AdminDashboard = () => {
                         <div>
                           <label className="block text-xs font-bold text-gray-500 mb-1">方案结果</label>
                           <select name="result" defaultValue={editingItem?.result || ''} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm">
-                            <option value="">未开奖</option>
+                            <option value="">未公开</option>
                             <option value="红">红</option>
                             <option value="黑">黑</option>
                           </select>

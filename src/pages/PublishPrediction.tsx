@@ -19,8 +19,11 @@ const PublishPrediction = () => {
     price: 0,
     isFree: true,
     content: '',
-    mainPicks: [36, 24, 12] as number[],
-    mainZodiacs: ['猴', '龙', '鼠'] as string[],
+    contentPicks: [] as string[],
+    contentColors: [] as ('red' | 'blue')[],
+    mainPicks: [] as number[],
+    mainZodiacs: [] as string[],
+    ballColors: [] as ('red' | 'blue')[],
     unlockDuration: '',
     isUnlocked: false,
     result: undefined as '红' | '黑' | undefined,
@@ -57,8 +60,11 @@ const PublishPrediction = () => {
               price: pred.price || 0,
               isFree: pred.isFree,
               content: pred.content || '',
-              mainPicks: pred.mainPicks || [36, 24, 12],
-              mainZodiacs: pred.mainZodiacs || (pred.mainPicks ? pred.mainPicks.map(() => '') : ['猴', '龙', '鼠']),
+              contentPicks: pred.contentPicks || (pred.content ? pred.content.split(/[\s,，、]+/).filter(Boolean) : []),
+              contentColors: pred.contentColors || (pred.content ? pred.content.split(/[\s,，、]+/).filter(Boolean).map(() => 'red') : []),
+              mainPicks: pred.mainPicks || [],
+              mainZodiacs: pred.mainZodiacs || [],
+              ballColors: pred.ballColors || (pred.mainPicks ? pred.mainPicks.map(() => 'red') : []),
               unlockDuration: pred.unlockDuration || '',
               isUnlocked: pred.isUnlocked || false,
               result: pred.result,
@@ -83,21 +89,23 @@ const PublishPrediction = () => {
     
     setLoading(true);
     try {
+      const dataToSubmit = {
+        ...formData,
+        content: formData.contentPicks.join(' '), // Keep for legacy compatibility
+        authorId: user.authorId,
+        authorName: user.nickname || user.username,
+        authorAvatar: user.avatar,
+      };
+
       if (editId) {
         await api.updateAuthorPrediction(editId, {
-          ...formData,
-          authorId: user.authorId,
-          authorName: user.nickname || user.username,
-          authorAvatar: user.avatar,
+          ...dataToSubmit,
           updatedAt: new Date().toISOString().replace('T', ' ').slice(0, 16)
         });
         alert('修改成功！');
       } else {
         await api.createPrediction({
-          ...formData,
-          authorId: user.authorId,
-          authorName: user.nickname || user.username,
-          authorAvatar: user.avatar,
+          ...dataToSubmit,
           authorFans: 0,
           authorRecentRecord: "精选",
           authorStreak: 0,
@@ -163,7 +171,7 @@ const PublishPrediction = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase">预测期数</label>
+              <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase">文章期数</label>
               <input 
                 value={formData.period}
                 onChange={e => setFormData({...formData, period: e.target.value})}
@@ -269,7 +277,7 @@ const PublishPrediction = () => {
                            !formData.result ? 'bg-blue-500 text-white border-blue-500 shadow-md' : 'bg-white text-gray-400 border-gray-200'
                         }`}
                      >
-                        未开奖
+                        未公开
                      </button>
                   </div>
                </div>
@@ -307,34 +315,177 @@ const PublishPrediction = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase">精选号码 (逗号分隔)</label>
-            <input 
-              value={formData.mainPicks.join(',')}
-              onChange={e => setFormData({...formData, mainPicks: e.target.value.split(',').map(n => parseInt(n.trim()) || 0)})}
-              placeholder="36,24,12"
-              className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-[#d32f2f] outline-none" 
-            />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold text-gray-400 uppercase">精选号码与对应生肖</label>
+              <button 
+                type="button"
+                onClick={() => {
+                  setFormData({
+                    ...formData,
+                    mainPicks: [...formData.mainPicks, null],
+                    mainZodiacs: [...formData.mainZodiacs, ''],
+                    ballColors: [...formData.ballColors, 'red']
+                  });
+                }}
+                className="text-[10px] bg-[#d32f2f] text-white px-2 py-1 rounded-md font-bold flex items-center shadow-sm active:scale-95 transition-transform"
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                新增号码
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {formData.mainPicks.map((_, i) => (
+                <div key={i} className="bg-gray-50/50 rounded-xl p-3 border border-gray-100 relative group">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const newPicks = [...formData.mainPicks];
+                      const newZodiacs = [...formData.mainZodiacs];
+                      const newColors = [...formData.ballColors];
+                      newPicks.splice(i, 1);
+                      newZodiacs.splice(i, 1);
+                      newColors.splice(i, 1);
+                      setFormData({...formData, mainPicks: newPicks, mainZodiacs: newZodiacs, ballColors: newColors});
+                    }}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+
+                  <div className="flex flex-col items-center space-y-3">
+                    {/* Ball & Type Toggle */}
+                    <div className="flex items-center space-x-3 w-full justify-center">
+                      <div className={`w-10 h-10 rounded-full shadow-sm flex items-center justify-center relative transition-colors ${formData.ballColors[i] === 'blue' ? 'bg-blue-600 shadow-blue-100' : 'bg-[#ef4444] shadow-red-100'}`}>
+                        <input 
+                          type="text"
+                          value={formData.mainPicks[i] || ''}
+                          onChange={e => {
+                            const newPicks = [...formData.mainPicks];
+                            newPicks[i] = e.target.value === '' ? null : (parseInt(e.target.value) || 0);
+                            setFormData({...formData, mainPicks: newPicks});
+                          }}
+                          className="w-full h-full bg-transparent text-white text-center font-bold text-sm outline-none border-none placeholder:text-white/50"
+                          placeholder="00"
+                        />
+                      </div>
+                      
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const newColors = [...formData.ballColors];
+                          newColors[i] = newColors[i] === 'red' ? 'blue' : 'red';
+                          setFormData({...formData, ballColors: newColors});
+                        }}
+                        className={`text-[10px] px-2 py-1 rounded border font-bold transition-all ${
+                          formData.ballColors[i] === 'blue' 
+                            ? 'bg-blue-50 text-blue-600 border-blue-200' 
+                            : 'bg-red-50 text-red-600 border-red-200'
+                        }`}
+                      >
+                        {formData.ballColors[i] === 'blue' ? '蓝球' : '红球'}
+                      </button>
+                    </div>
+
+                    <input 
+                      value={formData.mainZodiacs[i] || ''}
+                      onChange={e => {
+                        const newZodiacs = [...formData.mainZodiacs];
+                        newZodiacs[i] = e.target.value;
+                        setFormData({...formData, mainZodiacs: newZodiacs});
+                      }}
+                      placeholder="点此输生肖"
+                      className="w-full bg-white border border-gray-100 rounded-lg py-1.5 text-[11px] text-center font-bold text-gray-700 focus:ring-1 focus:ring-[#d32f2f] outline-none shadow-sm"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {formData.mainPicks.length === 0 && (
+              <div className="text-center py-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                <p className="text-xs text-gray-400">目前没有任何号码，请点击右上方按钮添加</p>
+              </div>
+            )}
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase">对应生肖 (逗号分隔，需与号码个数一致)</label>
-            <input 
-              value={formData.mainZodiacs.join(',')}
-              onChange={e => setFormData({...formData, mainZodiacs: e.target.value.split(',').map(s => s.trim())})}
-              placeholder="猴,龙,鼠"
-              className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-[#d32f2f] outline-none" 
-            />
-          </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold text-gray-400 uppercase">正文公开号码 (点击按钮添加)</label>
+              <button 
+                type="button"
+                onClick={() => {
+                  setFormData({
+                    ...formData,
+                    contentPicks: [...formData.contentPicks, ''],
+                    contentColors: [...formData.contentColors, 'red']
+                  });
+                }}
+                className="text-[10px] bg-orange-500 text-white px-2 py-1 rounded-md font-bold flex items-center shadow-sm active:scale-95 transition-transform"
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                新增正文号码
+              </button>
+            </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase">正文号码 (逗号分隔)</label>
-            <input 
-              value={formData.content}
-              onChange={e => setFormData({...formData, content: e.target.value})}
-              placeholder="如：5,15,25,35"
-              className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3.5 text-sm focus:ring-1 focus:ring-[#d32f2f] outline-none" 
-            />
+            <div className="grid grid-cols-3 gap-4">
+              {formData.contentPicks.map((pick, i) => (
+                <div key={i} className="flex flex-col items-center space-y-2 relative group bg-gray-50/50 p-2.5 rounded-xl border border-gray-100">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const newPicks = [...formData.contentPicks];
+                      const newColors = [...formData.contentColors];
+                      newPicks.splice(i, 1);
+                      newColors.splice(i, 1);
+                      setFormData({...formData, contentPicks: newPicks, contentColors: newColors});
+                    }}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+
+                  <div className="flex items-center space-x-2">
+                    <div 
+                      className={`w-10 h-10 rounded-full shadow-sm flex items-center justify-center transition-colors ${formData.contentColors[i] === 'blue' ? 'bg-blue-600 shadow-blue-100' : 'bg-[#ef4444] shadow-red-100'}`}
+                    >
+                      <input 
+                        type="text"
+                        value={pick}
+                        onChange={e => {
+                          const newPicks = [...formData.contentPicks];
+                          newPicks[i] = e.target.value;
+                          setFormData({...formData, contentPicks: newPicks});
+                        }}
+                        className="w-full h-full bg-transparent text-white text-center font-bold text-sm outline-none border-none"
+                        placeholder="00"
+                      />
+                    </div>
+                    
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        const newColors = [...formData.contentColors];
+                        newColors[i] = newColors[i] === 'red' ? 'blue' : 'red';
+                        setFormData({...formData, contentColors: newColors});
+                      }}
+                      className={`text-[10px] px-1.5 py-1 rounded border font-bold transition-all ${
+                        formData.contentColors[i] === 'blue' 
+                          ? 'bg-blue-50 text-blue-600 border-blue-200' 
+                          : 'bg-red-50 text-red-600 border-red-200'
+                      }`}
+                    >
+                      {formData.contentColors[i] === 'blue' ? '蓝' : '红'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {formData.contentPicks.length === 0 && (
+              <p className="text-[10px] text-gray-400 text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">点击上方按钮开始添加内容号码</p>
+            )}
           </div>
         </div>
 

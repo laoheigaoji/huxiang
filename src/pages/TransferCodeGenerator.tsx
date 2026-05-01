@@ -116,7 +116,7 @@ const TransferCodeGenerator = () => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const userId = user.id;
     const [showPayment, setShowPayment] = useState(false);
-    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'balance' | 'alipay'>('balance');
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'balance' | 'alipay'>('alipay');
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     
     const [isGeneratingBalance, setIsGeneratingBalance] = useState(false);
@@ -509,7 +509,7 @@ const TransferCodeGenerator = () => {
                           <div className="flex items-center">
                             <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center mr-3 text-white">¥</div>
                             <div>
-                              <p className="font-medium">余额支付 (可用余额: ¥ {user?.balance || '0.00'})</p>
+                              <p className="font-medium">余额支付 (可用余额: ¥ {Number(user?.balance || 0).toFixed(2)})</p>
                               {user?.balance < parseFloat(settings.transferCodePrice || '2') && <p className="text-[10px] text-[#d32f2f]">余额不足，请充值</p>}
                             </div>
                           </div>

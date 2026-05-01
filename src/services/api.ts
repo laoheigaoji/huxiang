@@ -2,6 +2,23 @@ import { Author, Prediction, HistoryItem } from '../types';
 
 const API_BASE = '/api';
 
+const fetchWithRetry = async (url: string, options?: RequestInit, retries = 2, backoff = 1000): Promise<Response> => {
+  try {
+    const res = await fetch(url, options);
+    if (res.status === 429 && retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, backoff + Math.random() * 500));
+      return fetchWithRetry(url, options, retries - 1, backoff * 2);
+    }
+    return res;
+  } catch (err) {
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, backoff + Math.random() * 500));
+      return fetchWithRetry(url, options, retries - 1, backoff * 2);
+    }
+    throw err;
+  }
+};
+
 const handleResponse = async (res: Response) => {
   const contentType = res.headers.get('content-type');
   if (!res.ok) {
@@ -24,33 +41,60 @@ const handleResponse = async (res: Response) => {
 };
 
 export const api = {
+  _authorsPromise: null as Promise<Author[]> | null,
   async getAuthors(): Promise<Author[]> {
-    const res = await fetch(`${API_BASE}/authors`);
-    return handleResponse(res);
+    if (this._authorsPromise) return this._authorsPromise;
+    this._authorsPromise = (async () => {
+      try {
+        const res = await fetchWithRetry(`${API_BASE}/authors`);
+        return await handleResponse(res);
+      } finally {
+        this._authorsPromise = null;
+      }
+    })();
+    return this._authorsPromise;
   },
 
   async getAuthorById(id: string): Promise<Author> {
-    const res = await fetch(`${API_BASE}/authors/${id}`);
+    const res = await fetchWithRetry(`${API_BASE}/authors/${id}`);
     return handleResponse(res);
   },
 
+  _predictionsPromise: null as Promise<Prediction[]> | null,
   async getPredictions(): Promise<Prediction[]> {
-    const res = await fetch(`${API_BASE}/predictions`);
-    return handleResponse(res);
+    if (this._predictionsPromise) return this._predictionsPromise;
+    this._predictionsPromise = (async () => {
+      try {
+        const res = await fetchWithRetry(`${API_BASE}/predictions`);
+        return await handleResponse(res);
+      } finally {
+        this._predictionsPromise = null;
+      }
+    })();
+    return this._predictionsPromise;
   },
+
+  _settingsCache: null as any,
+  _configCache: null as any,
 
   async getSettings() {
-    const res = await fetch(`${API_BASE}/settings`);
-    return handleResponse(res);
+    if (this._settingsCache) return this._settingsCache;
+    const res = await fetchWithRetry(`${API_BASE}/settings`);
+    const data = await handleResponse(res);
+    this._settingsCache = data;
+    return data;
   },
 
   async getConfig() {
-    const res = await fetch(`${API_BASE}/config`);
-    return handleResponse(res);
+    if (this._configCache) return this._configCache;
+    const res = await fetchWithRetry(`${API_BASE}/config`);
+    const data = await handleResponse(res);
+    this._configCache = data;
+    return data;
   },
 
   async updateSettings(data: any) {
-    const res = await fetch(`${API_BASE}/settings`, {
+    const res = await fetchWithRetry(`${API_BASE}/settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -59,27 +103,41 @@ export const api = {
   },
 
   async getHistory(): Promise<HistoryItem[]> {
-    const res = await fetch(`${API_BASE}/history`);
+    const res = await fetchWithRetry(`${API_BASE}/history`);
     return handleResponse(res);
   },
 
   async getPredictionById(id: string): Promise<Prediction> {
-    const res = await fetch(`${API_BASE}/predictions/${id}`);
+    const res = await fetchWithRetry(`${API_BASE}/predictions/${id}`);
     return handleResponse(res);
   },
+
+  _profilePromise: null as Promise<any> | null,
 
   async getProfile() {
     const userStr = localStorage.getItem('user');
     const userId = userStr ? JSON.parse(userStr).id : null;
     if (!userId) throw new Error('未登录');
-    const res = await fetch(`${API_BASE}/profile?userId=${userId}`);
-    return handleResponse(res);
+    
+    if (this._profilePromise) return this._profilePromise;
+
+    this._profilePromise = (async () => {
+      try {
+        const res = await fetchWithRetry(`${API_BASE}/profile?userId=${userId}`);
+        const data = await handleResponse(res);
+        return data;
+      } finally {
+        this._profilePromise = null;
+      }
+    })();
+
+    return this._profilePromise;
   },
 
   async updateProfile(data: any) {
     const userStr = localStorage.getItem('user');
     const userId = userStr ? JSON.parse(userStr).id : null;
-    const res = await fetch(`${API_BASE}/profile${userId ? `?userId=${userId}` : ''}`, {
+    const res = await fetchWithRetry(`${API_BASE}/profile${userId ? `?userId=${userId}` : ''}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -90,14 +148,14 @@ export const api = {
   async followAuthor(id: string) {
     const userStr = localStorage.getItem('user');
     const userId = userStr ? JSON.parse(userStr).id : null;
-    const res = await fetch(`${API_BASE}/authors/follow/${id}${userId ? `?userId=${userId}` : ''}`, {
+    const res = await fetchWithRetry(`${API_BASE}/authors/follow/${id}${userId ? `?userId=${userId}` : ''}`, {
       method: 'POST'
     });
     return handleResponse(res);
   },
 
   async createPayment(amount: number, type: string, orderName: string, userId?: string, predictionId?: string, returnUrl?: string, jump: boolean = false) {
-    const res = await fetch(`${API_BASE}/pay/create`, {
+    const res = await fetchWithRetry(`${API_BASE}/pay/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount, type, orderName, userId, predictionId, returnUrl, jump })
@@ -108,21 +166,21 @@ export const api = {
   async getMessages() {
     const userStr = localStorage.getItem('user');
     const userId = userStr ? JSON.parse(userStr).id : null;
-    const res = await fetch(`${API_BASE}/messages${userId ? `?userId=${userId}` : ''}`);
+    const res = await fetchWithRetry(`${API_BASE}/messages${userId ? `?userId=${userId}` : ''}`);
     return handleResponse(res);
   },
 
   async getTransactions() {
     const userStr = localStorage.getItem('user');
     const userId = userStr ? JSON.parse(userStr).id : null;
-    const res = await fetch(`${API_BASE}/transactions${userId ? `?userId=${userId}` : ''}`);
+    const res = await fetchWithRetry(`${API_BASE}/transactions${userId ? `?userId=${userId}` : ''}`);
     return handleResponse(res);
   },
 
   async withdraw(data: any) {
     const userStr = localStorage.getItem('user');
     const userId = userStr ? JSON.parse(userStr).id : null;
-    const res = await fetch(`${API_BASE}/withdraw`, {
+    const res = await fetchWithRetry(`${API_BASE}/withdraw`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...data, userId })
@@ -133,7 +191,7 @@ export const api = {
   async purchasePrediction(predictionId: string) {
     const userStr = localStorage.getItem('user');
     const userId = userStr ? JSON.parse(userStr).id : null;
-    const res = await fetch(`${API_BASE}/purchase`, {
+    const res = await fetchWithRetry(`${API_BASE}/purchase`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ predictionId, userId })
@@ -144,12 +202,12 @@ export const api = {
   async getPurchasedPredictions(): Promise<Prediction[]> {
     const userStr = localStorage.getItem('user');
     const userId = userStr ? JSON.parse(userStr).id : null;
-    const res = await fetch(`${API_BASE}/purchased-predictions${userId ? `?userId=${userId}` : ''}`);
+    const res = await fetchWithRetry(`${API_BASE}/purchased-predictions${userId ? `?userId=${userId}` : ''}`);
     return handleResponse(res);
   },
 
   async adminLogin(username: string, password: string) {
-    const res = await fetch(`${API_BASE}/admin/login`, {
+    const res = await fetchWithRetry(`${API_BASE}/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -158,7 +216,7 @@ export const api = {
   },
 
   async login(username: string, password: string) {
-    const res = await fetch(`${API_BASE}/login`, {
+    const res = await fetchWithRetry(`${API_BASE}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -167,7 +225,7 @@ export const api = {
   },
 
   async wechatLogin(code: string, nickname?: string, avatar?: string, referrer?: string) {
-    const res = await fetch(`${API_BASE}/wechat-login`, {
+    const res = await fetchWithRetry(`${API_BASE}/wechat-login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code, nickname, avatar, referrer })
@@ -176,7 +234,7 @@ export const api = {
   },
 
   async register(username: string, password: string, nickname: string, referrerId?: string) {
-    const res = await fetch(`${API_BASE}/register`, {
+    const res = await fetchWithRetry(`${API_BASE}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password, nickname, referrerId })
@@ -187,35 +245,35 @@ export const api = {
   async getInvitedFriends() {
     const userStr = localStorage.getItem('user');
     const userId = userStr ? JSON.parse(userStr).id : null;
-    const res = await fetch(`${API_BASE}/invited-friends${userId ? `?userId=${userId}` : ''}`);
+    const res = await fetchWithRetry(`${API_BASE}/invited-friends${userId ? `?userId=${userId}` : ''}`);
     return handleResponse(res);
   },
 
   async getFollowers() {
     const userStr = localStorage.getItem('user');
     const userId = userStr ? JSON.parse(userStr).id : null;
-    const res = await fetch(`${API_BASE}/followers${userId ? `?userId=${userId}` : ''}`);
+    const res = await fetchWithRetry(`${API_BASE}/followers${userId ? `?userId=${userId}` : ''}`);
     return handleResponse(res);
   },
 
   async getQiniuToken() {
-    const res = await fetch(`${API_BASE}/qiniu-token`);
+    const res = await fetchWithRetry(`${API_BASE}/qiniu-token`);
     return handleResponse(res);
   },
 
   async logout() {
-    await fetch(`${API_BASE}/logout`, { method: 'POST' });
+    await fetchWithRetry(`${API_BASE}/logout`, { method: 'POST' });
     localStorage.removeItem('user');
   },
 
   // Admin APIs
   async getAdminUsers() {
-    const res = await fetch(`${API_BASE}/admin/users`);
+    const res = await fetchWithRetry(`${API_BASE}/admin/users`);
     return handleResponse(res);
   },
 
   async updateAdminUser(id: string, data: any) {
-    const res = await fetch(`${API_BASE}/admin/users/${id}`, {
+    const res = await fetchWithRetry(`${API_BASE}/admin/users/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -224,22 +282,22 @@ export const api = {
   },
 
   async deleteAdminUser(id: string) {
-    const res = await fetch(`${API_BASE}/admin/users/${id}`, { method: 'DELETE' });
+    const res = await fetchWithRetry(`${API_BASE}/admin/users/${id}`, { method: 'DELETE' });
     return handleResponse(res);
   },
 
   async getAdminOrders() {
-    const res = await fetch(`${API_BASE}/admin/orders`);
+    const res = await fetchWithRetry(`${API_BASE}/admin/orders`);
     return handleResponse(res);
   },
 
   async deleteAdminOrder(id: string) {
-    const res = await fetch(`${API_BASE}/admin/orders/${id}`, { method: 'DELETE' });
+    const res = await fetchWithRetry(`${API_BASE}/admin/orders/${id}`, { method: 'DELETE' });
     return handleResponse(res);
   },
 
   async createHistory(data: any) {
-    const res = await fetch(`${API_BASE}/admin/history`, {
+    const res = await fetchWithRetry(`${API_BASE}/admin/history`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -248,12 +306,12 @@ export const api = {
   },
 
   async deleteHistory(id: string) {
-    const res = await fetch(`${API_BASE}/admin/history/${id}`, { method: 'DELETE' });
+    const res = await fetchWithRetry(`${API_BASE}/admin/history/${id}`, { method: 'DELETE' });
     return handleResponse(res);
   },
 
   async createAuthor(data: any) {
-    const res = await fetch(`${API_BASE}/admin/authors`, {
+    const res = await fetchWithRetry(`${API_BASE}/admin/authors`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -262,7 +320,7 @@ export const api = {
   },
 
   async updateAuthor(id: string, data: any) {
-    const res = await fetch(`${API_BASE}/admin/authors/${id}`, {
+    const res = await fetchWithRetry(`${API_BASE}/admin/authors/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -271,12 +329,12 @@ export const api = {
   },
 
   async deleteAuthor(id: string) {
-    const res = await fetch(`${API_BASE}/admin/authors/${id}`, { method: 'DELETE' });
+    const res = await fetchWithRetry(`${API_BASE}/admin/authors/${id}`, { method: 'DELETE' });
     return handleResponse(res);
   },
 
   async createPrediction(data: any) {
-    const res = await fetch(`${API_BASE}/admin/predictions`, {
+    const res = await fetchWithRetry(`${API_BASE}/admin/predictions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -285,7 +343,7 @@ export const api = {
   },
 
   async updatePrediction(id: string, data: any) {
-    const res = await fetch(`${API_BASE}/admin/predictions/${id}`, {
+    const res = await fetchWithRetry(`${API_BASE}/admin/predictions/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -294,19 +352,19 @@ export const api = {
   },
 
   async deletePrediction(id: string) {
-    const res = await fetch(`${API_BASE}/admin/predictions/${id}`, { method: 'DELETE' });
+    const res = await fetchWithRetry(`${API_BASE}/admin/predictions/${id}`, { method: 'DELETE' });
     return handleResponse(res);
   },
 
   async markAsPublic(id: string) {
-    const res = await fetch(`${API_BASE}/predictions/${id}/public`, {
+    const res = await fetchWithRetry(`${API_BASE}/predictions/${id}/public`, {
       method: 'POST'
     });
     return handleResponse(res);
   },
 
   async applyForAuthor(data: any) {
-    const res = await fetch(`${API_BASE}/applications`, {
+    const res = await fetchWithRetry(`${API_BASE}/applications`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -315,17 +373,17 @@ export const api = {
   },
 
   async getAdminApplications() {
-    const res = await fetch(`${API_BASE}/admin/applications`);
+    const res = await fetchWithRetry(`${API_BASE}/admin/applications`);
     return handleResponse(res);
   },
 
   async deleteAdminApplication(id: string) {
-    const res = await fetch(`${API_BASE}/admin/applications/${id}`, { method: 'DELETE' });
+    const res = await fetchWithRetry(`${API_BASE}/admin/applications/${id}`, { method: 'DELETE' });
     return handleResponse(res);
   },
 
   async updateAdminApplication(id: string, status: string) {
-    const res = await fetch(`${API_BASE}/admin/applications/${id}`, {
+    const res = await fetchWithRetry(`${API_BASE}/admin/applications/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
@@ -334,12 +392,12 @@ export const api = {
   },
 
   async getAdminWithdrawals() {
-    const res = await fetch(`${API_BASE}/admin/withdrawals`);
+    const res = await fetchWithRetry(`${API_BASE}/admin/withdrawals`);
     return handleResponse(res);
   },
 
   async updateAdminWithdrawal(id: string, status: string) {
-    const res = await fetch(`${API_BASE}/admin/withdrawals/${id}`, {
+    const res = await fetchWithRetry(`${API_BASE}/admin/withdrawals/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
@@ -350,7 +408,7 @@ export const api = {
   async submitFeedback(data: any) {
     const userStr = localStorage.getItem('user');
     const userId = userStr ? JSON.parse(userStr).id : null;
-    const res = await fetch(`${API_BASE}/feedback`, {
+    const res = await fetchWithRetry(`${API_BASE}/feedback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...data, userId })
@@ -359,29 +417,29 @@ export const api = {
   },
 
   async getAdminFeedbacks() {
-    const res = await fetch(`${API_BASE}/admin/feedbacks`);
+    const res = await fetchWithRetry(`${API_BASE}/admin/feedbacks`);
     return handleResponse(res);
   },
 
   async deleteAdminFeedback(id: string) {
-    const res = await fetch(`${API_BASE}/admin/feedbacks/${id}`, { method: 'DELETE' });
+    const res = await fetchWithRetry(`${API_BASE}/admin/feedbacks/${id}`, { method: 'DELETE' });
     return handleResponse(res);
   },
 
   async getAuthorPredictions(authorId: string): Promise<Prediction[]> {
-    const res = await fetch(`${API_BASE}/author/predictions/${authorId}`);
+    const res = await fetchWithRetry(`${API_BASE}/author/predictions/${authorId}`);
     return handleResponse(res);
   },
 
   async deleteAuthorPrediction(id: string) {
-    const res = await fetch(`${API_BASE}/author/predictions/${id}`, {
+    const res = await fetchWithRetry(`${API_BASE}/author/predictions/${id}`, {
       method: 'DELETE'
     });
     return handleResponse(res);
   },
 
   async updateAuthorPrediction(id: string, data: any) {
-    const res = await fetch(`${API_BASE}/author/predictions/${id}`, {
+    const res = await fetchWithRetry(`${API_BASE}/author/predictions/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -390,7 +448,7 @@ export const api = {
   },
 
   async unlockAllPredictions() {
-    const res = await fetch(`${API_BASE}/admin/predictions/unlock-all`, {
+    const res = await fetchWithRetry(`${API_BASE}/admin/predictions/unlock-all`, {
       method: 'POST'
     });
     return handleResponse(res);
@@ -398,7 +456,7 @@ export const api = {
 
   // Admin Message APIs
   async postAdminMessage(data: any) {
-    const res = await fetch(`${API_BASE}/admin/messages`, {
+    const res = await fetchWithRetry(`${API_BASE}/admin/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -407,12 +465,12 @@ export const api = {
   },
 
   async deleteAdminMessage(id: string) {
-    const res = await fetch(`${API_BASE}/admin/messages/${id}`, { method: 'DELETE' });
+    const res = await fetchWithRetry(`${API_BASE}/admin/messages/${id}`, { method: 'DELETE' });
     return handleResponse(res);
   },
 
   async refundOrder(orderId: string) {
-    const res = await fetch(`${API_BASE}/admin/refund`, {
+    const res = await fetchWithRetry(`${API_BASE}/admin/refund`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ orderId })

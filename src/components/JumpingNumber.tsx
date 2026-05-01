@@ -21,12 +21,12 @@ const JumpingNumber: React.FC<JumpingNumberProps> = ({ id, base, range = 5, inte
   useEffect(() => {
     // initialize if base changes
     if (!sessionStorage.getItem(`jumping_num_base_${id}`)) {
-       sessionStorage.setItem(`jumping_num_base_${id}`, base.toString());
+       sessionStorage.setItem(`jumping_num_base_${id}`, (base || 0).toString());
     }
     
     const timer = setInterval(() => {
       setNum(prev => {
-        const initialBase = parseInt(sessionStorage.getItem(`jumping_num_base_${id}`) || base.toString());
+        const initialBase = parseInt(sessionStorage.getItem(`jumping_num_base_${id}`) || (base || 0).toString());
         
         let next;
         
@@ -49,7 +49,7 @@ const JumpingNumber: React.FC<JumpingNumberProps> = ({ id, base, range = 5, inte
         // Prevent negative
         if (next < 0) next = 0;
         
-        sessionStorage.setItem(`jumping_num_${id}`, next.toString());
+        sessionStorage.setItem(`jumping_num_${id}`, (next || 0).toString());
         return next;
       });
     }, interval);

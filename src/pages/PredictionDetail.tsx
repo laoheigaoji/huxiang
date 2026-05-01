@@ -18,7 +18,7 @@ const formatPeriod = (period: string) => {
 const PredictionDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'balance' | 'alipay'>('balance');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'balance' | 'alipay'>('alipay');
   const [showShare, setShowShare] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
@@ -68,14 +68,6 @@ const PredictionDetail = () => {
   }, [isPurchased, isUnlocked]);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('payment_return') === '1' && !isProcessingPayment) {
-        setIsProcessingPayment(true);
-        const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.delete('payment_return');
-        window.history.replaceState({}, '', currentUrl.toString());
-    }
-
     const fetchData = async () => {
       try {
         if (id) {
@@ -115,6 +107,22 @@ const PredictionDetail = () => {
     };
     fetchData();
     
+    const lastShown = localStorage.getItem('disclaimer_last_shown');
+    const today = new Date().toDateString();
+    if (lastShown !== today) {
+      setShowDisclaimer(true);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('payment_return') === '1' && !isProcessingPayment) {
+        setIsProcessingPayment(true);
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.delete('payment_return');
+        window.history.replaceState({}, '', currentUrl.toString());
+    }
+
     const pollStatus = async () => {
       if (id && !isUnlockedRef.current && !isPurchasedRef.current) {
         try {
@@ -152,12 +160,6 @@ const PredictionDetail = () => {
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    const lastShown = localStorage.getItem('disclaimer_last_shown');
-    const today = new Date().toDateString();
-    if (lastShown !== today) {
-      setShowDisclaimer(true);
-    }
     
     return () => {
       clearInterval(pollInterval);
@@ -322,7 +324,7 @@ const PredictionDetail = () => {
   if (!prediction) return null;
 
   return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-gray-50 h-screen flex flex-col overflow-hidden">
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-gray-50 h-[100dvh] flex flex-col">
       {/* Disclaimer Modal */}
       <AnimatePresence>
         {showDisclaimer && (
@@ -486,98 +488,144 @@ const PredictionDetail = () => {
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto px-4 pb-20 scrollbar-hide">
         {/* Lock Section / Result Section */}
-        {!prediction.isFree && !isPurchased && !isUnlocked && (
-          <div className="mt-4 bg-orange-50 rounded-2xl p-6 border border-orange-100 text-center relative overflow-hidden">
-            <div className="absolute top-4 right-4 text-gray-400">
-              <Share2 className="w-5 h-5 cursor-pointer" onClick={() => setShowShare(true)} />
-            </div>
-            
-            <h4 className="text-gray-800 font-bold text-lg">解锁公开倒计时</h4>
-            
-            <div className="flex justify-center items-center space-x-2 mt-4 transition-all">
-              {['h', 'm', 's'].map((key) => (
-                <React.Fragment key={key}>
-                  <motion.div 
-                    className="bg-[#d32f2f] text-white text-xl font-bold w-12 h-12 flex items-center justify-center rounded-xl shadow-lg shadow-[#d32f2f]/20"
-                  >
-                    {timeLeft[key as keyof typeof timeLeft]}
-                  </motion.div>
-                  {key !== 's' && <span className="text-[#d32f2f] text-xl font-black">:</span>}
-                </React.Fragment>
-              ))}
-            </div>
-
-            <button 
-              onClick={() => setShowPayment(true)}
-              className="mt-8 flex items-center justify-center space-x-2 bg-gray-900 text-white w-full py-4 rounded-full font-black shadow-xl shadow-gray-200 active:scale-95 transition-transform"
-            >
-              <Lock className="w-5 h-5 fill-white" />
-              <span>付费 ¥ {prediction.price} 立即解锁</span>
-            </button>
-
-            <p className="mt-6 text-[11px] text-gray-400 leading-relaxed px-4 font-medium italic">
-              内容解锁后永久查看。倒计时结束后将变更为公开方案，公开后不再收费。
-            </p>
-          </div>
-        )}
-
-        {(prediction.isFree || isPurchased || isUnlocked) && (
-          <div className="mt-4 bg-[#fdf2f2] rounded-[32px] p-5 pb-6 border border-[#fee2e2] shadow-sm relative overflow-hidden">
-            <div className="absolute top-4 right-4 text-gray-400 z-10">
-              <Share2 className="w-5 h-5 cursor-pointer" onClick={() => setShowShare(true)} />
-            </div>
-            
-            {/* Title: 模拟核对第XX期 */}
-            <div className="text-center mb-2 relative">
-              <h3 className="text-[#374151] font-bold text-[15px] flex items-center justify-center">
-                模拟核对第{prediction.period?.replace(/[^\d]/g, '')}期
-              </h3>
-            </div>
-
-            {/* Check Grid: 核对 (Top) */}
-            <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-2 mb-3">
-              {(prediction.mainPicks || [1, 2, 5, 8, 12, 19, 24]).map((n, i) => (
-                <div key={i} className="flex flex-col items-center min-w-[32px]">
-                  <div className="w-7 h-7 rounded-full bg-[#ef4444] flex items-center justify-center text-white text-[12px] font-bold shadow-sm">
-                    {n.toString().padStart(2, '0')}
-                  </div>
-                  {prediction.mainZodiacs && prediction.mainZodiacs[i] && (
-                    <span className="text-[9px] text-gray-500 mt-0.5 font-bold">{prediction.mainZodiacs[i]}</span>
-                  )}
+        {!prediction.isFree && !isPurchased && !isUnlocked ? (
+          <div className="relative mt-3">
+            {/* Blurred Preview Content */}
+            <div className="opacity-40 blur-[4px] pointer-events-none select-none scale-[0.98] origin-top transition-all">
+              <div className="bg-[#fdf2f2] rounded-[32px] p-5 pb-6 border border-[#fee2e2] shadow-sm relative overflow-hidden">
+                <div className="text-center mb-2">
+                  <h3 className="text-[#374151] font-bold text-[15px]">模拟核对第000期</h3>
                 </div>
-              ))}
+                <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-2 mb-3">
+                  {[1, 2, 3, 4, 5, 6, 7].map(i => (
+                    <div key={i} className="flex flex-col items-center min-w-[32px]">
+                      <div className="w-7 h-7 rounded-full bg-[#ef4444] text-white flex items-center justify-center font-bold">??</div>
+                      <span className="text-[9px] text-gray-500 mt-0.5 font-bold">?</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-[#fff7ed] rounded-xl p-3 border border-dashed border-[#fdba74]/50 text-center">
+                  <span className="text-[#f97316] font-bold text-xs tracking-widest">付费公开内容</span>
+                </div>
+              </div>
             </div>
 
-            {/* Paid Content Label */}
-            <h4 className="text-[#f97316] font-black text-[14px] mb-2 flex justify-center items-center space-x-1.5 tracking-widest">
-              <Star className="w-3.5 h-3.5 fill-[#f97316]" />
-              <span>付费内容</span>
-              <Star className="w-3.5 h-3.5 fill-[#f97316]" />
-            </h4>
-            
-            {/* Body Content Grid (Bottom) */}
-            <div className="bg-[#fff7ed] rounded-xl p-3 border border-dashed border-[#fdba74]/50 relative shadow-inner">
-              <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-2">
-                {(prediction.content || '').split(/[\s,，、]+/).filter(Boolean).map((p, i) => (
-                  <div key={i} className="w-7 h-7 rounded-full bg-[#f97316] flex items-center justify-center text-white text-[12px] font-bold shadow-sm">
-                    {p}
-                  </div>
-                ))}
+            {/* Lock Overlay Card (Enhanced Transparency Glassmorphism) */}
+            <div className="absolute inset-0 flex items-start justify-center pt-2 px-1">
+              <div className="w-full bg-gradient-to-br from-[#fff7ed]/65 to-[#ffedd5]/65 backdrop-blur-[5px] rounded-2xl p-4 border border-orange-200/40 text-center shadow-lg shadow-orange-200/10">
+                <div className="absolute top-2 right-2 text-gray-400">
+                  <Share2 className="w-3.5 h-3.5 cursor-pointer" onClick={() => setShowShare(true)} />
+                </div>
+                
+                <h4 className="text-gray-800 font-bold text-[15px] mb-2">解锁公开倒计时</h4>
+                
+                <div className="flex justify-center items-center space-x-1.5 transition-all">
+                  {['h', 'm', 's'].map((key) => (
+                    <React.Fragment key={key}>
+                      <motion.div 
+                        className="bg-[#e11d48] text-white text-base font-bold w-8 h-8 flex items-center justify-center rounded-md shadow-sm"
+                      >
+                        {timeLeft[key as keyof typeof timeLeft]}
+                      </motion.div>
+                      {key !== 's' && <span className="text-[#e11d48] text-base font-bold">:</span>}
+                    </React.Fragment>
+                  ))}
+                </div>
+                
+                <div 
+                  onClick={() => setShowPayment(true)}
+                  className="mt-3.5 flex items-center justify-center space-x-1 text-gray-900 cursor-pointer py-0.5 group active:scale-95 transition-all"
+                >
+                  <Lock className="w-3.5 h-3.5 fill-black group-hover:scale-110 transition-transform" />
+                  <span className="font-bold text-[14px] hover:underline decoration-2 underline-offset-4">付费 ¥ {prediction.price} 立即解锁</span>
+                </div>
+
+                <p className="mt-2.5 text-[9px] text-gray-500 leading-tight px-1 scale-90 origin-center opacity-80">
+                  作者方案为个人数字概率分析内容，该结果不作为开奖胜负统计，不作为任何承诺。内容信息仅供参考，不代表平台意见！
+                </p>
               </div>
             </div>
           </div>
+        ) : (
+          /* Result Section (Only if shared/unlocked/free) */
+          (prediction.isFree || isPurchased || isUnlocked) && (() => {
+            const contentTokens = (prediction.content || '').split(/[\s,，、]+/).filter(Boolean);
+            const mainPicksStrings = (prediction.mainPicks || [1, 2, 5, 8, 12, 19, 24]).map(n => String(n || 0).padStart(2, '0'));
+            const contentStrings = contentTokens.map(p => String(p).padStart(2, '0'));
+
+            return (
+              <div className="mt-4 bg-[#fdf2f2] rounded-[32px] p-5 pb-6 border border-[#fee2e2] shadow-sm relative overflow-hidden">
+                <div className="absolute top-4 right-4 text-gray-400 z-10">
+                  <Share2 className="w-5 h-5 cursor-pointer" onClick={() => setShowShare(true)} />
+                </div>
+                
+                {/* Title: 模拟核对第XX期 */}
+                <div className="text-center mb-2 relative">
+                  <h3 className="text-[#374151] font-bold text-[15px] flex items-center justify-center">
+                    模拟核对第{prediction.period?.replace(/[^\d]/g, '')}期
+                  </h3>
+                </div>
+
+                {/* Check Grid: 核对 (Top) */}
+                <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-2 mb-3">
+                  {(prediction.mainPicks || [1, 2, 5, 8, 12, 19, 24]).map((n, i) => {
+                    const formattedN = n === null ? '' : String(n || 0).padStart(2, '0');
+                    // Use published color strictly
+                    const publishedColor = prediction.ballColors?.[i];
+                    const ballBgColor = publishedColor === 'blue' ? 'bg-blue-600' : 'bg-[#ef4444]';
+                    const textColor = publishedColor === 'blue' ? 'text-blue-600' : 'text-gray-500';
+
+                    return (
+                      <div key={i} className="flex flex-col items-center min-w-[32px]">
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-[12px] font-bold shadow-sm transition-colors ${ballBgColor}`}>
+                          {formattedN}
+                        </div>
+                        {prediction.mainZodiacs && prediction.mainZodiacs[i] && (
+                          <span className={`text-[9px] mt-0.5 font-bold transition-colors ${textColor}`}>{prediction.mainZodiacs[i]}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Paid Content Label */}
+                <h4 className="text-[#f97316] font-black text-[14px] mb-2 flex justify-center items-center space-x-1.5 tracking-widest">
+                  <Star className="w-3.5 h-3.5 fill-[#f97316]" />
+                  <span>付费内容</span>
+                  <Star className="w-3.5 h-3.5 fill-[#f97316]" />
+                </h4>
+                
+                {/* Body Content Grid (Bottom) */}
+                <div className="bg-[#fff7ed] rounded-xl p-3 border border-dashed border-[#fdba74]/50 relative shadow-inner">
+                  <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-2">
+                    {(prediction.contentPicks || contentTokens).map((p, i) => {
+                      const formattedP = p === '' ? '' : String(p).padStart(2, '0');
+                      
+                      const publishedColor = prediction.contentColors?.[i];
+                      const ballBgColor = publishedColor === 'blue' ? 'bg-blue-600' : 'bg-[#ef4444]';
+
+                      return (
+                        <div key={i} className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-[12px] font-bold shadow-sm transition-colors ${ballBgColor}`}>
+                          {p}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          })()
         )}
 
         {/* History / Info */}
-        <div className="mt-8 text-center relative mb-4">
-          <div className="absolute top-1/2 left-0 right-0 h-px bg-gray-200 -translate-y-1/2"></div>
-          <span className="relative z-10 bg-gray-50 px-4 text-xs font-medium text-[#d32f2f] flex items-center justify-center">
-            <span className="w-8 h-px bg-gray-300 mr-4"></span> 付费须知 <span className="w-8 h-px bg-gray-300 ml-4"></span>
-          </span>
+        <div className="mt-8 text-center relative mb-4 flex items-center justify-center">
+          <div className="w-16 h-px bg-gray-200"></div>
+          <span className="px-4 text-sm font-medium text-[#e11d48]">付费须知</span>
+          <div className="w-16 h-px bg-gray-200"></div>
         </div>
 
         <p className="text-xs text-center text-gray-500 leading-relaxed px-4">
-          温馨提示：本平台为虚拟内容服务，文章为作者个人分析观点，仅供参考，不保证结果或实用性。内容一经解锁即完成服务，付款即表示同意《购买协议》，虚拟产品不支持退款，请理性谨慎解锁。
+          温馨提示：文章内容为作者个人观点，不代表平台立场，仅供参考，不保证实用性。虚拟内容服务一经解锁即完成，付款即表示同意《购买协议》，请理性谨慎解锁。
         </p>
 
         {/* Past Records */}
@@ -626,32 +674,56 @@ const PredictionDetail = () => {
                    <span className="text-[11px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded font-medium">{item.title}</span>
                 </div>
                 
-                <div className="mt-4 flex items-start">
-                  <span className="text-[13px] text-gray-400 mr-4 mt-2 whitespace-nowrap">正文</span>
-                  <div className="flex flex-wrap gap-2.5">
-                    {(item.content || '测试').split(/[\s,，、]+/).filter(Boolean).map((p, i) => (
-                      <div key={i} className="w-6 h-6 rounded-full bg-[#ef4444] flex items-center justify-center text-white text-[11px] font-bold shadow-sm">
-                        {p}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="mt-4 flex items-start">
-                  <span className="text-[13px] text-gray-400 mr-4 mt-2.5 whitespace-nowrap">核对</span>
-                  <div className="flex flex-wrap gap-x-2 gap-y-3">
-                    {(item.mainPicks || [14, 5, 48, 23, 31, 44, 36]).map((p: any, i: number) => (
-                      <div key={i} className="flex flex-col items-center">
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold bg-[#ef4444] shadow-sm">
-                          {p.toString().padStart(2, '0')}
+                {(() => {
+                  const contentTokens = (item.content || '').split(/[\s,，、]+/).filter(Boolean);
+                  const mainPicksStrings = (item.mainPicks || [14, 5, 48, 23, 31, 44, 36]).map(p => String(p || 0).padStart(2, '0'));
+                  const contentStrings = contentTokens.map(p => String(p).padStart(2, '0'));
+
+                  return (
+                    <>
+                      <div className="mt-4 flex items-start">
+                        <span className="text-[13px] text-gray-400 mr-4 mt-2 whitespace-nowrap">正文</span>
+                        <div className="flex flex-wrap gap-2.5">
+                          {(item.contentPicks || contentTokens).map((p: any, i: number) => {
+                            const formattedP = p === '' ? '' : String(p).padStart(2, '0');
+                            
+                            const publishedColor = item.contentColors?.[i];
+                            const ballBgColor = publishedColor === 'blue' ? 'bg-blue-600' : 'bg-[#ef4444]';
+
+                            return (
+                              <div key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold shadow-sm transition-colors ${ballBgColor}`}>
+                                {p}
+                              </div>
+                            );
+                          })}
                         </div>
-                        {item.mainZodiacs && item.mainZodiacs[i] && (
-                          <span className="text-[9px] text-gray-500 mt-0.5 font-bold">{item.mainZodiacs[i]}</span>
-                        )}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                      
+                      <div className="mt-4 flex items-start">
+                        <span className="text-[13px] text-gray-400 mr-4 mt-2.5 whitespace-nowrap">核对</span>
+                        <div className="flex flex-wrap gap-x-2 gap-y-3">
+                          {(item.mainPicks || [14, 5, 48, 23, 31, 44, 36]).map((p: any, i: number) => {
+                            const formattedP = p === null ? '' : String(p || 0).padStart(2, '0');
+                            const publishedColor = item.ballColors?.[i];
+                            const ballBgColor = publishedColor === 'blue' ? 'bg-blue-600' : 'bg-[#ef4444]';
+                            const textColor = publishedColor === 'blue' ? 'text-blue-600' : 'text-gray-500';
+
+                            return (
+                              <div key={i} className="flex flex-col items-center">
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold shadow-sm transition-colors ${ballBgColor}`}>
+                                  {formattedP}
+                                </div>
+                                {item.mainZodiacs && item.mainZodiacs[i] && (
+                                  <span className={`text-[9px] mt-0.5 font-bold transition-colors ${textColor}`}>{item.mainZodiacs[i]}</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
                 
                 <div className="mt-4 flex justify-between items-center text-xs text-gray-400 border-t border-gray-50 pt-3">
                   <span>{item.time}</span>
@@ -683,15 +755,15 @@ const PredictionDetail = () => {
       )}
 
       {/* Floating Action Bar */}
-      {!isPurchased && !prediction.isFree && !isUnlocked && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white p-3 flex items-center justify-between z-50 border-t border-gray-100 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-          <div className="flex items-baseline space-x-1">
-            <span className="text-sm font-medium text-gray-800">需支付:</span>
-            <span className="text-xl font-bold text-[#d32f2f]">¥ {prediction.price}</span>
+      {!isPurchased && !prediction.isFree && !isUnlocked && prediction.price > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white px-5 py-3 flex items-center justify-between z-[100] border-t border-gray-100 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+          <div className="flex items-center space-x-2">
+            <span className="text-base font-bold text-gray-900">需支付：</span>
+            <span className="text-xl font-bold text-[#e11d48]">¥ {prediction.price}</span>
           </div>
           <button 
             onClick={() => setShowPayment(true)}
-            className="bg-[#d32f2f] text-white px-10 py-3 rounded-full font-bold shadow-lg shadow-[#d32f2f]/20 transition-transform active:scale-95"
+            className="bg-[#e11d48] text-white px-10 py-3 rounded-full text-[15px] font-bold active:scale-95 transition-transform"
           >
             立即支付
           </button>
@@ -748,7 +820,7 @@ const PredictionDetail = () => {
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center mr-3 text-white">¥</div>
                     <div>
-                      <p className="font-medium">余额支付 (可用余额: ¥ {user?.balance || '0.00'})</p>
+                      <p className="font-medium">余额支付 (可用余额: ¥ {(user?.balance || 0).toFixed(2)})</p>
                       {user?.balance < prediction?.price && <p className="text-[10px] text-[#d32f2f]">余额不足，请充值</p>}
                     </div>
                   </div>

@@ -7,6 +7,7 @@ import CryptoJS from "crypto-js";
 import axios from "axios";
 import { MongoClient, ObjectId } from "mongodb";
 import qiniu from "qiniu";
+import cors from "cors";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,20 +18,96 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  app.use(cors());
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+    next();
+  });
+
   const mongoClient = new MongoClient(MONGODB_URI, {
     serverSelectionTimeoutMS: 5000,
     connectTimeoutMS: 5000,
   });
   let db: any;
-  try {
-    await mongoClient.connect();
+  
+  const runMigration = async () => {
+    if (!db) return;
+    try {
+      const usersCount = await db.collection("users").countDocuments();
+      if (usersCount === 0) {
+        console.log("Migrating local data to database...");
+        const files = ["users", "authors", "predictions", "history", "messages", "orders", "settings", "transactions", "withdrawals", "applications"];
+        for (const file of files) {
+          try {
+            const filePath = path.join(__dirname, "data", `${file}.json`);
+            const content = await fs.readFile(filePath, "utf8");
+            const data = JSON.parse(content);
+            if (Array.isArray(data) && data.length > 0) {
+              await db.collection(file).insertMany(data);
+            } else if (!Array.isArray(data) && typeof data === 'object' && Object.keys(data).length > 0) {
+              await db.collection(file).insertOne(data);
+            }
+          } catch (err) {
+            // Skip if file doesn't exist
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Migration error:", err);
+    }
+  };
+
+  // Try to connect to MongoDB in the background
+  mongoClient.connect().then(() => {
     db = mongoClient.db();
-    console.log("Connected to MongoDB");
-  } catch (err) {
-    console.error("Failed to connect to MongoDB, falling back to mock DB behavior", err);
-    // Create a mock db object that warns or uses memory?
-    // For now, let's just ensure the server starts.
-  }
+    console.log("Connected to MongoDB established");
+    runMigration();
+  }).catch(err => {
+    console.error("Failed to connect to MongoDB during startup:", err.message);
+    // Initialize mock DB in case MongoDB fails completely
+    console.log("Initializing in-memory mock database for stability");
+    const mockCollections: any = {};
+    db = {
+      collection: (name: string) => {
+        if (!mockCollections[name]) {
+          mockCollections[name] = {
+            data: [],
+            find: () => ({ 
+              toArray: async () => mockCollections[name].data,
+              sort: () => ({ toArray: async () => mockCollections[name].data })
+            }),
+            findOne: async (query: any) => {
+              const keys = Object.keys(query);
+              return mockCollections[name].data.find((item: any) => 
+                keys.every(key => item[key] == query[key] || (query[key]?.$or && query[key].$or.some((q: any) => item[key] == q[key])))
+              );
+            },
+            insertOne: async (doc: any) => {
+              mockCollections[name].data.push(doc);
+              return { insertedId: doc._id || Date.now() };
+            },
+            insertMany: async (docs: any[]) => {
+              mockCollections[name].data.push(...docs);
+              return { insertedCount: docs.length };
+            },
+            updateOne: async (query: any, update: any) => {
+               // Very limited mock
+               return { modifiedCount: 1 };
+            },
+            updateMany: async (query: any, update: any) => {
+               return { modifiedCount: 1 };
+            },
+            deleteOne: async (query: any) => {
+               return { deletedCount: 1 };
+            },
+            countDocuments: async () => mockCollections[name].data.length
+          };
+        }
+        return mockCollections[name];
+      }
+    };
+    runMigration();
+  });
 
   // Middleware to ensure DB is available or send error
   const checkDb = (req: any, res: any, next: any) => {
@@ -120,7 +197,7 @@ async function startServer() {
 
   // API Routes
   app.get("/api/authors", checkDb, asyncHandler(async (req: any, res: any) => {
-    const authors = await db.collection("authors").find().toArray();
+    const authors = await db.collection("authors").find().sort({ fans: -1 }).limit(100).toArray();
     res.json(authors);
   }));
 
@@ -243,7 +320,7 @@ async function startServer() {
   });
 
   app.get("/api/predictions", checkDb, asyncHandler(async (req: any, res: any) => {
-    const predictions = await db.collection("predictions").find().toArray();
+    const predictions = await db.collection("predictions").find().sort({ time: -1 }).limit(200).toArray();
     res.json(predictions);
   }));
 
@@ -1430,5 +1507,13 @@ async function startServer() {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception thrown:', err);
+});
 
 startServer();

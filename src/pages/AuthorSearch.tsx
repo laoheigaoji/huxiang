@@ -51,8 +51,8 @@ const AuthorSearch = () => {
   const filteredAuthors = query.trim() === '' 
     ? [] 
     : authors.filter(a => 
-        a.name.toLowerCase().includes(query.toLowerCase()) || 
-        a.id.toLowerCase().includes(query.toLowerCase())
+        a.name?.toLowerCase().includes(query.toLowerCase()) || 
+        a.id?.toLowerCase().includes(query.toLowerCase())
       );
 
   return (
