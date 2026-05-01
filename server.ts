@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import CryptoJS from "crypto-js";
 import axios from "axios";
 import { MongoClient, ObjectId } from "mongodb";
+import qiniu from "qiniu";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,6 +48,32 @@ async function startServer() {
     res.json({ status: "ok", dbConnected: !!db });
   });
 
+  // Helper for async errors
+  const asyncHandler = (fn: any) => (req: any, res: any, next: any) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+
+  app.get("/api/qiniu-token", asyncHandler(async (req: any, res: any) => {
+    const accessKey = process.env.QINIU_AK || "BALdKGyIRFt2u8piNFIkXHQOo9ISkorSIXIylQTq";
+    const secretKey = process.env.QINIU_SK || "2alIKZzh2AeS-1Y_Vpzg06uzU6Cbzcsuzm7MNbHA";
+    const bucket = process.env.QINIU_BUCKET || "wxqun988";
+    const domain = process.env.QINIU_DOMAIN || "wxqun988.vxjuejin.com";
+
+    const mac = new qiniu.auth.digest.Mac(accessKey, secretKey);
+    const options = {
+      scope: bucket,
+      expires: 7200,
+      returnBody: '{"key":"$(key)","hash":"$(etag)","fsize":$(fsize),"bucket":"$(bucket)","name":"$(x:name)"}'
+    };
+    const putPolicy = new qiniu.rs.PutPolicy(options);
+    const uploadToken = putPolicy.uploadToken(mac);
+
+    res.json({
+      token: uploadToken,
+      domain: domain
+    });
+  }));
+
   // Migration logic (run once if users is empty)
   if (db) {
     try {
@@ -73,11 +100,6 @@ async function startServer() {
       console.error("Migration error:", err);
     }
   }
-
-  // Helper for async errors
-  const asyncHandler = (fn: any) => (req: any, res: any, next: any) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
 
   // Log to DB
   const logToDb = async (type: string, message: string, data: any = {}) => {

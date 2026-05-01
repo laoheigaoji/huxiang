@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, X, MoreHorizontal } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, X, MoreHorizontal, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { api } from '../services/api';
@@ -8,8 +8,11 @@ const EditProfile = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [nickname, setNickname] = useState('');
+  const [avatar, setAvatar] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -17,6 +20,7 @@ const EditProfile = () => {
         const data = await api.getProfile();
         setUser(data);
         setNickname(data.nickname);
+        setAvatar(data.avatar);
       } catch (err) {
         console.error('Failed to fetch profile', err);
       } finally {
@@ -26,10 +30,57 @@ const EditProfile = () => {
     fetchProfile();
   }, []);
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('图片大小不能超过2MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // 1. Get Qiniu Token
+      const { token, domain } = await api.getQiniuToken();
+      
+      // 2. Prepare FormData
+      const formData = new FormData();
+      const key = `avatar/${Date.now()}-${file.name}`;
+      formData.append('file', file);
+      formData.append('token', token);
+      formData.append('key', key);
+
+      // 3. Upload to Qiniu (using the correct region endpoint for your bucket)
+      const res = await fetch('https://up-z2.qiniup.com', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const result = await res.json();
+      if (res.ok && result.key) {
+        const avatarUrl = domain.startsWith('http') ? `${domain}/${result.key}` : `https://${domain}/${result.key}`;
+        setAvatar(avatarUrl);
+      } else {
+        console.error('Qiniu Upload Error Result:', result);
+        throw new Error(result.error || '上传失败');
+      }
+    } catch (err: any) {
+      console.error('Upload failed full error:', err);
+      alert(`头像上传失败: ${err.message || '未知错误'}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
-      const updatedUser = await api.updateProfile({ nickname });
+      const updatedUser = await api.updateProfile({ nickname, avatar });
       localStorage.setItem('user', JSON.stringify(updatedUser));
       alert('保存成功');
       navigate(-1);
@@ -57,13 +108,32 @@ const EditProfile = () => {
 
       {/* Avatar Section */}
       <div className="flex flex-col items-center py-8">
-        <div className="w-24 h-24 rounded-full overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.1)] border-2 border-white">
+        <div 
+          onClick={handleAvatarClick}
+          className="w-24 h-24 rounded-full overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.1)] border-2 border-white relative cursor-pointer group"
+        >
           <img 
-            src={user?.avatar || "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=400"} 
+            src={avatar || "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=400"} 
             alt="Avatar" 
-            className="w-full h-full object-cover" 
+            className={`w-full h-full object-cover transition-opacity ${uploading ? 'opacity-50' : 'opacity-100'}`} 
           />
+          <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <Camera className="w-8 h-8 text-white" />
+          </div>
+          {uploading && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
         </div>
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          className="hidden" 
+          accept="image/*" 
+          onChange={handleFileChange} 
+        />
+        <p className="text-gray-400 text-xs mt-3 font-medium">点击更换头像</p>
       </div>
 
       {/* Form Fields */}

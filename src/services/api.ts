@@ -198,6 +198,11 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getQiniuToken() {
+    const res = await fetch(`${API_BASE}/qiniu-token`);
+    return handleResponse(res);
+  },
+
   async logout() {
     await fetch(`${API_BASE}/logout`, { method: 'POST' });
     localStorage.removeItem('user');
