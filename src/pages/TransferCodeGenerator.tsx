@@ -437,8 +437,8 @@ const TransferCodeGenerator = () => {
             <div className="mt-10">
                 <h3 className="text-base font-bold flex items-center gap-2 mb-4 text-slate-800 px-1"><History className="text-slate-400" size={18} /> 最近生成</h3>
                 <div className="space-y-3">
-                    {history.map(item => (
-                        <div key={item.id} className="bg-white p-4 rounded-2xl flex justify-between items-center border border-slate-100 shadow-sm">
+                    {history.map((item, index) => (
+                        <div key={item.id || index} className="bg-white p-4 rounded-2xl flex justify-between items-center border border-slate-100 shadow-sm">
                              <div>
                                 <p className="text-sm font-bold text-slate-900">{item.name}</p>
                                 <p className="text-xs text-slate-500 font-mono mt-1">{item.cardNo}</p>

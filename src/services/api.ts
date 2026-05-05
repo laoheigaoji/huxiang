@@ -114,12 +114,12 @@ export const api = {
 
   _profilePromise: null as Promise<any> | null,
 
-  async getProfile() {
+  async getProfile(forceRefresh: boolean = false) {
     const userStr = localStorage.getItem('user');
     const userId = userStr ? JSON.parse(userStr).id : null;
     if (!userId) throw new Error('未登录');
     
-    if (this._profilePromise) return this._profilePromise;
+    if (!forceRefresh && this._profilePromise) return this._profilePromise;
 
     this._profilePromise = (async () => {
       try {

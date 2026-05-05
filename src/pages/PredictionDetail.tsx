@@ -37,6 +37,22 @@ const PredictionDetail = () => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentPollCount, setPaymentPollCount] = useState(0);
   const posterRef = React.useRef<HTMLDivElement>(null);
+  const handleShowPayment = async () => {
+    try {
+      const updatedUser = await api.getProfile(true);
+      localStorage.setItem('user', JSON.stringify(updatedUser)); // Ensure local storage is also updated
+      setUser(updatedUser);
+      setShowPayment(true);
+    } catch (err) {
+      console.error('Failed to update profile before payment', err);
+      // Fallback to local storage if API call fails
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        setUser(JSON.parse(userStr));
+      }
+      setShowPayment(true);
+    }
+  };
 
   const handleDownloadPoster = async () => {
       if (!posterRef.current) return;
@@ -254,7 +270,7 @@ const PredictionDetail = () => {
       if (selectedPaymentMethod === 'balance') {
         await api.purchasePrediction(id);
         setIsPurchased(true);
-        const updatedUser = await api.getProfile();
+        const updatedUser = await api.getProfile(true);
         setUser(updatedUser);
         setShowPayment(false);
         setIsProcessingPayment(false);
@@ -508,7 +524,7 @@ const PredictionDetail = () => {
                 </div>
                 
                 <div 
-                  onClick={() => setShowPayment(true)}
+                  onClick={handleShowPayment}
                   className="mt-3.5 flex items-center justify-center space-x-1 text-gray-900 cursor-pointer py-0.5 group active:scale-95 transition-all"
                 >
                   <Lock className="w-3.5 h-3.5 fill-black group-hover:scale-110 transition-transform" />
@@ -737,7 +753,7 @@ const PredictionDetail = () => {
             <span className="text-xl font-bold text-[#e11d48]">¥ {prediction.price}</span>
           </div>
           <button 
-            onClick={() => setShowPayment(true)}
+            onClick={handleShowPayment}
             className="bg-[#e11d48] text-white px-10 py-3 rounded-full text-[15px] font-bold active:scale-95 transition-transform"
           >
             立即支付
