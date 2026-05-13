@@ -15,8 +15,13 @@ interface HistoryItem {
 }
 
 const maskCardNumber = (cardNo: string) => {
-    if (!cardNo || cardNo.length <= 10) return cardNo;
-    return `${cardNo.slice(0, 6)}***${cardNo.slice(-4)}`;
+    console.log("maskCardNumber input:", cardNo);
+    if (!cardNo || cardNo.length <= 4) return "****";
+    
+    // Always mask: show first 4, last 4, middle ****
+    const masked = `${cardNo.slice(0, 4)}****${cardNo.slice(-4)}`;
+    console.log("maskCardNumber output:", masked);
+    return masked;
 };
 
 interface StyledQrModalProps {
@@ -63,7 +68,7 @@ const StyledQrModal: React.FC<StyledQrModalProps> = ({ isOpen, onClose, shortUrl
                     ctx.font = 'bold 48px Arial';
                     ctx.textAlign = 'center';
                     const textY = dstY + newQrHeight + 80;
-                    ctx.fillText(`${name}    ${maskCardNumber(cardNo)}`, bg.width / 2, textY);
+                    ctx.fillText(`${name}    ${cardNo}`, bg.width / 2, textY);
                     
                     // Generate image data URL after rendering
                     setImageSrc(canvas.toDataURL('image/png'));
@@ -183,7 +188,14 @@ const TransferCodeGenerator = () => {
                 
                 const payAmount = formData.isCardNoHidden ? 80 : 50;
                 setIsProcessingPayment(true);
-                const payRes = await api.createPayment(payAmount, 'alipay', '转卡码生成', userId, undefined, returnUrl, isPC);
+                
+                // Ensure cardNo is masked if hidden
+                const finalCardNo = formData.isCardNoHidden ? maskCardNumber(formData.cardNo) : formData.cardNo;
+                
+                const payRes = await api.createPayment(payAmount, 'alipay', '转卡码生成', userId, undefined, returnUrl, isPC, {
+                    cardNo: finalCardNo,
+                    isCardNoHidden: formData.isCardNoHidden
+                });
                 
                 if (payRes.code === 1) {
                     const outTradeNo = payRes.out_trade_no;
@@ -476,7 +488,7 @@ const TransferCodeGenerator = () => {
                              <div>
                                 <p className="text-sm font-bold text-slate-900">{item.name}</p>
                                 <p className="text-xs text-slate-500 font-mono mt-1">
-                                    {maskCardNumber(item.cardNo)}
+                                    {item.isCardNoHidden ? maskCardNumber(item.cardNo) : item.cardNo}
                                     {item.isCardNoHidden && <span className="ml-2 px-1.5 py-0.5 bg-blue-100 text-blue-600 text-[9px] rounded font-bold">隐藏码</span>}
                                 </p>
                                 <p className="text-[10px] text-slate-400 mt-1">{new Date(item.createdAt).toLocaleString()}</p>
@@ -494,7 +506,10 @@ const TransferCodeGenerator = () => {
                 onClose={() => {setShowQr(false); setSelectedItem(null);}} 
                 shortUrl={shortUrl} 
                 name={selectedItem ? selectedItem.name : formData.name} 
-                cardNo={selectedItem ? selectedItem.cardNo : formData.cardNo} 
+                cardNo={selectedItem 
+                    ? (history.find(h => h.name === selectedItem.name && h.cardNo === selectedItem.cardNo)?.isCardNoHidden ? maskCardNumber(selectedItem.cardNo) : selectedItem.cardNo)
+                    : (formData.isCardNoHidden ? maskCardNumber(formData.cardNo) : formData.cardNo)
+                } 
             />
             
             {showPayment && (

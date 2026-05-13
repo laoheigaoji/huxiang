@@ -154,11 +154,11 @@ export const api = {
     return handleResponse(res);
   },
 
-  async createPayment(amount: number, type: string, orderName: string, userId?: string, predictionId?: string, returnUrl?: string, jump: boolean = false) {
+  async createPayment(amount: number, type: string, orderName: string, userId?: string, predictionId?: string, returnUrl?: string, jump: boolean = false, extraData?: any) {
     const res = await fetchWithRetry(`${API_BASE}/pay/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount, type, orderName, userId, predictionId, returnUrl, jump })
+      body: JSON.stringify({ amount, type, orderName, userId, predictionId, returnUrl, jump, ...extraData })
     });
     return handleResponse(res);
   },
