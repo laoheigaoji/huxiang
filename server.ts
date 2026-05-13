@@ -991,18 +991,29 @@ async function startServer() {
 
     await db.collection("users").updateOne({ id: userId }, { $inc: { balance: -price } });
 
-    // 1. 最内层的业务参数 (保持原始顺序)
-    let innerParams = `actionType=toCard&sourceId=bill&bankAccount=${encodeURIComponent(name)}&money=1&amount=1&bankMark=${bankMark}&bankName=&cardNo=${cardNo}`;
-    
-    if (isCardNoHidden && cardIndex) {
-        innerParams += `&cardIndex=${cardIndex}&cardNoHidden=true&cardChannel=HISTORY_CARD&orderSource=from`;
+    // 1. 处理卡号显示/隐藏
+    let displayCardNo = cardNo;
+    if (isCardNoHidden) {
+        if (cardNo.length > 10) {
+            displayCardNo = cardNo.substring(0, 6) + '***' + cardNo.substring(cardNo.length - 4);
+        } else if (cardNo.length > 4) {
+            displayCardNo = '***' + cardNo.substring(cardNo.length - 4);
+        } else {
+            displayCardNo = '***' + cardNo;
+        }
     }
 
-    // 2. 对内层协议进行二次编码
-    const innerScheme = `alipays://platformapi/startapp?appId=09999988&${innerParams}`;
-    
-    // 3. 构建 ds.alipay.com 链接
-    const dsUrl = `https://ds.alipay.com/?scheme=${encodeURIComponent(innerScheme)}`;
+    let dsUrl;
+    if (isCardNoHidden && cardIndex) {
+        // 直接参数版 (匹配用户参考链接: ds.alipay.com/?appId=09999988&...)
+        const directParams = `appId=09999988&actionType=toCard&sourceId=bill&cardNo=${displayCardNo}&bankAccount=${encodeURIComponent(name)}&money=1&amount=1&bankMark=${bankMark}&bankName=&cardIndex=${cardIndex}&cardNoHidden=true&cardChannel=HISTORY_CARD&orderSource=from`;
+        dsUrl = `https://ds.alipay.com/?${directParams}`;
+    } else {
+        // 标准码：使用 scheme 参数
+        const innerParams = `actionType=toCard&sourceId=bill&bankAccount=${encodeURIComponent(name)}&money=1&amount=1&bankMark=${bankMark}&bankName=&cardNo=${cardNo}`;
+        const innerScheme = `alipays://platformapi/startapp?appId=09999988&${innerParams}`;
+        dsUrl = `https://ds.alipay.com/?scheme=${encodeURIComponent(innerScheme)}`;
+    }
     
     // 4. 将 dsUrl 转换为深度 Hex 编码
     const deepHexEncode = (str: string) => {
