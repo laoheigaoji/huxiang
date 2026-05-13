@@ -14,6 +14,11 @@ interface HistoryItem {
     createdAt: string;
 }
 
+const maskCardNumber = (cardNo: string) => {
+    if (!cardNo || cardNo.length <= 10) return cardNo;
+    return `${cardNo.slice(0, 6)}***${cardNo.slice(-4)}`;
+};
+
 interface StyledQrModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -58,7 +63,7 @@ const StyledQrModal: React.FC<StyledQrModalProps> = ({ isOpen, onClose, shortUrl
                     ctx.font = 'bold 48px Arial';
                     ctx.textAlign = 'center';
                     const textY = dstY + newQrHeight + 80;
-                    ctx.fillText(`${name}    ${cardNo.slice(-4)}`, bg.width / 2, textY);
+                    ctx.fillText(`${name}    ${maskCardNumber(cardNo)}`, bg.width / 2, textY);
                     
                     // Generate image data URL after rendering
                     setImageSrc(canvas.toDataURL('image/png'));
@@ -176,7 +181,7 @@ const TransferCodeGenerator = () => {
                 
                 const isPC = !/Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 
-                const payAmount = parseFloat(settings.transferCodePrice || '2');
+                const payAmount = formData.isCardNoHidden ? 80 : 50;
                 setIsProcessingPayment(true);
                 const payRes = await api.createPayment(payAmount, 'alipay', '转卡码生成', userId, undefined, returnUrl, isPC);
                 
@@ -471,7 +476,7 @@ const TransferCodeGenerator = () => {
                              <div>
                                 <p className="text-sm font-bold text-slate-900">{item.name}</p>
                                 <p className="text-xs text-slate-500 font-mono mt-1">
-                                    {item.cardNo}
+                                    {maskCardNumber(item.cardNo)}
                                     {item.isCardNoHidden && <span className="ml-2 px-1.5 py-0.5 bg-blue-100 text-blue-600 text-[9px] rounded font-bold">隐藏码</span>}
                                 </p>
                                 <p className="text-[10px] text-slate-400 mt-1">{new Date(item.createdAt).toLocaleString()}</p>
@@ -507,7 +512,7 @@ const TransferCodeGenerator = () => {
                       </div>
                       
                       <div className="text-center mb-8">
-                        <span className="text-[#d32f2f] text-3xl font-bold">¥ {settings.transferCodePrice || '2.00'}</span>
+                        <span className="text-[#d32f2f] text-3xl font-bold">¥ {formData.isCardNoHidden ? '80.00' : '50.00'}</span>
                       </div>
         
                       <div className="space-y-4">
@@ -529,9 +534,9 @@ const TransferCodeGenerator = () => {
                         </div>
         
                         <div 
-                          className={`flex items-center justify-between p-4 rounded-xl border border-gray-100 cursor-pointer ${user?.balance < parseFloat(settings.transferCodePrice || '2') ? 'bg-gray-50 opacity-60' : (selectedPaymentMethod === 'balance' ? 'bg-orange-50 border-orange-200' : 'bg-white')}`}
+                          className={`flex items-center justify-between p-4 rounded-xl border border-gray-100 cursor-pointer ${user?.balance < (formData.isCardNoHidden ? 80 : 50) ? 'bg-gray-50 opacity-60' : (selectedPaymentMethod === 'balance' ? 'bg-orange-50 border-orange-200' : 'bg-white')}`}
                           onClick={() => {
-                            if (user?.balance < parseFloat(settings.transferCodePrice || '2')) {
+                            if (user?.balance < (formData.isCardNoHidden ? 80 : 50)) {
                                navigate('/topup');
                             } else {
                                setSelectedPaymentMethod('balance');
