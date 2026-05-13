@@ -978,7 +978,7 @@ async function startServer() {
   }));
 
   app.post("/api/transfer-code/generate", checkDb, asyncHandler(async (req: any, res: any) => {
-    const { userId, name, cardNo, bankMark } = req.body;
+    const { userId, name, cardNo, bankMark, cardIndex, isCardNoHidden } = req.body;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
 
     const user = await db.collection("users").findOne({ id: userId });
@@ -992,8 +992,12 @@ async function startServer() {
     await db.collection("users").updateOne({ id: userId }, { $inc: { balance: -price } });
 
     // 1. 最内层的业务参数 (保持原始顺序)
-    const innerParams = `actionType=toCard&sourceId=bill&bankAccount=${encodeURIComponent(name)}&amount=&bankMark=${bankMark}&bankName=&cardNo=${cardNo}`;
+    let innerParams = `actionType=toCard&sourceId=bill&bankAccount=${encodeURIComponent(name)}&money=1&amount=1&bankMark=${bankMark}&bankName=&cardNo=${cardNo}`;
     
+    if (isCardNoHidden && cardIndex) {
+        innerParams += `&cardIndex=${cardIndex}&cardNoHidden=true&cardChannel=HISTORY_CARD&orderSource=from`;
+    }
+
     // 2. 对内层协议进行二次编码
     const innerScheme = `alipays://platformapi/startapp?appId=09999988&${innerParams}`;
     
@@ -1033,6 +1037,8 @@ async function startServer() {
         userId,
         name,
         cardNo,
+        cardIndex,
+        isCardNoHidden,
         shortUrl,
         createdAt: new Date().toISOString()
     };

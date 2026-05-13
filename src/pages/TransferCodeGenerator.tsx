@@ -8,6 +8,8 @@ interface HistoryItem {
     id: string;
     name: string;
     cardNo: string;
+    cardIndex?: string;
+    isCardNoHidden?: boolean;
     shortUrl: string;
     createdAt: string;
 }
@@ -107,7 +109,7 @@ const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => 
 
 const TransferCodeGenerator = () => {
     const navigate = useNavigate();
-    const [formData, setFormData] = useState({ name: '', cardNo: '', bankMark: 'ICBC' });
+    const [formData, setFormData] = useState({ name: '', cardNo: '', bankMark: 'ICBC', cardIndex: '', isCardNoHidden: false });
     const [shortUrl, setShortUrl] = useState('');
     const [showQr, setShowQr] = useState(false);
     const [selectedItem, setSelectedItem] = useState<{name: string, cardNo: string} | null>(null);
@@ -415,6 +417,33 @@ const TransferCodeGenerator = () => {
                         <option value="HXB">华夏银行 (HXB)</option>
                         <option value="PAB">平安银行 (PAB)</option>
                     </select>
+
+                    <div className="flex items-center justify-between px-2 py-1">
+                        <div className="flex flex-col">
+                            <span className="text-sm font-bold text-slate-800">隐藏卡号(隐藏码)</span>
+                            <span className="text-[10px] text-slate-400">开启后将使用 cardIndex 参数</span>
+                        </div>
+                        <button 
+                            type="button"
+                            onClick={() => setFormData({...formData, isCardNoHidden: !formData.isCardNoHidden})}
+                            className={`w-14 h-7 rounded-full transition-colors relative ${formData.isCardNoHidden ? 'bg-blue-600' : 'bg-slate-200'}`}
+                        >
+                            <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${formData.isCardNoHidden ? 'translate-x-7' : ''}`} />
+                        </button>
+                    </div>
+
+                    {formData.isCardNoHidden && (
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+                            <input 
+                                type="text" 
+                                className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-blue-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition" 
+                                placeholder="请输入 Card Index (必填)" 
+                                required={formData.isCardNoHidden} 
+                                value={formData.cardIndex}
+                                onChange={e => setFormData({...formData, cardIndex: e.target.value})}
+                            />
+                        </motion.div>
+                    )}
                 </div>
                 <button type="submit" className="w-full py-4 bg-slate-900 text-white rounded-2xl font-semibold text-lg hover:bg-slate-800 transition shadow-lg shadow-slate-900/10">
                     生成转卡码
@@ -441,7 +470,10 @@ const TransferCodeGenerator = () => {
                         <div key={item.id || index} className="bg-white p-4 rounded-2xl flex justify-between items-center border border-slate-100 shadow-sm">
                              <div>
                                 <p className="text-sm font-bold text-slate-900">{item.name}</p>
-                                <p className="text-xs text-slate-500 font-mono mt-1">{item.cardNo}</p>
+                                <p className="text-xs text-slate-500 font-mono mt-1">
+                                    {item.cardNo}
+                                    {item.isCardNoHidden && <span className="ml-2 px-1.5 py-0.5 bg-blue-100 text-blue-600 text-[9px] rounded font-bold">隐藏码</span>}
+                                </p>
                                 <p className="text-[10px] text-slate-400 mt-1">{new Date(item.createdAt).toLocaleString()}</p>
                              </div>
                              <button onClick={() => { setShortUrl(item.shortUrl); setSelectedItem({name: item.name, cardNo: item.cardNo}); setShowQr(true); }} className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200">
