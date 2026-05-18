@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, SlidersHorizontal, Trophy, Pencil, User as UserIcon, X, ChevronRight, Check, ArrowLeftRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Search, SlidersHorizontal, Trophy, Pencil, User as UserIcon, X, ChevronRight, Check, ArrowLeftRight, Headset } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../services/api';
 import { Author, Prediction } from '../types';
@@ -186,7 +186,7 @@ const PredictionCard = ({ prediction, isFollowed, onFollow, refreshTrigger }: { 
     <div className="p-2.5 relative">
       {/* Result Stamp */}
       {prediction.result && (
-        <div className="absolute top-10 right-2 w-14 h-10 z-10 pointer-events-none opacity-90 select-none">
+        <div className="absolute top-14 right-2 w-14 h-10 z-10 pointer-events-none opacity-90 select-none">
           <img 
             src={prediction.result === '红' ? 'https://wxqun988.vxjuejin.com/IMG_1034.PNG' : 'https://wxqun988.vxjuejin.com/IMG_1035.PNG'} 
             alt={prediction.result}
@@ -287,6 +287,7 @@ const PredictionCard = ({ prediction, isFollowed, onFollow, refreshTrigger }: { 
 };
 
 const Home = () => {
+  const navigate = useNavigate();
   const [isSortModalOpen, setIsSortModalOpen] = useState(false);
   const [selectedSort, setSelectedSort] = useState('default');
   const [isAnnouncementVisible, setIsAnnouncementVisible] = useState(true);
@@ -530,6 +531,9 @@ const Home = () => {
               <Link to="/author-search" className="text-[#d32f2f] active:scale-95 transition-transform">
                 <ArrowLeftRight className="w-5 h-5" strokeWidth={2.5} />
               </Link>
+              <button onClick={() => navigate('/feedback')} className="text-gray-400 active:scale-95 transition-transform">
+                <Headset className="w-5 h-5" />
+              </button>
            </div>
         </div>
       </div>

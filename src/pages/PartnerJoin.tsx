@@ -160,7 +160,7 @@ const PartnerJoin = () => {
               <div className="flex items-center text-[14px] font-bold text-gray-400">
                 <div className="w-5 h-5 bg-orange-400 rounded-full flex items-center justify-center text-white text-[12px] mr-2">?</div>
                 <span>如有疑问，请</span>
-                <span className="text-[#d32f2f] mx-1">咨询客服</span>
+                <span className="text-[#d32f2f] mx-1 cursor-pointer" onClick={() => navigate('/feedback')}>咨询客服</span>
                 <span>处理</span>
               </div>
             </div>
@@ -320,7 +320,7 @@ const PartnerJoin = () => {
               <div className="flex items-center text-[14px] font-bold text-gray-400">
                 <div className="w-5 h-5 bg-orange-400 rounded-full flex items-center justify-center text-white text-[12px] mr-2">?</div>
                 <span>如有疑问，请</span>
-                <span className="text-[#d32f2f] mx-1">咨询客服</span>
+                <span className="text-[#d32f2f] mx-1 cursor-pointer" onClick={() => navigate('/feedback')}>咨询客服</span>
                 <span>处理</span>
               </div>
             </div>
@@ -401,7 +401,7 @@ const PartnerJoin = () => {
         <div className="w-full flex items-center justify-between text-white mb-6">
           <ChevronLeft className="w-7 h-7 cursor-pointer" onClick={() => navigate(-1)} />
           <h2 className="text-xl font-bold">申请入驻</h2>
-          <Headset className="w-6 h-6 cursor-pointer" />
+          <Headset className="w-6 h-6 cursor-pointer" onClick={() => navigate('/feedback')} />
         </div>
 
         <div className="w-full max-w-xs flex items-center justify-between relative px-2 mb-2">

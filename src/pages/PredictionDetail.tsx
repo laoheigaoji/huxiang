@@ -414,7 +414,7 @@ const PredictionDetail = () => {
               {prediction.status === 'public' && (
                   <span className="bg-green-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">公开</span>
               )}
-              <Headset className="w-6 h-6 cursor-pointer" />
+              <Headset className="w-6 h-6 cursor-pointer" onClick={() => navigate('/feedback')} />
           </div>
         </div>
 
@@ -539,74 +539,105 @@ const PredictionDetail = () => {
           </div>
         ) : (
           /* Result Section (Only if shared/unlocked/free) */
-          (prediction.isFree || isPurchased || isUnlocked) && (() => {
-            const contentTokens = (prediction.content || '').split(/[\s,，、]+/).filter(Boolean);
-            const mainPicksStrings = (prediction.mainPicks || [1, 2, 5, 8, 12, 19, 24]).map(n => String(n || 0).padStart(2, '0'));
-            const contentStrings = contentTokens.map(p => String(p).padStart(2, '0'));
-
-            return (
-              <div className="mt-4 bg-[#fdf2f2] rounded-[32px] p-5 pb-6 border border-[#fee2e2] shadow-sm relative overflow-hidden">
-                <div className="absolute top-4 right-4 text-gray-400 z-10">
-                  <Share2 className="w-5 h-5 cursor-pointer" onClick={() => setShowShare(true)} />
-                </div>
-                
-                {/* Title: 模拟核对第XX期 */}
-                <div className="text-center mb-2 relative">
-                  <h3 className="text-[#374151] font-bold text-[15px] flex items-center justify-center">
-                    模拟核对第{prediction.period?.replace(/[^\d]/g, '')}期
-                  </h3>
-                </div>
-
-                {/* Check Grid: 核对 (Top) */}
-                <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-2 mb-3">
-                  {(prediction.mainPicks || [1, 2, 5, 8, 12, 19, 24]).map((n, i) => {
-                    const formattedN = n === null ? '' : String(n || 0).padStart(2, '0');
-                    // Use published color strictly
-                    const publishedColor = prediction.ballColors?.[i];
-                    const ballBgColor = publishedColor === 'blue' ? 'bg-blue-600' : 'bg-[#ef4444]';
-                    const textColor = publishedColor === 'blue' ? 'text-blue-600' : 'text-gray-500';
-
-                    return (
-                      <div key={i} className="flex flex-col items-center min-w-[32px]">
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-[12px] font-bold shadow-sm transition-colors ${ballBgColor}`}>
-                          {formattedN}
-                        </div>
-                        {prediction.mainZodiacs && prediction.mainZodiacs[i] && (
-                          <span className={`text-[9px] mt-0.5 font-bold transition-colors ${textColor}`}>{prediction.mainZodiacs[i]}</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Paid Content Label */}
-                <h4 className="text-[#f97316] font-black text-[14px] mb-2 flex justify-center items-center space-x-1.5 tracking-widest">
-                  <Star className="w-3.5 h-3.5 fill-[#f97316]" />
-                  <span>付费内容</span>
-                  <Star className="w-3.5 h-3.5 fill-[#f97316]" />
-                </h4>
-                
-                {/* Body Content Grid (Bottom) */}
-                <div className="bg-[#fff7ed] rounded-xl p-3 border border-dashed border-[#fdba74]/50 relative shadow-inner">
-                  <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-2">
-                    {(prediction.contentPicks || contentTokens).map((p, i) => {
-                      const formattedP = p === '' ? '' : String(p).padStart(2, '0');
-                      
-                      const publishedColor = prediction.contentColors?.[i];
-                      const ballBgColor = publishedColor === 'blue' ? 'bg-blue-600' : 'bg-[#ef4444]';
-
-                      return (
-                        <div key={i} className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-[12px] font-bold shadow-sm transition-colors ${ballBgColor}`}>
-                          {p}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+          (prediction.isFree || isPurchased || isUnlocked) && (
+            <div className="mt-4 bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+              <div className="mb-6 border-b border-gray-50 pb-4">
+                 <h2 className="text-xl font-bold text-gray-900 leading-tight mb-2">
+                   {prediction.contentTitle || prediction.title}
+                 </h2>
+                 <div className="flex items-center space-x-3 text-xs text-gray-400 font-medium">
+                    <span className="text-[#d32f2f] font-bold">第{prediction.period?.replace(/[^\d]/g, '')}期</span>
+                    <span>•</span>
+                    <span>发布于 {prediction.time}</span>
+                 </div>
               </div>
-            );
-          })()
+              
+              <div 
+                className="article-content text-gray-800 leading-relaxed text-sm space-y-4"
+                dangerouslySetInnerHTML={{ __html: prediction.content || '' }}
+              />
+
+              <div className="mt-8 flex flex-col items-center justify-center py-6 border-t border-gray-50">
+                 <div className="flex items-center space-x-2 text-[#d32f2f] font-bold text-sm mb-4">
+                    <Star className="w-4 h-4 fill-[#d32f2f]" />
+                    <span>智料汇享 • 独家分析内容</span>
+                    <Star className="w-4 h-4 fill-[#d32f2f]" />
+                 </div>
+                 <div className="w-24 h-px bg-gray-100"></div>
+              </div>
+            </div>
+          )
         )}
+
+        <style>{`
+          .article-content {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.8;
+            word-wrap: break-word;
+            word-break: break-all;
+          }
+          .article-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            margin: 20px auto;
+            display: block;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            border: 1px solid #f3f4f6;
+          }
+          .article-content p {
+            margin-bottom: 1.25rem;
+            white-space: pre-wrap;
+          }
+          .article-content h1, .article-content h2, .article-content h3 {
+            font-weight: 800;
+            color: #111827;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            line-height: 1.3;
+          }
+          .article-content h1 { font-size: 1.5rem; border-left: 4px solid #d32f2f; padding-left: 12px; }
+          .article-content h2 { font-size: 1.25rem; }
+          .article-content h3 { font-size: 1.1rem; }
+          .article-content ul, .article-content ol {
+            padding-left: 1.5rem;
+            margin-bottom: 1.25rem;
+          }
+          .article-content ul { list-style-type: disc; }
+          .article-content ol { list-style-type: decimal; }
+          .article-content code {
+            background-color: #f3f4f6;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.9em;
+            color: #d32f2f;
+          }
+          .article-content pre {
+            background-color: #1f2937;
+            color: #f9fafb;
+            padding: 1rem;
+            border-radius: 12px;
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+          }
+          .article-content pre code {
+            background-color: transparent;
+            padding: 0;
+            color: inherit;
+            font-size: inherit;
+          }
+          .article-content blockquote {
+            border-left: 4px solid #e5e7eb;
+            padding-left: 1rem;
+            font-style: italic;
+            color: #4b5563;
+            margin-bottom: 1.25rem;
+          }
+        `}</style>
 
         {/* History / Info */}
         <div className="mt-8 text-center relative mb-4 flex items-center justify-center">
@@ -652,7 +683,7 @@ const PredictionDetail = () => {
                 className="bg-white rounded-xl p-4 card-shadow relative cursor-pointer active:scale-[0.98] transition-transform"
                 onClick={() => navigate(`/prediction/${item.id}`)}
               >
-                <div className="absolute top-8 right-4 w-20 h-16 z-10 pointer-events-none opacity-90 select-none">
+                <div className="absolute top-12 right-4 w-20 h-16 z-10 pointer-events-none opacity-90 select-none">
                    <img 
                      src={item.result === 'red' || item.result === '红' ? 'https://wxqun988.vxjuejin.com/IMG_1034.PNG' : 'https://wxqun988.vxjuejin.com/IMG_1035.PNG'} 
                      alt={item.result} 
@@ -665,56 +696,9 @@ const PredictionDetail = () => {
                    <span className="text-[11px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded font-medium">{item.title}</span>
                 </div>
                 
-                {(() => {
-                  const contentTokens = (item.content || '').split(/[\s,，、]+/).filter(Boolean);
-                  const mainPicksStrings = (item.mainPicks || [14, 5, 48, 23, 31, 44, 36]).map(p => String(p || 0).padStart(2, '0'));
-                  const contentStrings = contentTokens.map(p => String(p).padStart(2, '0'));
-
-                  return (
-                    <>
-                      <div className="mt-4 flex items-start">
-                        <span className="text-[13px] text-gray-400 mr-4 mt-2 whitespace-nowrap">正文</span>
-                        <div className="flex flex-wrap gap-2.5">
-                          {(item.contentPicks || contentTokens).map((p: any, i: number) => {
-                            const formattedP = p === '' ? '' : String(p).padStart(2, '0');
-                            
-                            const publishedColor = item.contentColors?.[i];
-                            const ballBgColor = publishedColor === 'blue' ? 'bg-blue-600' : 'bg-[#ef4444]';
-
-                            return (
-                              <div key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold shadow-sm transition-colors ${ballBgColor}`}>
-                                {p}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 flex items-start">
-                        <span className="text-[13px] text-gray-400 mr-4 mt-2.5 whitespace-nowrap">核对</span>
-                        <div className="flex flex-wrap gap-x-2 gap-y-3">
-                          {(item.mainPicks || [14, 5, 48, 23, 31, 44, 36]).map((p: any, i: number) => {
-                            const formattedP = p === null ? '' : String(p || 0).padStart(2, '0');
-                            const publishedColor = item.ballColors?.[i];
-                            const ballBgColor = publishedColor === 'blue' ? 'bg-blue-600' : 'bg-[#ef4444]';
-                            const textColor = publishedColor === 'blue' ? 'text-blue-600' : 'text-gray-500';
-
-                            return (
-                              <div key={i} className="flex flex-col items-center">
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold shadow-sm transition-colors ${ballBgColor}`}>
-                                  {formattedP}
-                                </div>
-                                {item.mainZodiacs && item.mainZodiacs[i] && (
-                                  <span className={`text-[9px] mt-0.5 font-bold transition-colors ${textColor}`}>{item.mainZodiacs[i]}</span>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </>
-                  );
-                })()}
+                {/* Article Content Summary */}
+                <div className="mt-4 article-summary text-sm text-gray-600 line-clamp-3 bg-gray-50 p-3 rounded-lg border border-gray-100" 
+                     dangerouslySetInnerHTML={{ __html: item.content || '' }} />
                 
                 <div className="mt-4 flex justify-between items-center text-xs text-gray-400 border-t border-gray-50 pt-3">
                   <span>{item.time}</span>
@@ -931,74 +915,26 @@ const PredictionDetail = () => {
                       </div>
                     ) : (
                       /* Unlocked Version */
-                      (() => {
-                        const contentTokens = (prediction.content || '').split(/[\s,，、]+/).filter(Boolean);
-            
-                        return (
-                          <div className="rounded-[20px] p-4 mb-4 border relative overflow-hidden" style={{ backgroundColor: '#fdf2f2', borderColor: '#fee2e2' }}>
-                            {/* Title: 模拟核对第XX期 */}
-                            <div className="text-center mb-2">
-                              <h3 className="font-bold text-[14px]" style={{ color: '#374151' }}>
-                                模拟核对第{prediction.period?.replace(/[^\d]/g, '')}期
-                              </h3>
-                            </div>
-            
-                            {/* Check Grid: 核对 (Top) */}
-                            <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-2 mb-3">
-                              {(prediction.mainPicks || [1, 2, 5, 8, 12, 19, 24]).map((n, i) => {
-                                const formattedN = n === null ? '' : String(n || 0).padStart(2, '0');
-                                const publishedColor = prediction.ballColors?.[i];
-                                const ballBgColor = publishedColor === 'blue' ? '#2563eb' : '#ef4444';
-                                const textColor = publishedColor === 'blue' ? '#2563eb' : '#6b7280';
-            
-                                return (
-                                  <div key={i} className="flex flex-col items-center min-w-[28px]">
-                                    <div 
-                                      className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold shadow-sm"
-                                      style={{ backgroundColor: ballBgColor }}
-                                    >
-                                      {formattedN}
-                                    </div>
-                                    {prediction.mainZodiacs && prediction.mainZodiacs[i] && (
-                                      <span className="text-[8px] mt-0.5 font-bold" style={{ color: textColor }}>
-                                        {prediction.mainZodiacs[i]}
-                                      </span>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-            
-                            {/* Paid Content Label */}
-                            <h4 className="font-black text-[13px] mb-2 flex justify-center items-center space-x-1" style={{ color: '#f97316' }}>
-                              <Star className="w-3 h-3 fill-[#f97316]" />
-                              <span>付费内容</span>
-                              <Star className="w-3 h-3 fill-[#f97316]" />
-                            </h4>
-                            
-                            {/* Body Content Grid (Bottom) */}
-                            <div className="rounded-lg p-2 border border-dashed relative shadow-inner" style={{ backgroundColor: '#fff7ed', borderColor: 'rgba(253, 186, 116, 0.5)' }}>
-                              <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-1.5">
-                                {(prediction.contentPicks || contentTokens).map((p, i) => {
-                                  const formattedP = p === '' ? '' : String(p).padStart(2, '0');
-                                  const publishedColor = prediction.contentColors?.[i];
-                                  const ballBgColor = publishedColor === 'blue' ? '#2563eb' : '#ef4444';
-            
-                                  return (
-                                    <div 
-                                      key={i} 
-                                      className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold shadow-sm"
-                                      style={{ backgroundColor: ballBgColor }}
-                                    >
-                                      {formattedP}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })()
+                      <div className="rounded-[20px] p-4 mb-4 border relative overflow-hidden bg-[#fdf2f2] border-[#fee2e2]">
+                        <div className="text-center mb-3">
+                          <h3 className="font-bold text-[14px] text-gray-800">
+                             {prediction.contentTitle || prediction.title}
+                          </h3>
+                        </div>
+                        
+                        <div className="bg-white/80 rounded-xl p-3 border border-red-50/50">
+                           <div 
+                              className="poster-article-content text-[11px] text-gray-700 leading-relaxed line-clamp-[12]"
+                              dangerouslySetInnerHTML={{ __html: prediction.content || '' }}
+                           />
+                        </div>
+
+                        <h4 className="font-black text-[12px] mt-3 flex justify-center items-center space-x-1 text-orange-500">
+                          <Star className="w-3 h-3 fill-orange-500" />
+                          <span>付费专享分析内容</span>
+                          <Star className="w-3 h-3 fill-orange-500" />
+                        </h4>
+                      </div>
                     )}
 
                     {/* QR Code Section */}

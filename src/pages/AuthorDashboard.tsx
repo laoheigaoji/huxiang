@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ChevronLeft, Plus, MoreVertical, 
   Eye, Calendar, Trash2, Edit3, 
-  Filter, Search, AlertCircle
+  Filter, Search, AlertCircle, Headset
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -98,9 +98,14 @@ const AuthorDashboard = () => {
           <ChevronLeft className="w-6 h-6 text-gray-800" />
         </button>
         <h1 className="flex-1 text-center text-lg font-bold text-gray-900">文章管理</h1>
-        <Link to="/publish" className="p-2">
-          <Plus className="w-6 h-6 text-[#d32f2f]" />
-        </Link>
+        <div className="flex items-center space-x-1">
+          <button onClick={() => navigate('/feedback')} className="p-2">
+            <Headset className="w-6 h-6 text-gray-800" />
+          </button>
+          <Link to="/publish" className="p-2">
+            <Plus className="w-6 h-6 text-[#d32f2f]" />
+          </Link>
+        </div>
       </div>
 
       {/* Stats Summary */}

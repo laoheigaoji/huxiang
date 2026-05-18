@@ -8,6 +8,7 @@ import axios from "axios";
 import { MongoClient, ObjectId } from "mongodb";
 import qiniu from "qiniu";
 import cors from "cors";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -128,6 +129,116 @@ async function startServer() {
   // Helper for async errors
   const asyncHandler = (fn: any) => (req: any, res: any, next: any) => {
     Promise.resolve(fn(req, res, next)).catch(next);
+  };
+
+  // Cloudflare R2 Client (Fetching from DB preferentially)
+  const getR2Config = async () => {
+    const settings: any = (await db.collection("settings").findOne({})) || {};
+    return {
+      accountId: settings.r2AccountId || process.env.R2_ACCOUNT_ID || "0a28250e63bf217f833feabaf84a25a1",
+      accessKeyId: settings.r2AccessKeyId || process.env.R2_ACCESS_KEY_ID || "04690e4399db8cd09a408ffa2578b73a",
+      secretAccessKey: settings.r2SecretAccessKey || process.env.R2_SECRET_ACCESS_KEY || "c665ea47aa1465bc3ec8517639feece3bff5d7a1291772eb600b84adf707d8c4",
+      bucketName: settings.r2BucketName || process.env.R2_BUCKET_NAME || "faka",
+      publicDomain: settings.r2PublicDomain || process.env.R2_PUBLIC_DOMAIN || "https://pub-e47413b21ec24a6194733fbed73e6a8b.r2.dev"
+    };
+  };
+
+  const getR2Client = (config: any) => {
+    if (!config.accountId || !config.accessKeyId || !config.secretAccessKey) {
+      return null;
+    }
+
+    return new S3Client({
+      region: "auto",
+      endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey,
+      },
+    });
+  };
+
+  const uploadToR2 = async (buffer: Buffer, fileName: string, contentType: string) => {
+    const config = await getR2Config();
+    const client = getR2Client(config);
+    if (!client) throw new Error("R2 is not configured");
+
+    await client.send(new PutObjectCommand({
+      Bucket: config.bucketName,
+      Key: fileName,
+      Body: buffer,
+      ContentType: contentType,
+    }));
+
+    return config.publicDomain ? `${config.publicDomain.replace(/\/$/, "")}/${fileName}` : fileName;
+  };
+
+  const transferImagesInHtml = async (html: string) => {
+    if (!html) return html;
+    console.log("Starting transferImagesInHtml processing...");
+    const config = await getR2Config();
+    const client = getR2Client(config);
+    if (!client) {
+      console.log("R2 not fully configured. Missing credentials. Image transfer skipped.");
+      return html;
+    }
+
+    if (!config.publicDomain) {
+      console.warn("R2 Public Domain is not configured. Images will be uploaded but URLs will not be accessible via web.");
+    }
+
+    // Even more robust regex for various img tag styles
+    const imgRegex = /<img[^>]+src=(["'])(.*?)\1/gi;
+    const matches = Array.from(html.matchAll(imgRegex));
+    let updatedHtml = html;
+    
+    // Use a set to prevent processing the same image twice
+    const uniqueSrcs = [...new Set(matches.map(m => m[2]))];
+    console.log(`Found ${matches.length} img tags in HTML, ${uniqueSrcs.length} unique sources.`);
+
+    for (const originalSrc of uniqueSrcs) {
+      if (!originalSrc) continue;
+      
+      // Skip if already on R2
+      if (config.publicDomain && originalSrc.includes(config.publicDomain)) {
+        console.log("Image already on R2, skipping.");
+        continue;
+      }
+
+      try {
+        let buffer: Buffer;
+        let contentType: string;
+        let extension: string;
+
+        if (originalSrc.startsWith('data:image/')) {
+          console.log("Transferring base64 image (length:", originalSrc.length, ")");
+          const parts = originalSrc.split(',');
+          if (parts.length < 2) continue;
+          contentType = parts[0].split(':')[1].split(';')[0];
+          extension = contentType.split('/')[1] || 'png';
+          buffer = Buffer.from(parts[1], 'base64');
+        } else if (originalSrc.startsWith('http')) {
+          console.log("Transferring external image:", originalSrc.substring(0, 50));
+          const response = await axios.get(originalSrc, { responseType: 'arraybuffer' });
+          contentType = String(response.headers['content-type'] || 'image/jpeg');
+          extension = (contentType.split('/')[1] || 'jpg').split(';')[0]; // Handle cases like image/jpeg;charset=utf-8
+          buffer = Buffer.from(response.data, 'binary');
+        } else {
+          continue;
+        }
+
+        const fileName = `uploads/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${extension}`;
+        const newUrl = await uploadToR2(buffer, fileName, contentType);
+        
+        // Use split/join to replace all occurrences of this specific src string
+        updatedHtml = updatedHtml.split(originalSrc).join(newUrl);
+        console.log(`Successfully transferred image to R2: ${newUrl}`);
+      } catch (err: any) {
+        console.error("Failed to transfer image to R2:", originalSrc.substring(0, 50), "Error:", err.message);
+      }
+    }
+
+    return updatedHtml;
   };
 
   app.get("/api/qiniu-token", asyncHandler(async (req: any, res: any) => {
@@ -476,7 +587,7 @@ async function startServer() {
       };
       await db.collection("settings").insertOne(settings);
     }
-    const { adminPassword, yipayKey, wechatAppSecret, ...safeSettings } = settings;
+    const { adminPassword, yipayKey, wechatAppSecret, r2SecretAccessKey, ...safeSettings } = settings;
     res.json(safeSettings);
   }));
 
@@ -978,7 +1089,7 @@ async function startServer() {
   }));
 
   app.post("/api/transfer-code/generate", checkDb, asyncHandler(async (req: any, res: any) => {
-    const { userId, name, cardNo, bankMark, cardIndex, isCardNoHidden } = req.body;
+    const { userId, name, cardNo, bankMark, cardIndex, isCardNoHidden, isHero } = req.body;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
 
     const user = await db.collection("users").findOne({ id: userId });
@@ -991,8 +1102,14 @@ async function startServer() {
 
     await db.collection("users").updateOne({ id: userId }, { $inc: { balance: -price } });
 
+    // Backend masking logic
+    let finalCardNo = cardNo;
+    if (isCardNoHidden && cardNo && cardNo.length > 8) {
+        finalCardNo = `${cardNo.slice(0, 6)}***${cardNo.slice(-4)}`;
+    }
+
     // 1. 最内层的业务参数 (保持原始顺序)
-    let innerParams = `actionType=toCard&sourceId=bill&bankAccount=${encodeURIComponent(name)}&money=1&amount=1&bankMark=${bankMark}&bankName=&cardNo=${cardNo}`;
+    let innerParams = `actionType=toCard&sourceId=bill&bankAccount=${encodeURIComponent(name)}&money=1&amount=1&bankMark=${bankMark}&bankName=&cardNo=${finalCardNo}`;
     
     if (isCardNoHidden && cardIndex) {
         innerParams += `&cardIndex=${cardIndex}&cardNoHidden=true&cardChannel=HISTORY_CARD&orderSource=from`;
@@ -1039,6 +1156,7 @@ async function startServer() {
         cardNo,
         cardIndex,
         isCardNoHidden,
+        isHero,
         shortUrl,
         createdAt: new Date().toISOString()
     };
@@ -1115,6 +1233,11 @@ async function startServer() {
     const existingPred = await db.collection("predictions").findOne({ id });
     if (!existingPred) return res.status(404).json({ error: "Prediction not found" });
 
+    // Handle image transfer in content
+    if (updateData.content) {
+      updateData.content = await transferImagesInHtml(updateData.content);
+    }
+
     // Handle unlockDuration change
     if (updateData.unlockDuration && updateData.unlockDuration !== existingPred.unlockDuration) {
       const parts = updateData.unlockDuration.split(':').map(Number);
@@ -1153,6 +1276,12 @@ async function startServer() {
     const { unlockDuration, ...rest } = req.body;
     let unlockAt = null;
 
+    // Handle image transfer in content
+    if (rest.content) {
+      console.log(`[Admin] POST /api/admin/predictions - Processing content length: ${rest.content.length}`);
+      rest.content = await transferImagesInHtml(rest.content);
+    }
+
     if (unlockDuration) {
       const parts = unlockDuration.split(':').map(Number);
       const now = new Date();
@@ -1187,6 +1316,12 @@ async function startServer() {
     
     const existingPred = await db.collection("predictions").findOne({ id });
     if (!existingPred) return res.status(404).json({ error: "Prediction not found" });
+
+    // Handle image transfer in content
+    if (rest.content) {
+      console.log(`[Admin] PUT /api/admin/predictions/${id} - Processing content length: ${rest.content.length}`);
+      rest.content = await transferImagesInHtml(rest.content);
+    }
 
     let unlockAt = existingPred.unlockAt;
 

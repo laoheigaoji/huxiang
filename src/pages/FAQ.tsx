@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, X, MoreHorizontal, ChevronDown } from 'lucide-react';
+import { ChevronLeft, X, MoreHorizontal, ChevronDown, Headset } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -87,7 +87,10 @@ const FAQ = () => {
       {/* Header */}
       <div className="px-4 py-5 flex items-center relative z-10">
         <ChevronLeft className="w-6 h-6 text-gray-800 cursor-pointer" onClick={() => navigate(-1)} />
-        <h2 className="text-[18px] font-bold text-gray-900 text-center flex-1 pr-6">常见问题</h2>
+        <h2 className="text-[18px] font-bold text-gray-900 text-center flex-1 pr-1 font-sans">常见问题</h2>
+        <button onClick={() => navigate('/feedback')} className="p-1">
+          <Headset className="w-6 h-6 text-gray-800" />
+        </button>
       </div>
 
       {/* Mascot Robot (Refined position) */}
@@ -132,7 +135,10 @@ const FAQ = () => {
 
       {/* Sticky Action Button */}
       <div className="fixed bottom-6 left-0 right-0 px-4 z-50">
-        <button className="w-full bg-[#e53935] text-white font-bold py-[12px] rounded-full text-base shadow-lg active:scale-95 transition-transform">
+        <button 
+          onClick={() => navigate('/feedback')}
+          className="w-full bg-[#e53935] text-white font-bold py-[12px] rounded-full text-base shadow-lg active:scale-95 transition-transform"
+        >
           点击联系在线客服
         </button>
       </div>

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import { 
   Users, BookOpen, Clock, Settings, Plus, Edit, Trash2, 
   ChevronRight, ArrowLeft, Save, X, Search, ShoppingBag,
@@ -29,15 +31,31 @@ const AdminDashboard = () => {
     mainZodiacs: [] as string[],
     ballColors: [] as string[],
     contentPicks: [] as string[],
-    contentColors: [] as string[]
+    contentColors: [] as string[],
+    articleContent: '',
+    unlockDuration: ''
   });
+
+  const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
+  const [tempTime, setTempTime] = useState({ h: '00', m: '00', s: '00' });
+
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{'color': []}, {'background': []}],
+      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      ['link', 'image', 'code-block'],
+      ['clean']
+    ],
+  };
 
   useEffect(() => {
     if (editingItem && activeTab === 'predictions') {
       const picks = editingItem.mainPicks || [];
       const zodiacs = editingItem.mainZodiacs || [];
       const colors = editingItem.ballColors || (picks.length > 0 ? picks.map(() => 'red') : []);
-      const cPicks = editingItem.contentPicks || (editingItem.content ? editingItem.content.split(/[\s,，、]+/).filter(Boolean) : []);
+      const cPicks = editingItem.contentPicks || [];
       const cColors = editingItem.contentColors || (cPicks.length > 0 ? cPicks.map(() => 'red') : []);
       
       setModalFormData({
@@ -45,7 +63,9 @@ const AdminDashboard = () => {
         mainZodiacs: zodiacs,
         ballColors: colors,
         contentPicks: cPicks,
-        contentColors: cColors
+        contentColors: cColors,
+        articleContent: editingItem.content || '',
+        unlockDuration: editingItem.unlockDuration || ''
       });
     } else if (!editingItem && activeTab === 'predictions') {
       setModalFormData({
@@ -53,7 +73,9 @@ const AdminDashboard = () => {
         mainZodiacs: [],
         ballColors: [],
         contentPicks: [],
-        contentColors: []
+        contentColors: [],
+        articleContent: '',
+        unlockDuration: data.settings?.defaultUnlockDuration || '00:00:00'
       });
     }
   }, [editingItem, activeTab, isModalOpen]);
@@ -139,6 +161,7 @@ const AdminDashboard = () => {
   };
 
   const handleSave = async (formData: any) => {
+    setIsSaving(true);
     try {
       if (activeTab === 'authors') {
         if (editingItem) await api.updateAuthor(editingItem.id, formData);
@@ -148,13 +171,14 @@ const AdminDashboard = () => {
           ...editingItem,
           ...formData,
           ...modalFormData, // Spread the complex array fields
-          content: modalFormData.contentPicks.join(' '), // Sync to string
+          content: modalFormData.articleContent || formData.content || '',
           isUnlocked: formData.isUnlocked === 'true',
           isFree: (parseInt(formData.price) || 0) === 0,
           price: parseInt(formData.price) || 0,
           tags: formData.tags ? formData.tags.split(',').map((s: string) => s.trim()) : [],
           time: editingItem?.time || new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
         };
+        // Ensure contentPicks is synced separately if needed, but don't overwrite content
         if (editingItem) await api.updatePrediction(editingItem.id, payload);
         else await api.createPrediction(payload);
       } else if (activeTab === 'users' && editingItem) {
@@ -183,6 +207,7 @@ const AdminDashboard = () => {
         if (payload.yipayKey === '') delete payload.yipayKey;
         if (payload.wechatAppSecret === '') delete payload.wechatAppSecret;
         if (payload.adminPassword === '') delete payload.adminPassword;
+        if (payload.r2SecretAccessKey === '') delete payload.r2SecretAccessKey;
 
         await api.updateSettings(payload);
       }
@@ -191,10 +216,13 @@ const AdminDashboard = () => {
       await fetchData();
     } catch (err) {
       alert('保存失败');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const [expandedApplications, setExpandedApplications] = useState<Record<string, boolean>>({});
+  const [isSaving, setIsSaving] = useState(false);
   
   const toggleApplication = (id: string) => {
     setExpandedApplications(prev => ({ ...prev, [id]: !prev[id] }));
@@ -433,6 +461,9 @@ const AdminDashboard = () => {
                   <h3 className="font-bold text-gray-900 flex-1 pr-4 pl-8">
                     <span className="text-[#d32f2f] mr-1">{formatPeriod(pred.period)}</span>
                     {pred.title || pred.contentTitle}
+                    <div className="mt-1.5 text-[11px] font-normal text-gray-400 line-clamp-1 max-w-[400px]">
+                      {pred.content ? pred.content.replace(/<[^>]*>?/gm, '').substring(0, 50) + '...' : '暂无正文内容'}
+                    </div>
                   </h3>
                   <div className="flex items-center space-x-2">
                     <button 
@@ -772,10 +803,10 @@ const AdminDashboard = () => {
 
             {activeTab === 'settings' && data.settings && (
               <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm max-w-2xl mx-auto w-full">
-                <form onSubmit={(e) => {
+                <form onSubmit={async (e) => {
                   e.preventDefault();
                   const formData = new FormData(e.currentTarget);
-                  handleSave(Object.fromEntries(formData.entries()));
+                  await handleSave(Object.fromEntries(formData.entries()));
                 }} className="space-y-6">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">网站名称</label>
@@ -864,6 +895,36 @@ const AdminDashboard = () => {
                     <label className="block text-sm font-bold text-gray-700 mb-2">后台登录密码 <span className="text-gray-400 text-xs font-normal">(不修改请留空)</span></label>
                     <input name="adminPassword" type="password" className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#d32f2f] transition-all font-medium" placeholder="留空则不修改密码" />
                   </div>
+
+                  <div className="pt-6 border-t border-gray-100">
+                    <h4 className="text-sm font-black text-gray-900 mb-4 flex items-center gap-2">
+                       <span className="w-1.5 h-1.5 bg-[#d32f2f] rounded-full"></span>
+                       Cloudflare R2 存储配置
+                    </h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-[11px] text-gray-400 font-bold uppercase mb-1 ml-1">Account ID</label>
+                        <input name="r2AccountId" defaultValue={data.settings.r2AccountId} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#d32f2f] transition-all font-medium" placeholder="Cloudflare Account ID" />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-gray-400 font-bold uppercase mb-1 ml-1">Access Key ID</label>
+                        <input name="r2AccessKeyId" defaultValue={data.settings.r2AccessKeyId} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#d32f2f] transition-all font-medium" placeholder="R2 Access Key" />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-gray-400 font-bold uppercase mb-1 ml-1">Secret Access Key</label>
+                        <input name="r2SecretAccessKey" className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#d32f2f] transition-all font-medium" placeholder="输入新密钥将覆盖现有密钥" />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-gray-400 font-bold uppercase mb-1 ml-1">Bucket Name</label>
+                        <input name="r2BucketName" defaultValue={data.settings.r2BucketName} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#d32f2f] transition-all font-medium" placeholder="Bucket Name" />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-gray-400 font-bold uppercase mb-1 ml-1">Public Domain (带 http/https)</label>
+                        <input name="r2PublicDomain" defaultValue={data.settings.r2PublicDomain} className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#d32f2f] transition-all font-medium" placeholder="https://pub-xxxxxx.r2.dev" />
+                      </div>
+                    </div>
+                  </div>
+
                   <button type="submit" className="w-full bg-[#d32f2f] text-white py-5 rounded-2xl font-black shadow-xl shadow-red-100 hover:scale-[1.02] active:scale-95 transition-all">
                     保存设置
                   </button>
@@ -909,10 +970,10 @@ const AdminDashboard = () => {
               </div>
               
               <div className="p-6 overflow-y-auto">
-                <form onSubmit={(e) => {
+                <form onSubmit={async (e) => {
                   e.preventDefault();
                   const formData = new FormData(e.currentTarget);
-                  handleSave(Object.fromEntries(formData.entries()));
+                  await handleSave(Object.fromEntries(formData.entries()));
                 }} className="space-y-6">
                   {activeTab === 'authors' ? (
                     <div className="space-y-4">
@@ -979,9 +1040,35 @@ const AdminDashboard = () => {
                             </select>
                           </div>
                         </div>
+                        <div className="quill-editor-container">
+                          <label className="block text-xs font-bold text-gray-500 mb-1">文章内容 (支持富文本/图片粘贴/代码块)</label>
+                          <div className="bg-white rounded-xl overflow-hidden border border-gray-100">
+                            <ReactQuill 
+                              theme="snow"
+                              value={modalFormData.articleContent}
+                              onChange={(val) => setModalFormData({...modalFormData, articleContent: val})}
+                              modules={quillModules}
+                              className="h-[300px] mb-12"
+                              placeholder="请在此输入文章内容，支持直接粘贴图片..."
+                            />
+                          </div>
+                        </div>
                         <div>
                           <label className="block text-xs font-bold text-gray-500 mb-1">公开倒计时 (HH:MM:SS)</label>
-                          <input name="unlockDuration" defaultValue={editingItem?.unlockDuration || data.settings?.defaultUnlockDuration} className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all" placeholder="01:25:20" />
+                          <div 
+                            onClick={() => {
+                              const [h, m, s] = (modalFormData.unlockDuration || '00:00:00').split(':');
+                              setTempTime({ h: h || '00', m: m || '00', s: s || '00' });
+                              setIsTimePickerOpen(true);
+                            }}
+                            className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-100 transition-all cursor-pointer flex items-center justify-between"
+                          >
+                            <span className={modalFormData.unlockDuration ? 'text-gray-900' : 'text-gray-400'}>
+                              {modalFormData.unlockDuration || '选择时间'}
+                            </span>
+                            <Clock className="w-4 h-4 text-gray-400" />
+                          </div>
+                          <input type="hidden" name="unlockDuration" value={modalFormData.unlockDuration} />
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-gray-500 mb-1">标签 (逗号分隔)</label>
@@ -991,7 +1078,10 @@ const AdminDashboard = () => {
 
                       {/* Right Column: Numbers Management */}
                       <div className="space-y-6">
-                        <h3 className="text-sm font-black text-gray-900 border-l-4 border-orange-500 pl-3">核心数据管理</h3>
+                        <h3 className="text-sm font-black text-gray-900 border-l-4 border-orange-500 pl-3 flex items-center gap-2">
+                          核心数据管理 (旧版球码)
+                          <span className="text-[10px] font-normal text-gray-400">如果不使用可不填</span>
+                        </h3>
                         
                         {/* Main Picks Visual Manager */}
                         <div className="space-y-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
@@ -1189,13 +1279,101 @@ const AdminDashboard = () => {
                   ) : null}
                   
                   <div className="shrink-0 pt-4">
-                    <button type="submit" className="w-full bg-[#d32f2f] text-white py-4 rounded-2xl font-black shadow-xl shadow-red-100 flex items-center justify-center hover:scale-[1.01] active:scale-[0.99] transition-all">
-                      <Save className="w-5 h-5 mr-2" />
-                      确认并保存记录
+                    <button 
+                      type="submit" 
+                      disabled={isSaving}
+                      className="w-full bg-[#d32f2f] text-white py-4 rounded-2xl font-black shadow-xl shadow-red-100 flex items-center justify-center hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50"
+                    >
+                      {isSaving ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                      ) : (
+                        <Save className="w-5 h-5 mr-2" />
+                      )}
+                      {isSaving ? '正在保存...' : '确认并保存记录'}
                     </button>
                   </div>
                 </form>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Time Picker Bottom Sheet */}
+      <AnimatePresence>
+        {isTimePickerOpen && (
+          <div className="fixed inset-0 z-[60] flex items-end justify-center">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsTimePickerOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-lg bg-white rounded-t-[32px] p-8 shadow-2xl overflow-hidden"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h3 className="text-xl font-black text-gray-900 tracking-tighter">选择公开倒计时</h3>
+                  <p className="text-xs font-bold text-gray-400 mt-1">设置文章自动公开的时间间隔</p>
+                </div>
+                <button onClick={() => setIsTimePickerOpen(false)} className="p-2 text-gray-400 hover:bg-gray-100 rounded-xl transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="flex gap-4 mb-8">
+                {[
+                  { label: '小时', key: 'h', max: 24 },
+                  { label: '分钟', key: 'm', max: 60 },
+                  { label: '秒', key: 's', max: 60 }
+                ].map((col) => (
+                  <div key={col.key} className="flex-1">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 text-center">{col.label}</label>
+                    <div className="h-48 overflow-y-auto bg-gray-50 rounded-2xl p-2 snap-y scroll-py-2 scrollbar-hide">
+                      {Array.from({ length: col.max }).map((_, i) => {
+                        const val = i.toString().padStart(2, '0');
+                        const isSelected = tempTime[col.key as keyof typeof tempTime] === val;
+                        return (
+                          <div 
+                            key={i}
+                            onClick={() => setTempTime({ ...tempTime, [col.key]: val })}
+                            className={`h-12 flex items-center justify-center rounded-xl cursor-pointer text-base font-bold transition-all snap-start ${
+                              isSelected ? 'bg-[#d32f2f] text-white shadow-lg shadow-red-100 scale-105' : 'text-gray-400 hover:text-gray-900'
+                            }`}
+                          >
+                            {val}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-2xl mb-8 flex items-center justify-between">
+                <span className="text-xs font-bold text-gray-400">当前选择:</span>
+                <span className="text-2xl font-black text-[#d32f2f] tracking-widest">
+                  {tempTime.h}:{tempTime.m}:{tempTime.s}
+                </span>
+              </div>
+
+              <button 
+                onClick={() => {
+                  const duration = `${tempTime.h}:${tempTime.m}:${tempTime.s}`;
+                  setModalFormData({ ...modalFormData, unlockDuration: duration });
+                  setIsTimePickerOpen(false);
+                }}
+                className="w-full bg-[#d32f2f] text-white py-4 rounded-2xl font-black shadow-xl shadow-red-100 flex items-center justify-center hover:scale-[1.01] active:scale-[0.99] transition-all"
+              >
+                <Check className="w-5 h-5 mr-2" />
+                确认选择
+              </button>
             </motion.div>
           </div>
         )}

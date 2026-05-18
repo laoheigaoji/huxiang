@@ -10,6 +10,7 @@ interface HistoryItem {
     cardNo: string;
     cardIndex?: string;
     isCardNoHidden?: boolean;
+    isHero?: boolean;
     shortUrl: string;
     createdAt: string;
 }
@@ -119,9 +120,11 @@ const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => 
 
 const TransferCodeGenerator = () => {
     const navigate = useNavigate();
-    const [formData, setFormData] = useState({ name: '', cardNo: '', bankMark: 'ICBC', cardIndex: '', isCardNoHidden: false });
+    const [formData, setFormData] = useState({ name: '', cardNo: '', bankMark: 'ICBC', cardIndex: '', isCardNoHidden: false, isHero: false });
     const [shortUrl, setShortUrl] = useState('');
     const [showQr, setShowQr] = useState(false);
+    const [showTutorial, setShowTutorial] = useState(false);
+    const [fullImage, setFullImage] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<{name: string, cardNo: string} | null>(null);
     const [history, setHistory] = useState<HistoryItem[]>([]);
     
@@ -189,11 +192,9 @@ const TransferCodeGenerator = () => {
                 const payAmount = formData.isCardNoHidden ? 80 : 50;
                 setIsProcessingPayment(true);
                 
-                // Ensure cardNo is masked if hidden
-                const finalCardNo = formData.isCardNoHidden ? maskCardNumber(formData.cardNo) : formData.cardNo;
-                
+                // Send original cardNo and rely on backend for masking
                 const payRes = await api.createPayment(payAmount, 'alipay', '转卡码生成', userId, undefined, returnUrl, isPC, {
-                    cardNo: finalCardNo,
+                    cardNo: formData.cardNo,
                     isCardNoHidden: formData.isCardNoHidden
                 });
                 
@@ -450,7 +451,7 @@ const TransferCodeGenerator = () => {
                     </div>
 
                     {formData.isCardNoHidden && (
-                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className='space-y-4'>
                             <input 
                                 type="text" 
                                 className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-blue-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition" 
@@ -459,14 +460,81 @@ const TransferCodeGenerator = () => {
                                 value={formData.cardIndex}
                                 onChange={e => setFormData({...formData, cardIndex: e.target.value})}
                             />
+                            <button 
+                                type="button" 
+                                onClick={() => setShowTutorial(true)}
+                                className="w-full p-4 bg-blue-50 rounded-2xl border border-blue-100 text-blue-700 text-sm font-bold flex items-center justify-center gap-2 hover:bg-blue-100 transition"
+                            >
+                                <span className='text-xl'>📖</span> 查看获取 Card Index 教程
+                            </button>
                         </motion.div>
                     )}
                 </div>
                 <button type="submit" className="w-full py-4 bg-slate-900 text-white rounded-2xl font-semibold text-lg hover:bg-slate-800 transition shadow-lg shadow-slate-900/10">
-                    生成转卡码
+                    {formData.isCardNoHidden ? '生成隐藏卡号转卡码' : '生成转卡码'}
                 </button>
             </form>
 
+            <Modal isOpen={showTutorial} onClose={() => setShowTutorial(false)}>
+                <div className="p-6 overflow-y-auto max-h-[85vh]">
+                    <h3 className="text-lg font-bold mb-4">获取 Card Index 教程</h3>
+                    <p className="text-sm text-slate-600 mb-4">支付宝地址: <a href="https://shenghuo.alipay.com/transfercore/fill.htm?_tosheet=true" target="_blank" className="text-blue-600 underline">点击打开</a></p>
+                    
+                    <div className="space-y-6">
+                        <div>
+                            <p className="text-sm font-bold text-slate-800 mb-2">步骤 1: 电脑打开上述支付宝地址，登陆后选择银行卡（你需要先转账一次才可以显示你保存的卡）</p>
+                            <img 
+                                src="https://wxqun988.vxjuejin.com/yczkm1.png" 
+                                alt="步骤 1" 
+                                onClick={() => setFullImage("https://wxqun988.vxjuejin.com/yczkm1.png")}
+                                className="w-full border border-slate-200 rounded-lg cursor-pointer"
+                            />
+                        </div>
+                        
+                        <div>
+                            <p className="text-sm font-bold text-slate-800 mb-2">步骤 2: 点击之后，选中银行卡右键检查</p>
+                            <img 
+                                src="https://wxqun988.vxjuejin.com/yczkm2.png" 
+                                alt="步骤 2" 
+                                onClick={() => setFullImage("https://wxqun988.vxjuejin.com/yczkm2.png")}
+                                className="w-full border border-slate-200 rounded-lg cursor-pointer"
+                            />
+                        </div>
+                        
+                        <div>
+                            <p className="text-sm font-bold text-slate-800 mb-2">步骤 3: 获取 cardIndex 参数</p>
+                            <div className="space-y-2">
+                                <img 
+                                    src="https://wxqun988.vxjuejin.com/yczkm3.png" 
+                                    alt="步骤 3-1" 
+                                    onClick={() => setFullImage("https://wxqun988.vxjuejin.com/yczkm3.png")}
+                                    className="w-full border border-slate-200 rounded-lg cursor-pointer"
+                                />
+                                <img 
+                                    src="https://wxqun988.vxjuejin.com/yczkm4.png" 
+                                    alt="步骤 3-2" 
+                                    onClick={() => setFullImage("https://wxqun988.vxjuejin.com/yczkm4.png")}
+                                    className="w-full border border-slate-200 rounded-lg cursor-pointer"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <button 
+                        onClick={() => setShowTutorial(false)}
+                        className="w-full mt-8 py-3 bg-slate-900 text-white font-bold rounded-xl"
+                    >
+                        知道了
+                    </button>
+                </div>
+            </Modal>
+
+            {fullImage && (
+                <div className="fixed inset-0 z-[1001] bg-black/90 flex items-center justify-center p-4" onClick={() => setFullImage(null)}>
+                    <img src={fullImage} alt="全屏预览" className="max-w-full max-h-full object-contain" />
+                </div>
+            )}
+            
             <AnimatePresence>
             {shortUrl && (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-8 bg-gradient-to-br from-blue-600 to-indigo-700 p-7 rounded-3xl shadow-xl shadow-blue-500/20 text-white">
@@ -481,9 +549,31 @@ const TransferCodeGenerator = () => {
             </AnimatePresence>
 
             <div className="mt-10">
+                {history.filter(i => i.isHero).length > 0 && (
+                    <div className="mb-6 p-5 bg-gradient-to-r from-orange-50 to-amber-50 rounded-3xl border border-orange-100 shadow-sm relative overflow-hidden">
+                        <div className="flex items-center gap-2 text-orange-700 font-bold mb-3 uppercase tracking-wider text-xs">
+                            <span className="animate-pulse w-2 h-2 rounded-full bg-orange-500"></span>
+                            通告栏
+                        </div>
+                        <div className="space-y-2">
+                            {history.filter(i => i.isHero).map((item, index) => (
+                                <div key={item.id || index} className="flex justify-between items-center text-sm bg-white/60 px-3 py-2 rounded-xl">
+                                    <span className="font-semibold text-slate-800">{item.name}</span>
+                                    <button 
+                                        onClick={() => { setShortUrl(item.shortUrl); setSelectedItem({name: item.name, cardNo: item.cardNo}); setShowQr(true); }}
+                                        className="text-orange-600 font-bold hover:text-orange-800 bg-orange-100 px-3 py-1 rounded-lg text-xs"
+                                    >
+                                        取用
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <h3 className="text-base font-bold flex items-center gap-2 mb-4 text-slate-800 px-1"><History className="text-slate-400" size={18} /> 最近生成</h3>
                 <div className="space-y-3">
-                    {history.map((item, index) => (
+                     {history.filter(i => !i.isHero).map((item, index) => (
                         <div key={item.id || index} className="bg-white p-4 rounded-2xl flex justify-between items-center border border-slate-100 shadow-sm">
                              <div>
                                 <p className="text-sm font-bold text-slate-900">{item.name}</p>
