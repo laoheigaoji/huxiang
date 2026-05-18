@@ -65,11 +65,7 @@ const StyledQrModal: React.FC<StyledQrModalProps> = ({ isOpen, onClose, shortUrl
 
                     ctx.drawImage(qr, dstX, dstY, newQrWidth, newQrHeight);
 
-                    ctx.fillStyle = 'white';
-                    ctx.font = 'bold 48px Arial';
-                    ctx.textAlign = 'center';
-                    const textY = dstY + newQrHeight + 80;
-                    ctx.fillText(`${name}    ${cardNo}`, bg.width / 2, textY);
+                    // Removed name and card number text from the QR code image as requested
                     
                     // Generate image data URL after rendering
                     setImageSrc(canvas.toDataURL('image/png'));
@@ -120,7 +116,7 @@ const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => 
 
 const TransferCodeGenerator = () => {
     const navigate = useNavigate();
-    const [formData, setFormData] = useState({ name: '', cardNo: '', bankMark: 'ICBC', cardIndex: '', isCardNoHidden: false, isHero: false });
+    const [formData, setFormData] = useState({ name: '', cardNo: '', bankMark: 'ICBC', bankName: '工商银行', cardIndex: '', isCardNoHidden: false, isHero: false });
     const [shortUrl, setShortUrl] = useState('');
     const [showQr, setShowQr] = useState(false);
     const [showTutorial, setShowTutorial] = useState(false);
@@ -418,7 +414,11 @@ const TransferCodeGenerator = () => {
                 <div className="space-y-4">
                     <input type="text" className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition" placeholder="收款人姓名" required onChange={e => setFormData({...formData, name: e.target.value})}/>
                     <input type="text" className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition" placeholder="银行卡号" required onChange={e => setFormData({...formData, cardNo: e.target.value})}/>
-                    <select className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition" onChange={e => setFormData({...formData, bankMark: e.target.value})}>
+                    <select className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition" onChange={e => {
+                        const selectedOption = e.target.options[e.target.selectedIndex];
+                        const name = selectedOption.text.split(' (')[0];
+                        setFormData({...formData, bankMark: e.target.value, bankName: name});
+                    }}>
                         <option value="ICBC">工商银行 (ICBC)</option>
                         <option value="ABC">农业银行 (ABC)</option>
                         <option value="CCB">建设银行 (CCB)</option>

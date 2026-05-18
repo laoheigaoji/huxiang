@@ -1089,7 +1089,7 @@ async function startServer() {
   }));
 
   app.post("/api/transfer-code/generate", checkDb, asyncHandler(async (req: any, res: any) => {
-    const { userId, name, cardNo, bankMark, cardIndex, isCardNoHidden, isHero } = req.body;
+    const { userId, name, cardNo, bankMark, bankName, cardIndex, isCardNoHidden, isHero } = req.body;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
 
     const user = await db.collection("users").findOne({ id: userId });
@@ -1102,16 +1102,22 @@ async function startServer() {
 
     await db.collection("users").updateOne({ id: userId }, { $inc: { balance: -price } });
 
-    // Backend masking logic
+    // Backend masking logic - Refined for better Alipay compatibility on Android
     let finalCardNo = cardNo;
     if (isCardNoHidden && cardNo && cardNo.length > 8) {
-        finalCardNo = `${cardNo.slice(0, 6)}***${cardNo.slice(-4)}`;
+        // Standard masking for hidden transfer: First 6 + ****** + Last 4
+        finalCardNo = `${cardNo.slice(0, 6)}******${cardNo.slice(-4)}`;
     }
 
-    // 1. 最内层的业务参数 (保持原始顺序)
-    let innerParams = `actionType=toCard&sourceId=bill&bankAccount=${encodeURIComponent(name)}&money=1&amount=1&bankMark=${bankMark}&bankName=&cardNo=${finalCardNo}`;
+    // 1. 最内层的业务参数 (保持原始顺序，添加 bankName 并优化 sourceId)
+    // 经验证 bankName 对安卓自动选择银行至关重要
+    const encodedName = encodeURIComponent(name);
+    const encodedBankName = encodeURIComponent(bankName || "");
+    
+    let innerParams = `actionType=toCard&sourceId=bill&bankAccount=${encodedName}&money=1&amount=1&bankMark=${bankMark}&bankName=${encodedBankName}&cardNo=${finalCardNo}`;
     
     if (isCardNoHidden && cardIndex) {
+        // cardIndex 这种模式下，部分安卓设备要求参数顺序和完整性
         innerParams += `&cardIndex=${cardIndex}&cardNoHidden=true&cardChannel=HISTORY_CARD&orderSource=from`;
     }
 
@@ -1121,7 +1127,7 @@ async function startServer() {
     // 3. 构建 ds.alipay.com 链接
     const dsUrl = `https://ds.alipay.com/?scheme=${encodeURIComponent(innerScheme)}`;
     
-    // 4. 将 dsUrl 转换为深度 Hex 编码
+    // 4. 将 dsUrl 转换为深度 Hex 编码 (解决部分安卓浏览器跳转拦截)
     const deepHexEncode = (str: string) => {
         let ret = '';
         for (let i = 0; i < str.length; i++) {
@@ -1132,7 +1138,8 @@ async function startServer() {
     const deepEncodedUrl = deepHexEncode(dsUrl);
     
     // 5. 组合成最终的 render 链接
-    const finalUrl = `https://render.alipay.com/p/s/i/?scheme=alipays%3A%2F%2Fplatformapi%2Fstartapp%3FappId%3D20000067%26url%3D${deepEncodedUrl}&page=&query=`;
+    // 增加 page=index 可能有助于安卓环境下 H5 容器的稳定初始化
+    const finalUrl = `https://render.alipay.com/p/s/i/?scheme=alipays%3A%2F%2Fplatformapi%2Fstartapp%3FappId%3D20000067%26url%3D${deepEncodedUrl}&page=index&query=`;
 
     const SHORTLINK_API_KEY = 'a57585f9fcfd145d8aff69aeec45805c';
     let shortUrl = finalUrl;
@@ -1154,6 +1161,8 @@ async function startServer() {
         userId,
         name,
         cardNo,
+        bankMark,
+        bankName,
         cardIndex,
         isCardNoHidden,
         isHero,
